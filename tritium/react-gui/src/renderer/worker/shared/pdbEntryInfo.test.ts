@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { parseEmdbMap, parseRcsbEntries } from './pdbEntryInfo'
+import { parseEmdbMap, parseRcsbEntries, parseRcsbSearch, rcsbSearchRequest } from './pdbEntryInfo'
 
 function entry(id: string, method: string, emdbIds: string[] | null, compat = 'Y') {
     return {
@@ -45,5 +45,29 @@ describe('parseEmdbMap', () => {
         const none = parseEmdbMap('EMD-1', map([]))
         expect(none.recommendedLevel).toBeNull()
         expect(none.sizeBytes).toBe(67109000)
+    })
+})
+
+describe('rcsbSearchRequest / parseRcsbSearch', () => {
+    it('sends the method as an exact-match clause and the order as a server-side sort', () => {
+        expect(rcsbSearchRequest('psi', 'all', 'score', 0, 25)).toEqual({
+            query: { type: 'terminal', service: 'full_text', parameters: { value: 'psi' } },
+            return_type: 'entry',
+            request_options: { paginate: { start: 0, rows: 25 } },
+        })
+        const req = rcsbSearchRequest('psi', 'em', 'resolution', 25, 25) as {
+            query: { logical_operator: string; nodes: { parameters: Record<string, string> }[] }
+            request_options: unknown
+        }
+        expect(req.query.logical_operator).toBe('and')
+        expect(req.query.nodes[1].parameters).toEqual({
+            attribute: 'exptl.method', operator: 'exact_match', value: 'ELECTRON MICROSCOPY',
+        })
+        expect(req.request_options).toEqual({
+            paginate: { start: 25, rows: 25 },
+            sort: [{ sort_by: 'rcsb_entry_info.resolution_combined', direction: 'asc' }],
+        })
+        expect(parseRcsbSearch({ total_count: 1088, result_set: [{ identifier: '1JB0' }, { identifier: '6VPV' }] }))
+            .toEqual({ total: 1088, ids: ['1jb0', '6vpv'] })
     })
 })

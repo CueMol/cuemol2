@@ -1,7 +1,8 @@
 /**
  * @file plugins/getpdb/renderer/GetPdbDialog.tsx
- * @description The Get PDB form: a PDB or EMDB accession code, then which of
- * the entry's files to fetch, and from which server.
+ * @description The Get PDB form: a PDB or EMDB accession code (or keywords to
+ * search for one), then which of the entry's files to fetch, and from which
+ * server.
  *
  * The code is looked up as it is typed (`useEntryLookup`), and the map
  * section follows what the entry is: a crystallographic entry offers its
@@ -9,22 +10,34 @@
  * directly offers that map alone. When the lookup fails the dialog offers
  * what it always did (coordinates and crystallographic maps), so a download
  * never depends on the lookup.
+ *
+ * The one field takes keywords too. Text that is not an accession code is
+ * searched for on Enter, and the hits are listed under the field; picking a
+ * row makes that entry the one the rest of the form is about, exactly as if
+ * its ID had been typed. Typing an ID again closes the list.
  */
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { DialogShell } from '@renderer/plugin-host/api'
 import {
   isImeKey,
+  ButtonRow,
   CheckboxField,
   ComboBoxField,
   Field,
+  FieldGrid,
+  FieldGridRow,
   FieldSection,
+  FormButton,
   RadioField,
+  SelectField,
 } from '@renderer/h3-kit/form'
-import { getHistory } from './pdbIdHistory'
+import { Listbox, ListRow, TruncatedText } from '@renderer/h3-kit/list'
+import { getHistory, pushHistory } from './pdbIdHistory'
 import { parseAccession } from '@renderer/worker/shared/pdbUrls'
-import type { EmdbMapInfo, EntryInfo } from '@renderer/worker/shared/pdbEntryInfo'
+import type { EmdbMapInfo, EntryInfo, SearchMethodFilter, SearchSort } from '@renderer/worker/shared/pdbEntryInfo'
 import { useEntryLookup, type EmdbInfoMap, type EntryLookup } from './useEntryLookup'
+import { usePdbSearch, type PdbSearchState } from './usePdbSearch'
 
 // The server choices are shared with the worker (see worker/shared/pdbUrls.ts),
 // which builds the URLs for a headless fetch too.
@@ -101,6 +114,17 @@ function formatBytes(n: number): string {
   return `${(n / 1e6).toFixed(1)} MB`
 }
 
+/** The method as a short tag for a result row (`EM`, `X-ray`, ...). */
+function shortMethod(entry: EntryInfo): string {
+  const m = entry.methods.map((x) => x.toUpperCase())
+  if (m.some((x) => x.includes('ELECTRON MICROSCOPY'))) return 'EM'
+  if (m.some((x) => x.includes('X-RAY'))) return 'X-ray'
+  if (m.some((x) => x.includes('NMR'))) return 'NMR'
+  if (m.some((x) => x.includes('NEUTRON'))) return 'Neutron'
+  if (m.some((x) => x.includes('ELECTRON CRYSTALLOGRAPHY'))) return 'ED'
+  return entry.methods.length > 0 ? formatMethod(entry.methods[0]) : '?'
+}
+
 /** One line of what the entry is: method, resolution, EMDB maps. */
 function entrySummary(entry: EntryInfo): string {
   const parts = [entry.methods.map(formatMethod).join(', ') || 'Unknown method']
@@ -122,8 +146,17 @@ function emdbMapSummary(info: EmdbMapInfo | 'loading' | 'error' | undefined): st
   return parts.join(' | ')
 }
 
-/** The lines under the accession field: what the code names, or why not. */
-function EntryInfoLines({ lookup, emdbInfo }: { lookup: EntryLookup; emdbInfo: EmdbInfoMap }): React.JSX.Element | null {
+/**
+ * The lines under the accession field: what the code names, or why not.
+ *
+ * @param onSearchInstead - offered when an ID-shaped input names no entry, so
+ *   a four-letter word that happens to look like an ID can still be searched
+ */
+function EntryInfoLines({ lookup, emdbInfo, onSearchInstead }: {
+  lookup: EntryLookup
+  emdbInfo: EmdbInfoMap
+  onSearchInstead: () => void
+}): React.JSX.Element | null {
   switch (lookup.status) {
     case 'idle':
       return null
@@ -147,7 +180,14 @@ function EntryInfoLines({ lookup, emdbInfo }: { lookup: EntryLookup; emdbInfo: E
       )
     }
     case 'not-found':
-      return <div className="h3-dialog-error">No entry {lookup.accession.id.toUpperCase()} was found.</div>
+      return (
+        <>
+          <div className="h3-dialog-error">No entry {lookup.accession.id.toUpperCase()} was found.</div>
+          <ButtonRow>
+            <FormButton text="Search as keywords" onClick={onSearchInstead} />
+          </ButtonRow>
+        </>
+      )
     case 'error':
       return (
         <div className="h3-dialog-hint">
@@ -155,6 +195,85 @@ function EntryInfoLines({ lookup, emdbInfo }: { lookup: EntryLookup; emdbInfo: E
         </div>
       )
   }
+}
+
+const METHOD_FILTER_LABELS: Record<SearchMethodFilter, string> = {
+  all: 'All methods',
+  xray: 'X-ray',
+  em: 'Electron microscopy',
+}
+
+const SORT_LABELS: Record<SearchSort, string> = {
+  score: 'Relevance',
+  resolution: 'Best resolution',
+  date: 'Newest',
+}
+
+/**
+ * The keyword search hits: a method filter and an order, the rows, and paging.
+ *
+ * @param children - what the picked row is (its information lines), drawn
+ *   under the list so picking a row never moves the rows themselves
+ */
+function SearchResults({ search, method, onMethodChange, sort, onSortChange, selectedId, onSelect, onMore, children }: {
+  search: PdbSearchState
+  method: SearchMethodFilter
+  onMethodChange: (m: SearchMethodFilter) => void
+  sort: SearchSort
+  onSortChange: (s: SearchSort) => void
+  selectedId: string | null
+  onSelect: (id: string) => void
+  onMore: () => void
+  children?: React.ReactNode
+}): React.JSX.Element {
+  const count = search.loading && search.entries.length === 0
+    ? 'Searching...'
+    : search.entries.length < search.total
+      ? `${search.entries.length} / ${search.total} entries`
+      : `${search.total} ${search.total === 1 ? 'entry' : 'entries'}`
+  return (
+    <FieldSection title="Search results" titleActions={<span className="type-caption">{count}</span>}>
+      <FieldGrid>
+        <FieldGridRow label="Method">
+          <SelectField value={method} onChange={(v) => onMethodChange(v as SearchMethodFilter)}>
+            {(Object.keys(METHOD_FILTER_LABELS) as SearchMethodFilter[]).map((m) => (
+              <option key={m} value={m}>{METHOD_FILTER_LABELS[m]}</option>
+            ))}
+          </SelectField>
+        </FieldGridRow>
+        <FieldGridRow label="Sort">
+          <SelectField value={sort} onChange={(v) => onSortChange(v as SearchSort)}>
+            {(Object.keys(SORT_LABELS) as SearchSort[]).map((s) => (
+              <option key={s} value={s}>{SORT_LABELS[s]}</option>
+            ))}
+          </SelectField>
+        </FieldGridRow>
+      </FieldGrid>
+      <Listbox framed>
+        {search.entries.length === 0 ? (
+          <div className="h3-list-empty">
+            {search.loading ? 'Searching...' : search.error ? `Search failed: ${search.error}` : 'No entries found.'}
+          </div>
+        ) : (
+          search.entries.map((e) => (
+            <ListRow key={e.id} selected={e.id === selectedId} onClick={() => onSelect(e.id)}>
+              <span className="type-row getpdb-result-id">{e.id.toUpperCase()}</span>
+              <TruncatedText className="type-row getpdb-result-title" text={e.title || e.id.toUpperCase()} />
+              <span className="type-caption getpdb-result-meta">
+                {e.resolution !== null ? `${shortMethod(e)} ${e.resolution.toFixed(1)} \u00c5` : shortMethod(e)}
+              </span>
+            </ListRow>
+          ))
+        )}
+      </Listbox>
+      {search.entries.length > 0 && search.entries.length < search.total && (
+        <ButtonRow>
+          <FormButton text={search.loading ? 'Loading...' : 'More'} disabled={search.loading} onClick={onMore} />
+        </ButtonRow>
+      )}
+      {children}
+    </FieldSection>
+  )
 }
 
 export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX.Element {
@@ -174,6 +293,11 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
 
   const [historyItems, setHistoryItems] = useState<string[]>(() => getHistory())
 
+  const search = usePdbSearch()
+  const [searchMethod, setSearchMethod] = useState<SearchMethodFilter>('all')
+  const [searchSort, setSearchSort] = useState<SearchSort>('score')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
   useEffect(() => {
     if (visible) {
       setText('')
@@ -185,15 +309,28 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
       setEmOff(new Set())
       setEmServer('WWPDB')
       setHistoryItems(getHistory())
+      search.reset()
+      setSearchMethod('all')
+      setSearchSort('score')
+      setSelectedId(null)
     }
+    // `search.reset` is stable; listing `search` would rerun on every result.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
 
   const refreshHistory = useCallback((): void => {
     setHistoryItems(getHistory())
   }, [])
 
-  const { lookup, emdbInfo } = useEntryLookup(text, visible)
-  const accession = parseAccession(text)
+  // The search list owns the form while it is open: the entry is the picked
+  // row, not the text. It stays open while the text is still not an ID, or
+  // is the very text that was searched ("Search as keywords" on an ID).
+  const typed = parseAccession(text)
+  const searchOpen = search.state !== null && (typed === null || search.state.query === text.trim())
+  const entryText = searchOpen ? (selectedId ?? '') : text
+
+  const { lookup, emdbInfo } = useEntryLookup(entryText, visible)
+  const accession = parseAccession(entryText)
   const section = mapSectionFor(lookup)
   const emdbIds = emdbIdsFor(lookup)
 
@@ -231,12 +368,55 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
     })
   }
 
+  // A search is remembered in the history as soon as it runs (an ID is
+  // remembered when it is downloaded, by the command).
+  const runSearch = (query: string, method = searchMethod, sort = searchSort): void => {
+    setSelectedId(null)
+    pushHistory(query)
+    setHistoryItems(getHistory())
+    search.run(query, method, sort)
+  }
+
+  // Picking remembered keywords searches for them at once; a picked ID only
+  // fills the field, and the lookup follows as if it had been typed.
+  const pickHistory = (v: string): void => {
+    setText(v)
+    if (parseAccession(v) === null) runSearch(v)
+  }
+
+  const changeMethod = (m: SearchMethodFilter): void => {
+    setSearchMethod(m)
+    if (search.state) runSearch(search.state.query, m, searchSort)
+  }
+
+  const changeSort = (s: SearchSort): void => {
+    setSearchSort(s)
+    if (search.state) runSearch(search.state.query, searchMethod, s)
+  }
+
+  // Enter downloads what the form is about, unless the text is keywords that
+  // have not been searched yet, which it searches first.
+  // Up / Down walk the hit list without leaving the field.
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && canSubmit && !isImeKey(e.nativeEvent)) {
+    if (isImeKey(e.nativeEvent)) return
+    const q = text.trim()
+    if (e.key === 'Enter') {
       e.preventDefault()
-      handleOk()
+      const searched = search.state !== null && search.state.query === q
+      if (typed === null && q.length > 0 && !searched) runSearch(q)
+      else if (canSubmit) handleOk()
+      return
+    }
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && searchOpen && search.state && search.state.entries.length > 0) {
+      e.preventDefault()
+      const ids = search.state.entries.map((x) => x.id)
+      const cur = selectedId === null ? -1 : ids.indexOf(selectedId)
+      const next = e.key === 'ArrowDown' ? Math.min(cur + 1, ids.length - 1) : Math.max(cur - 1, 0)
+      setSelectedId(ids[next])
     }
   }
+
+  const keywordsPending = typed === null && text.trim().length > 0 && !searchOpen
 
   return (
     <DialogShell
@@ -249,7 +429,7 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
       okDisabled={!canSubmit}
     >
       <FieldSection title="Entry">
-        <Field label="PDB or EMDB ID">
+        <Field label="PDB or EMDB ID, or keywords">
           {/* Editable combobox: text + themed, click-to-open history
               dropdown. The chevron and dark-mode popover are handled
               by ComboBoxField (h3-kit), so this dialog adds none of
@@ -258,20 +438,49 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
             id="get-pdb-id"
             value={text}
             onChange={setText}
+            onPick={pickHistory}
             options={historyItems}
             onOpen={refreshHistory}
-            placeholder="e.g., 1mbn or EMD-11638"
+            placeholder="1mbn, EMD-11638, or keywords"
             autoFocus
-            invalid={text.trim().length > 0 && accession === null}
             onKeyDown={handleKeyDown}
             emptyText="No history"
-            triggerLabel="Show PDB ID history"
-            triggerTitle="Recent IDs"
+            triggerLabel="Show history"
+            triggerTitle="Recent IDs and searches"
             aria-label="PDB or EMDB ID"
           />
         </Field>
-        <EntryInfoLines lookup={lookup} emdbInfo={emdbInfo} />
+        {keywordsPending && (
+          <>
+            <div className="h3-dialog-hint">Press Enter to search the PDB for these keywords.</div>
+            <ButtonRow>
+              <FormButton text="Search" onClick={() => runSearch(text)} />
+            </ButtonRow>
+          </>
+        )}
+        {!searchOpen && (
+          <EntryInfoLines
+            lookup={lookup}
+            emdbInfo={emdbInfo}
+            onSearchInstead={() => runSearch(text)}
+          />
+        )}
       </FieldSection>
+
+      {searchOpen && search.state && (
+        <SearchResults
+          search={search.state}
+          method={searchMethod}
+          onMethodChange={changeMethod}
+          sort={searchSort}
+          onSortChange={changeSort}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onMore={search.more}
+        >
+          <EntryInfoLines lookup={lookup} emdbInfo={emdbInfo} onSearchInstead={() => {}} />
+        </SearchResults>
+      )}
 
       {showCoord && (
         <FieldSection title="Coordinates">
