@@ -489,76 +489,76 @@ texture {
 
   <!-- The theme new molecules are painted with. Override it in a user style
        file, or in a scene's style set, with the same tag. -->
-  <palette id="default_paint" value="okabe_ito"/>
+  <palette id="default_paint" value="okabeito"/>
 
   <!-- Okabe-Ito (Color Universal Design), without its black -->
-  <color id="okabe_ito_1" value="#E69F00"/>
-  <color id="okabe_ito_2" value="#56B4E9"/>
-  <color id="okabe_ito_3" value="#009E73"/>
-  <color id="okabe_ito_4" value="#F0E442"/>
-  <color id="okabe_ito_5" value="#0072B2"/>
-  <color id="okabe_ito_6" value="#D55E00"/>
-  <color id="okabe_ito_7" value="#CC79A7"/>
+  <color id="okabeito_1" value="#E69F00"/>
+  <color id="okabeito_2" value="#56B4E9"/>
+  <color id="okabeito_3" value="#009E73"/>
+  <color id="okabeito_4" value="#F0E442"/>
+  <color id="okabeito_5" value="#0072B2"/>
+  <color id="okabeito_6" value="#D55E00"/>
+  <color id="okabeito_7" value="#CC79A7"/>
 
   <!-- Paul Tol, bright -->
-  <color id="tol_bright_1" value="#4477AA"/>
-  <color id="tol_bright_2" value="#EE6677"/>
-  <color id="tol_bright_3" value="#228833"/>
-  <color id="tol_bright_4" value="#CCBB44"/>
-  <color id="tol_bright_5" value="#66CCEE"/>
-  <color id="tol_bright_6" value="#AA3377"/>
-  <color id="tol_bright_7" value="#BBBBBB"/>
+  <color id="tolbright_1" value="#4477AA"/>
+  <color id="tolbright_2" value="#EE6677"/>
+  <color id="tolbright_3" value="#228833"/>
+  <color id="tolbright_4" value="#CCBB44"/>
+  <color id="tolbright_5" value="#66CCEE"/>
+  <color id="tolbright_6" value="#AA3377"/>
+  <color id="tolbright_7" value="#BBBBBB"/>
 
   <!-- Paul Tol, vibrant -->
-  <color id="tol_vibrant_1" value="#0077BB"/>
-  <color id="tol_vibrant_2" value="#33BBEE"/>
-  <color id="tol_vibrant_3" value="#009988"/>
-  <color id="tol_vibrant_4" value="#EE7733"/>
-  <color id="tol_vibrant_5" value="#CC3311"/>
-  <color id="tol_vibrant_6" value="#EE3377"/>
-  <color id="tol_vibrant_7" value="#BBBBBB"/>
+  <color id="tolvibrant_1" value="#0077BB"/>
+  <color id="tolvibrant_2" value="#33BBEE"/>
+  <color id="tolvibrant_3" value="#009988"/>
+  <color id="tolvibrant_4" value="#EE7733"/>
+  <color id="tolvibrant_5" value="#CC3311"/>
+  <color id="tolvibrant_6" value="#EE3377"/>
+  <color id="tolvibrant_7" value="#BBBBBB"/>
 
   <!-- Paul Tol, muted -->
-  <color id="tol_muted_1" value="#332288"/>
-  <color id="tol_muted_2" value="#88CCEE"/>
-  <color id="tol_muted_3" value="#44AA99"/>
-  <color id="tol_muted_4" value="#117733"/>
-  <color id="tol_muted_5" value="#999933"/>
-  <color id="tol_muted_6" value="#DDCC77"/>
-  <color id="tol_muted_7" value="#CC6677"/>
-  <color id="tol_muted_8" value="#882255"/>
-  <color id="tol_muted_9" value="#AA4499"/>
+  <color id="tolmuted_1" value="#332288"/>
+  <color id="tolmuted_2" value="#88CCEE"/>
+  <color id="tolmuted_3" value="#44AA99"/>
+  <color id="tolmuted_4" value="#117733"/>
+  <color id="tolmuted_5" value="#999933"/>
+  <color id="tolmuted_6" value="#DDCC77"/>
+  <color id="tolmuted_7" value="#CC6677"/>
+  <color id="tolmuted_8" value="#882255"/>
+  <color id="tolmuted_9" value="#AA4499"/>
 
   <!-- Paul Tol, light -->
-  <color id="tol_light_1" value="#77AADD"/>
-  <color id="tol_light_2" value="#99DDFF"/>
-  <color id="tol_light_3" value="#44BB99"/>
-  <color id="tol_light_4" value="#BBCC33"/>
-  <color id="tol_light_5" value="#AAAA00"/>
-  <color id="tol_light_6" value="#EEDD88"/>
-  <color id="tol_light_7" value="#EE8866"/>
-  <color id="tol_light_8" value="#FFAABB"/>
-  <color id="tol_light_9" value="#DDDDDD"/>
+  <color id="tollight_1" value="#77AADD"/>
+  <color id="tollight_2" value="#99DDFF"/>
+  <color id="tollight_3" value="#44BB99"/>
+  <color id="tollight_4" value="#BBCC33"/>
+  <color id="tollight_5" value="#AAAA00"/>
+  <color id="tollight_6" value="#EEDD88"/>
+  <color id="tollight_7" value="#EE8866"/>
+  <color id="tollight_8" value="#FFAABB"/>
+  <color id="tollight_9" value="#DDDDDD"/>
 
   <!-- ColorBrewer, Set2 -->
-  <color id="brewer_set2_1" value="#66C2A5"/>
-  <color id="brewer_set2_2" value="#FC8D62"/>
-  <color id="brewer_set2_3" value="#8DA0CB"/>
-  <color id="brewer_set2_4" value="#E78AC3"/>
-  <color id="brewer_set2_5" value="#A6D854"/>
-  <color id="brewer_set2_6" value="#FFD92F"/>
-  <color id="brewer_set2_7" value="#E5C494"/>
-  <color id="brewer_set2_8" value="#B3B3B3"/>
+  <color id="brewerset2_1" value="#66C2A5"/>
+  <color id="brewerset2_2" value="#FC8D62"/>
+  <color id="brewerset2_3" value="#8DA0CB"/>
+  <color id="brewerset2_4" value="#E78AC3"/>
+  <color id="brewerset2_5" value="#A6D854"/>
+  <color id="brewerset2_6" value="#FFD92F"/>
+  <color id="brewerset2_7" value="#E5C494"/>
+  <color id="brewerset2_8" value="#B3B3B3"/>
 
   <!-- ColorBrewer, Dark2 -->
-  <color id="brewer_dark2_1" value="#1B9E77"/>
-  <color id="brewer_dark2_2" value="#D95F02"/>
-  <color id="brewer_dark2_3" value="#7570B3"/>
-  <color id="brewer_dark2_4" value="#E7298A"/>
-  <color id="brewer_dark2_5" value="#66A61E"/>
-  <color id="brewer_dark2_6" value="#E6AB02"/>
-  <color id="brewer_dark2_7" value="#A6761D"/>
-  <color id="brewer_dark2_8" value="#666666"/>
+  <color id="brewerdark2_1" value="#1B9E77"/>
+  <color id="brewerdark2_2" value="#D95F02"/>
+  <color id="brewerdark2_3" value="#7570B3"/>
+  <color id="brewerdark2_4" value="#E7298A"/>
+  <color id="brewerdark2_5" value="#66A61E"/>
+  <color id="brewerdark2_6" value="#E6AB02"/>
+  <color id="brewerdark2_7" value="#A6761D"/>
+  <color id="brewerdark2_8" value="#666666"/>
 
   <!-- Tableau 10 -->
   <color id="tableau10_1" value="#4E79A7"/>

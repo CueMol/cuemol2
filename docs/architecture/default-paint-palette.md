@@ -19,20 +19,20 @@ Okabe-Ito。
 
 | テーマ名 | 出典 | 色数 |
 |---|---|---|
-| `okabe_ito` (既定) | Okabe-Ito (Color Universal Design)、黒を除く | 7 |
-| `tol_bright` / `tol_vibrant` | Paul Tol bright / vibrant | 7 |
-| `tol_muted` / `tol_light` | Paul Tol muted / light | 9 |
-| `brewer_set2` / `brewer_dark2` | ColorBrewer Set2 / Dark2 | 8 |
+| `okabeito` (既定) | Okabe-Ito (Color Universal Design)、黒を除く | 7 |
+| `tolbright` / `tolvibrant` | Paul Tol bright / vibrant | 7 |
+| `tolmuted` / `tollight` | Paul Tol muted / light | 9 |
+| `brewerset2` / `brewerdark2` | ColorBrewer Set2 / Dark2 | 8 |
 | `tableau10` | Tableau 10 | 10 |
 
-どのテーマで塗るかは style の文字列データ `<palette id="default_paint" value="okabe_ito"/>`
+どのテーマで塗るかは style の文字列データ `<palette id="default_paint" value="okabeito"/>`
 で決まる (`getStrData('palette', 'default_paint', sceneUid)`)。scene の style set の定義が
 あればそれ、無ければ全体の定義を使う。切り替えの GUI やコマンドは無く、手で書き換える:
 
 - 全体の既定を変える: ユーザーの style ファイルに同じタグを書く。
 - その scene だけ変える: scene の style set に同じタグを置く (qsc の `<styles>` 内)。
 
-テーマ名に当たる色が 1 つも無いときは `okabe_ito` を使う。
+テーマ名に当たる色が 1 つも無いときは `okabeito` を使う。
 
 テーマはこれから読み込む分子の塗り方だけを決める。テーマを変えても、塗り済みの分子は
 そのまま。1 つの scene に複数のテーマの色が混ざってよい (色名がテーマごとに違う)。
@@ -44,12 +44,12 @@ Okabe-Ito。
   Default を付け直しても同じ色になる。
 - 各構造の色は主色に NamedColor の修飾子を付けたもの (`DEFAULT_PAINT_ENTRIES`):
 
-  | sel | 色 (主色が `okabe_ito_2` の例) | 意味 |
+  | sel | 色 (主色が `okabeito_2` の例) | 意味 |
   |---|---|---|
-  | `sheet` | `okabe_ito_2` | 主色そのまま |
-  | `helix` | `okabe_ito_2` | 主色そのまま |
-  | `nucleic` | `okabe_ito_2{mod_h:15}` | 色相を +15 度ずらす |
-  | `*` (coil など) | `okabe_ito_2{mod_s:-0.6;mod_b:0.1}` | 白っぽくする |
+  | `sheet` | `okabeito_2` | 主色そのまま |
+  | `helix` | `okabeito_2` | 主色そのまま |
+  | `nucleic` | `okabeito_2{mod_h:15}` | 色相を +15 度ずらす |
+  | `*` (coil など) | `okabeito_2{mod_s:-0.6;mod_b:0.1}` | 白っぽくする |
 
   helix と sheet は形が違うので同じ色にする。核酸は色相でずらす: 3D 表示では陰影
   (lighting / AO) がすでに明暗を変えているので、彩度や明度の差は「同じ色の陰」と区別
@@ -73,10 +73,10 @@ paint を作る前に `ensureSceneColor` が、使う色の名前を、全体の
 - コピーするのはその分子が使う色だけ。scene に同じ名前の定義がすでにあれば上書きしない。
   ユーザーが scene 内で変えた色や、開いた qsc の色はそのまま残る。
 - 外部ファイルを参照しない style set は `Scene::stylesWriteTo` が qsc に埋め込む。qsc には
-  色の定義 (`<styles id="default"><color id="okabe_ito_1" value="#E69F00"/>...`) と、
-  それを参照する paint (`<paint sel="nucleic" color="okabe_ito_1{mod_h:15}"/>`) の両方が入る。
+  色の定義 (`<styles id="default"><color id="okabeito_1" value="#E69F00"/>...`) と、
+  それを参照する paint (`<paint sel="nucleic" color="okabeito_1{mod_h:15}"/>`) の両方が入る。
 - 名前は scene の定義が全体より優先して解決される。全体の値を後から変えても、保存済みの
-  図の色は変わらない。scene の定義を書き換えれば (`define_color okabe_ito_1, ...`)、その色を
+  図の色は変わらない。scene の定義を書き換えれば (`define_color okabeito_1, ...`)、その色を
   使う分子がまとめて塗り変わる。
 
 修飾子付きの名前は保存と読み込みで保たれる (`NamedColor::toString` が
@@ -88,9 +88,9 @@ paint を作る前に `ensureSceneColor` が、使う色の名前を、全体の
 - MolCoord (Object) には style を当てる仕組みが無い (`applyStyles` は Renderer のみ)。
   そのため paint の組み立て自体は TS に残り、色の値とテーマ名だけを style から読む。
 - 修飾子の値 (色相・彩度・明度のずらし量) は TS の `DEFAULT_PAINT_ENTRIES` にあり、
-  テーマによらず共通。淡いテーマ (`tol_light`、`brewer_set2`) では coil や核酸との差が
+  テーマによらず共通。淡いテーマ (`tollight`、`brewerset2`) では coil や核酸との差が
   小さくなる。
-- テーマに灰色を含むもの (`tol_bright` / `tol_vibrant` の 7 番目など) は、その番目の分子が
+- テーマに灰色を含むもの (`tolbright` / `tolvibrant` の 7 番目など) は、その番目の分子が
   灰色になる。
 - テーマを GUI から選ぶ機能は無い。構想は
   [`../plans/261027-palette-set-switch-plan.md`](../plans/261027-palette-set-switch-plan.md)。
