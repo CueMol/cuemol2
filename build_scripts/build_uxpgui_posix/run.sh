@@ -68,7 +68,10 @@ ls -l $BUNDLE_DIR/apbs
 if [ $RUNNER_OS = "macOS" ]; then
     brew install yasm
 
-    SDK_BASE_PATH=$(dirname $(xcrun --show-sdk-path))
+    # Ask for the macosx SDK explicitly: a bare --show-sdk-path can resolve to the
+    # Command Line Tools SDK while clang comes from the selected Xcode, and a
+    # newer CLT SDK breaks an older Xcode clang.
+    SDK_BASE_PATH=$(dirname $(xcrun --sdk macosx --show-sdk-path))
     SDK_PATH=$(echo $SDK_BASE_PATH/MacOSX*.*.sdk | tr ' ' '\n' | sort | tail -1)
     echo SDK_PATH: $SDK_PATH
     ls -la $SDK_PATH
