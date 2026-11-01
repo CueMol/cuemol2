@@ -4,6 +4,9 @@ import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import { DialogShell } from './DialogShell';
 import aboutPng from '@renderer/assets/about.png';
 import { APP_PRODUCT_NAME } from '@shared/appInfo';
+import { IPC } from '@shared/ipcChannels';
+import type { AboutRuntimeInfo } from '@shared/types/aboutInfo';
+import { aboutRows, aboutText } from './aboutInfo';
 
 interface Props {
   visible: boolean;
@@ -14,6 +17,8 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
   const { cm } = useCueMol();
   const [version, setVersion] = useState('');
   const [build, setBuild] = useState('');
+  const [runtime, setRuntime] = useState<AboutRuntimeInfo | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!visible || !cm) return;
@@ -22,6 +27,20 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
       setBuild(b);
     }).catch(() => {});
   }, [visible, cm]);
+
+  useEffect(() => {
+    if (!visible) return;
+    setCopied(false);
+    window.electronAPI.invoke(IPC.APP_ABOUT_INFO).then(setRuntime).catch(() => {});
+  }, [visible]);
+
+  const rows = aboutRows({ version, build }, runtime, __BUILD_DATE__);
+
+  const onCopy = (): void => {
+    navigator.clipboard.writeText(aboutText(APP_PRODUCT_NAME, rows))
+      .then(() => setCopied(true))
+      .catch(() => {});
+  };
 
   return (
     <DialogShell
@@ -32,7 +51,12 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
       // A splash image bled to the frame edge, not a form: the shared gutter
       // and section gap would inset it.
       bodyClassName="h3-dialog-plain-body"
-      footerActions={<Button intent="primary" onClick={onClose}>OK</Button>}
+      footerActions={
+        <>
+          <Button onClick={onCopy}>{copied ? 'Copied' : 'Copy'}</Button>
+          <Button intent="primary" onClick={onClose}>OK</Button>
+        </>
+      }
     >
       <>
         <img
@@ -53,22 +77,14 @@ export function AboutDialog({ visible, onClose }: Props): React.JSX.Element {
             {APP_PRODUCT_NAME}
           </div>
 
-          <div style={{
-            fontWeight: 'bold',
-            color: 'var(--text-secondary)',
-            marginLeft: 17,
-            marginBottom: 2,
-          }}>
-            Version: {version || '—'}
-          </div>
-
-          <div style={{
-            color: 'var(--text-secondary)',
-            marginLeft: 17,
-            marginBottom: 10,
-          }}>
-            Build: {build || '—'}
-          </div>
+          <dl className="h3-about-info type-body">
+            {rows.map(([label, value]) => (
+              <React.Fragment key={label}>
+                <dt>{label}:</dt>
+                <dd>{value || '\u2014'}</dd>
+              </React.Fragment>
+            ))}
+          </dl>
 
           <div style={{
             fontSize: 'var(--fs-sm)',

@@ -19,6 +19,9 @@ declare module '*.png' {
 // tests, false when packaging/package.sh builds a release (CUEMOL_RELEASE=1).
 declare const __DEV_UI__: boolean
 
+// ISO-8601 UTC time the renderer bundle was built (electron.vite.config.ts).
+declare const __BUILD_DATE__: string
+
 // Shared IPC types exposed as globals using TypeScript import() type syntax.
 // This works in script-mode .d.ts files without requiring export {} or declare global.
 type PaneCollapseState  = import('../../shared/types/layout').PaneCollapseState

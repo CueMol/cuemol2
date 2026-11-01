@@ -15,6 +15,7 @@
  */
 
 import type { BrowserWindow } from 'electron';
+import { registerAboutInfoHandlers } from './handlers/aboutInfo';
 import { registerAppPathHandlers } from './handlers/appPath';
 import { registerAppStateHandlers } from './handlers/appState';
 import { registerContextMenuHandlers } from './handlers/contextMenus';
@@ -39,6 +40,7 @@ export { handleOpenFile } from './fileOpen';
  */
 export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   registerAppPathHandlers();
+  registerAboutInfoHandlers();
   registerFileDialogHandlers(mainWindow);
   registerFileSystemHandlers();
   registerAppStateHandlers();

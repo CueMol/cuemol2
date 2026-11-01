@@ -124,3 +124,24 @@
   color: var(--accent-red);
   font-size: var(--fs-lg);
 }
+
+/* About dialog: the version / runtime rows (label column + value column).
+   Values are selectable so a single line can be copied by hand. */
+.h3-about-info {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: var(--space-4);
+  row-gap: var(--space-1);
+  margin: 0 var(--space-6) var(--space-5);
+  color: var(--text-secondary);
+}
+
+.h3-about-info dt {
+  font-weight: var(--fw-semibold);
+}
+
+.h3-about-info dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  user-select: text;
+}

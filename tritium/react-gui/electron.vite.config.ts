@@ -113,6 +113,8 @@ export default defineConfig({
     resolve: { alias: rendererAlias },
     define: {
       __DEV_UI__: JSON.stringify(devUi),
+      // Bundle time, shown as the build date in the About dialog.
+      __BUILD_DATE__: JSON.stringify(new Date().toISOString().replace(/\.\d+Z$/, 'Z')),
     },
     build: {
       rollupOptions: {
