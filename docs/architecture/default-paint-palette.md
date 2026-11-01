@@ -14,7 +14,7 @@ Okabe-Ito。
 
 ## テーマ
 
-`data/default_style.xml` に、テーマごとに `<テーマ名>_<番号>` の named color で定義する。
+`data/cuemol3_style.xml` (CueMol3 だけが読む。[cuemol3-style-file.md](cuemol3-style-file.md)) に、テーマごとに `<テーマ名>_<番号>` の named color で定義する。
 色数はテーマごとに違ってよい。
 
 | テーマ名 | 出典 | 色数 |

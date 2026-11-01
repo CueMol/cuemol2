@@ -21,7 +21,7 @@
  * where the shading already varies it; a hue difference does.
  *
  * The themes are global named colours `<theme>_<n>` in
- * `data/default_style.xml`, and the theme used is the style string
+ * `data/cuemol3_style.xml` (loaded by CueMol3 only), and the theme used is the style string
  * `<palette id="default_paint" value="..."/>` (a scene's own definition first,
  * then the global one). The theme only decides how molecules loaded from now
  * on are painted; nothing recolours those already painted.

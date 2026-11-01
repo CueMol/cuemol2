@@ -341,16 +341,19 @@ ${DATA_DIR}/mono_top.xml
 ${DATA_DIR}/default_params.xml
 ${DATA_DIR}/symop.dat
 ${DATA_DIR}/default_style.xml
+${DATA_DIR}/cuemol3_style.xml
 ${DATA_DIR}/default_actions.qax
 )
 set(SYSCONFIG_FILE ${DATA_DIR}/sysconfig.xml)
+# CueMol3 (tritium) reads this one instead: sysconfig.xml plus cuemol3_style.xml
+set(SYSCONFIG_CUEMOL3_FILE ${DATA_DIR}/sysconfig_cuemol3.xml)
 
 # install(FILES ${DATA_FILES} DESTINATION data/data)
 # install(FILES ${SYSCONFIG_FILE} DESTINATION data)
 # install(FILES ${DATA_DIR}/icc_profiles/GenericCMYK.icm DESTINATION data/data/icc_profiles)
 
 install(FILES ${DATA_FILES} DESTINATION share/data)
-install(FILES ${SYSCONFIG_FILE} DESTINATION share)
+install(FILES ${SYSCONFIG_FILE} ${SYSCONFIG_CUEMOL3_FILE} DESTINATION share)
 install(FILES ${DATA_DIR}/icc_profiles/GenericCMYK.icm DESTINATION share/icc_profiles)
 
 # SMAA anti-aliasing lookup textures (raw, decoded from Mol*'s SMAA area/search

@@ -57,8 +57,8 @@ if [ ! -d "$LIBCUEMOL2_ROOT" ]; then
 fi
 
 # Validate the prefix really is a cuemol2 install (holds the runtime data tree).
-if [ ! -f "$LIBCUEMOL2_ROOT/share/sysconfig.xml" ]; then
-  echo "Error: $LIBCUEMOL2_ROOT/share/sysconfig.xml not found;" >&2
+if [ ! -f "$LIBCUEMOL2_ROOT/share/sysconfig_cuemol3.xml" ]; then
+  echo "Error: $LIBCUEMOL2_ROOT/share/sysconfig_cuemol3.xml not found;" >&2
   echo "  LIBCUEMOL2_ROOT does not look like a cuemol2 install prefix." >&2
   exit 1
 fi
@@ -372,7 +372,8 @@ echo "  file-uri-to-path: $FUP_DIR"
 assert_file() {
   [ -f "$1" ] || { echo "Error: staging assertion failed -- missing $1" >&2; exit 1; }
 }
-assert_file "$RUNTIME_DEST/share/sysconfig.xml"
+assert_file "$RUNTIME_DEST/share/sysconfig_cuemol3.xml"
+assert_file "$RUNTIME_DEST/share/data/cuemol3_style.xml"
 assert_file "$RUNTIME_DEST/bin/$BLENDPNG_EXE"
 assert_file "$STAGING_DEST/@cuemol/core/package.json"
 assert_file "$STAGING_DEST/@cuemol/core/src/index.cjs"

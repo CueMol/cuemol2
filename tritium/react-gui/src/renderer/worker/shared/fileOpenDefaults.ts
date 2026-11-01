@@ -84,7 +84,7 @@ export function initialRendererType(types: readonly string[]): string {
 /**
  * The renderer preset a molecule is drawn with when a load without a dialog
  * (console, MCP, agent) was given no renderer: PyMOL's classified display
- * (`auto_show_classified`), defined in `data/default_style.xml`.
+ * (`auto_show_classified`), defined in `data/cuemol3_style.xml`.
  */
 export const MOLECULE_LOAD_PRESET = 'DefaultPymRendPreset'
 

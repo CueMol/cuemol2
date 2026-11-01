@@ -10,7 +10,7 @@ import {
 // Create a CueMol instance and initialize the underlying C++ library.
 //
 // sysConfigPath is resolved by the main process (main/index.ts getSysConfigPath):
-//   - packaged build: Contents/Resources/cuemol2/share/sysconfig.xml
+//   - packaged build: Contents/Resources/cuemol2/share/sysconfig_cuemol3.xml
 //   - dev build:      '' -> cuemol_internal.node falls back to its compiled-in DEFAULT_CONFIG
 //
 // The path is forwarded to the Web Worker, which passes it to

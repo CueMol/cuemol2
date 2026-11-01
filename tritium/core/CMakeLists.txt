@@ -108,7 +108,9 @@ target_link_libraries(
   ${NODEJS_LINK_LIBRARIES}
 )
 
-file(TO_NATIVE_PATH "${LIBCUEMOL2_ROOT}/share/sysconfig.xml" DEFAULT_SYSCONFIG_PATH)
+# CueMol3 reads its own sysconfig (default_style.xml plus cuemol3_style.xml);
+# CueMol2 (UXP) keeps share/sysconfig.xml.
+file(TO_NATIVE_PATH "${LIBCUEMOL2_ROOT}/share/sysconfig_cuemol3.xml" DEFAULT_SYSCONFIG_PATH)
 STRING(REPLACE "\\" "\\\\" DEFAULT_SYSCONFIG_PATH ${DEFAULT_SYSCONFIG_PATH})
 message(STATUS "DEFAULT_SYSCONFIG_PATH: ${DEFAULT_SYSCONFIG_PATH}")
 target_compile_definitions(cuemol_internal PUBLIC DEFAULT_CONFIG=\"${DEFAULT_SYSCONFIG_PATH}\")

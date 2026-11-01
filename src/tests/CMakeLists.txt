@@ -128,11 +128,15 @@ add_executable(test_qsys
   qsys/test_mouseeventhandler.cpp
   qsys/test_styleeditinfo.cpp
   qsys/test_colcompiler.cpp
+  qsys/test_cuemol3_style.cpp
 )
 target_include_directories(test_qsys PRIVATE
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_BINARY_DIR}/src
   ${Boost_INCLUDE_DIRS}
+)
+target_compile_definitions(test_qsys PRIVATE
+  CUEMOL2_DATA_DIR="${CMAKE_SOURCE_DIR}/data"
 )
 target_link_libraries(test_qsys PRIVATE qsys gfx qlib Boost::filesystem GTest::gtest)
 gtest_discover_tests(test_qsys PROPERTIES LABELS "test_qsys")
