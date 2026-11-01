@@ -19,6 +19,7 @@ import type { FileDialogOptions } from './types/fileDialog'
 import type { RecentFileEntry } from './types/recent'
 import type { FileErrorData, FileOpenedData, ShellOpenRequest } from './types/fileEvents'
 import type { AppPathInfo } from './types/appPath'
+import type { AboutRuntimeInfo } from './types/aboutInfo'
 import type { NaviCtxAction, NaviCtxMenuPayload } from './types/naviCtxMenu'
 import type { TextEditAction, TextCtxShowPayload } from './types/textCtxMenu'
 import type { SceneCtxAction, SceneCtxMenuPayload } from './types/sceneCtxMenu'
@@ -43,6 +44,7 @@ import type { UpdateStatus } from './types/update'
 
 export interface InvokeChannels {
   [IPC.APP_PATH]:          { req: void;                  res: AppPathInfo }
+  [IPC.APP_ABOUT_INFO]:    { req: void;                  res: AboutRuntimeInfo }
   [IPC.DIALOG_OPEN]:       { req: FileDialogOptions;     res: void }
   [IPC.DIALOG_SAVE_SCENE]: { req: { defaultName: string };
                              res: { canceled: boolean; filePath: string } }

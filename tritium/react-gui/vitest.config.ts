@@ -7,6 +7,7 @@ export default defineConfig({
   // passing the flag explicitly to the gated builders.
   define: {
     __DEV_UI__: "true",
+    __BUILD_DATE__: JSON.stringify("2026-01-01T00:00:00Z"),
   },
   // Mirrors the `paths` maps of tsconfig.web.json / tsconfig.node.json and the
   // `resolve.alias` maps of electron.vite.config.ts. Declared explicitly (not

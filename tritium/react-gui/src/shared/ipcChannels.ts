@@ -8,6 +8,7 @@
 export const IPC = {
   // invoke channels (renderer -> main, with reply)
   APP_PATH:       'apppath',
+  APP_ABOUT_INFO: 'app:aboutInfo',
   DIALOG_OPEN:    'dialog:openFile',
   DIALOG_SAVE_SCENE: 'dialog:saveScene',
   DIALOG_STYLE_OPEN: 'dialog:styleOpen',

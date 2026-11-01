@@ -63,7 +63,7 @@ import { MergeMolDialog } from '@renderer/dialogs/MergeMolDialog'
 import { MolSuperposeDialog } from '@renderer/dialogs/MolSuperposeDialog'
 import { ReassignProt2ndryDialog } from '@renderer/dialogs/ReassignProt2ndryDialog'
 import { InteractionAnalysisDialog } from '@renderer/dialogs/InteractionAnalysisDialog'
-import { mountTree } from '@renderer/__test__/helpers/testHarness'
+import { mountTree, setupElectronAPI, teardownElectronAPI } from '@renderer/__test__/helpers/testHarness'
 
 void React
 
@@ -80,8 +80,10 @@ function lastDialogProps(): Record<string, unknown> {
 describe('DialogShell frame contract', () => {
   beforeEach(() => {
     dialogPropsList.length = 0
+    setupElectronAPI()
   })
   afterEach(() => {
+    teardownElectronAPI()
     vi.restoreAllMocks()
   })
 
