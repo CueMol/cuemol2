@@ -16,7 +16,7 @@
  * cycling over however many the theme has, and the structures' colours are
  * that colour with a modifier: helix and sheet take it as it is (their
  * shapes tell them apart), the nucleic acid shifts its hue
- * (`okabe_ito_2{mod_h:15}`), and the coil is washed out to near white. A
+ * (`okabeito_2{mod_h:15}`), and the coil is washed out to near white. A
  * difference in brightness alone does not read as another colour in 3D,
  * where the shading already varies it; a hue difference does.
  *
@@ -44,7 +44,7 @@ import { listSceneObjects } from '@renderer/worker/server/services/scene/listSce
 const log = console;
 
 /** The theme used when the style names none, or one with no colours. */
-const FALLBACK_THEME = 'okabe_ito';
+const FALLBACK_THEME = 'okabeito';
 
 /**
  * Selection -> how its colour derives from the molecule's palette colour, in

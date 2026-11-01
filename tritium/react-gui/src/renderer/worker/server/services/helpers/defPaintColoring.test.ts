@@ -26,8 +26,8 @@ vi.mock('@renderer/worker/server/services/scene/listSceneObjects', () => ({
 
 import { createDefPaintColoring } from './defPaintColoring'
 
-/** Global themes: okabe_ito with two colours, tol_bright with three (#0n0000 for the n-th). */
-const GLOBAL = ['okabe_ito_1', 'okabe_ito_2', 'tol_bright_3', 'tol_bright_1', 'tol_bright_2', 'Red']
+/** Global themes: okabeito with two colours, tolbright with three (#0n0000 for the n-th). */
+const GLOBAL = ['okabeito_1', 'okabeito_2', 'tolbright_3', 'tolbright_1', 'tolbright_2', 'Red']
 
 /** A context whose style names `theme` and whose scene defines `sceneNames`. */
 function makeCtx(theme: string, sceneNames: string[] = []) {
@@ -66,32 +66,32 @@ beforeEach(() => {
 
 describe('the default painting', () => {
   it("paints the n-th molecule from the theme's n-th colour, cycling over its count", () => {
-    const bright = makeCtx('tol_bright')
+    const bright = makeCtx('tolbright')
     createDefPaintColoring(bright.ctx, 1, 20)
     expect(painted(bright.append)).toEqual({
-      sheet: 'tol_bright_2',
-      helix: 'tol_bright_2',
-      nucleic: 'tol_bright_2{mod_h:15}',
-      '*': 'tol_bright_2{mod_s:-0.6;mod_b:0.1}',
+      sheet: 'tolbright_2',
+      helix: 'tolbright_2',
+      nucleic: 'tolbright_2{mod_h:15}',
+      '*': 'tolbright_2{mod_s:-0.6;mod_b:0.1}',
     })
     bright.append.mockClear()
     // The fourth molecule wraps round a three-colour theme.
     createDefPaintColoring(bright.ctx, 1, 40)
-    expect(painted(bright.append).helix).toBe('tol_bright_1')
+    expect(painted(bright.append).helix).toBe('tolbright_1')
 
-    // A theme with no colours falls back to okabe_ito (two here: the third wraps).
+    // A theme with no colours falls back to okabeito (two here: the third wraps).
     const unknown = makeCtx('nosuch')
     createDefPaintColoring(unknown.ctx, 1, 30)
-    expect(painted(unknown.append).helix).toBe('okabe_ito_1')
+    expect(painted(unknown.append).helix).toBe('okabeito_1')
   })
 
   it("copies the colour used into the scene, keeping the scene's own", () => {
-    const fresh = makeCtx('okabe_ito')
+    const fresh = makeCtx('okabeito')
     createDefPaintColoring(fresh.ctx, 1, 20)
     expect(fresh.setColor.mock.calls.map((c) => [c[0], (c[1] as { color: string }).color, c[2], c[3]]))
-      .toEqual([['okabe_ito_2', '#020000', 1, 7]])
+      .toEqual([['okabeito_2', '#020000', 1, 7]])
 
-    const recoloured = makeCtx('okabe_ito', ['okabe_ito_2'])
+    const recoloured = makeCtx('okabeito', ['okabeito_2'])
     createDefPaintColoring(recoloured.ctx, 1, 20)
     expect(recoloured.setColor).not.toHaveBeenCalled()
   })
