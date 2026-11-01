@@ -72,13 +72,12 @@
 
   <!-- ribbon styles -->
   <style id="DefaultRibbon" type="renderer" axialdetail="8" desc="Default">
-    <helix type="rectangle" tuber="6.5" width="0.18"/>
+    <helix type="rectangle" tuber="6.0" width="0.2"/>
     <helixhead type="smooth"/>
     <helixtail type="smooth"/>
-    <sheet type="rectangle" tuber="6.5" width="0.18"/>
+    <sheet type="rectangle" tuber="7.0" width="0.2"/>
     <sheethead type="arrow"/>
     <sheettail type="smooth"/>
-    <coil width="0.2"/>
   </style>
 
   <style id="RoundRibbon" type="renderer" axialdetail="8" desc="Round">
@@ -105,10 +104,9 @@
   </style>
 
   <style id="DefaultNucl" type="renderer"
-    axialdetail="8" pivotatom="P" defaultcolor="$molcol"
-    base_size="0.3" base_thick="0.3">
+    axialdetail="8" pivotatom="P" defaultcolor="$molcol">
     <coloring type="SolidColoring"/>
-    <section type="roundsquare" width="0.4" tuber="2.5"/>
+    <section width="0.5" tuber="2.5"/>
   </style>
 
   <style id="DefaultLabel" type="renderer"
@@ -325,18 +323,6 @@
     <renderer type="ballstick" sel="!nucleic&amp;!protein" style="DefaultBallStick,DefaultCPKColoring"/>
   </style>
 
-  <!-- PyMOL's auto_show_classified: polymer as cartoon (CueMol's ribbon), organic residues
-       (those with carbon) as sticks, inorganic ones as spheres, water as
-       lines (crosses). The default for a molecule loaded without a renderer
-       (console / MCP / agent). -->
-  <style id="DefaultPymRendPreset" type="MolCoord-rendpreset" desc="PyMOL-like preset">
-    <renderer type="ribbon" sel="protein" style="DefaultRibbon,DefaultHSCPaint"/>
-    <renderer type="nucl" sel="nucleic" style="DefaultNucl"/>
-    <renderer type="ballstick" sel="ligand&amp;(byres (ligand&amp;elem C))" style="StickBallStick,DefaultCPKColoring"/>
-    <renderer type="cpk" sel="ligand&amp;!(byres (ligand&amp;elem C))" style="DefaultCPK,DefaultCPKColoring"/>
-    <renderer type="simple" sel="water" style="DefaultSimple,DefaultCPKColoring"/>
-  </style>
-
   <style id="Simple1RendPreset" type="MolCoord-rendpreset" desc="Simple preset 1">
     <renderer type="trace" sel="protein|nucleic" style="DefaultCPKColoring"/>
     <renderer type="simple" sel="!nucleic&amp;!protein" style="DefaultCPKColoring"/>
@@ -479,98 +465,6 @@ texture {
   <sel id="sugar" value="rprop type=pyranose"/>
   <sel id="ligand" value="!rprop type=prot and !rprop type=nucl and !rprop type=water"/>
   <sel id="hydrogen" value="elem H"/>
-
-  <!-- Palette themes for the default painting of a loaded molecule, as
-       <theme>_<n> named colors. The n-th molecule loaded into a scene takes
-       the theme's n-th colour (cycling over however many it has), and its
-       structures are modifiers of it. The colour used is copied into the
-       scene's own style set on load, so a saved scene carries it. Values
-       only (a named color cannot refer to another one). -->
-
-  <!-- The theme new molecules are painted with. Override it in a user style
-       file, or in a scene's style set, with the same tag. -->
-  <palette id="default_paint" value="okabeito"/>
-
-  <!-- Okabe-Ito (Color Universal Design), without its black -->
-  <color id="okabeito_1" value="#E69F00"/>
-  <color id="okabeito_2" value="#56B4E9"/>
-  <color id="okabeito_3" value="#009E73"/>
-  <color id="okabeito_4" value="#F0E442"/>
-  <color id="okabeito_5" value="#0072B2"/>
-  <color id="okabeito_6" value="#D55E00"/>
-  <color id="okabeito_7" value="#CC79A7"/>
-
-  <!-- Paul Tol, bright -->
-  <color id="tolbright_1" value="#4477AA"/>
-  <color id="tolbright_2" value="#EE6677"/>
-  <color id="tolbright_3" value="#228833"/>
-  <color id="tolbright_4" value="#CCBB44"/>
-  <color id="tolbright_5" value="#66CCEE"/>
-  <color id="tolbright_6" value="#AA3377"/>
-  <color id="tolbright_7" value="#BBBBBB"/>
-
-  <!-- Paul Tol, vibrant -->
-  <color id="tolvibrant_1" value="#0077BB"/>
-  <color id="tolvibrant_2" value="#33BBEE"/>
-  <color id="tolvibrant_3" value="#009988"/>
-  <color id="tolvibrant_4" value="#EE7733"/>
-  <color id="tolvibrant_5" value="#CC3311"/>
-  <color id="tolvibrant_6" value="#EE3377"/>
-  <color id="tolvibrant_7" value="#BBBBBB"/>
-
-  <!-- Paul Tol, muted -->
-  <color id="tolmuted_1" value="#332288"/>
-  <color id="tolmuted_2" value="#88CCEE"/>
-  <color id="tolmuted_3" value="#44AA99"/>
-  <color id="tolmuted_4" value="#117733"/>
-  <color id="tolmuted_5" value="#999933"/>
-  <color id="tolmuted_6" value="#DDCC77"/>
-  <color id="tolmuted_7" value="#CC6677"/>
-  <color id="tolmuted_8" value="#882255"/>
-  <color id="tolmuted_9" value="#AA4499"/>
-
-  <!-- Paul Tol, light -->
-  <color id="tollight_1" value="#77AADD"/>
-  <color id="tollight_2" value="#99DDFF"/>
-  <color id="tollight_3" value="#44BB99"/>
-  <color id="tollight_4" value="#BBCC33"/>
-  <color id="tollight_5" value="#AAAA00"/>
-  <color id="tollight_6" value="#EEDD88"/>
-  <color id="tollight_7" value="#EE8866"/>
-  <color id="tollight_8" value="#FFAABB"/>
-  <color id="tollight_9" value="#DDDDDD"/>
-
-  <!-- ColorBrewer, Set2 -->
-  <color id="brewerset2_1" value="#66C2A5"/>
-  <color id="brewerset2_2" value="#FC8D62"/>
-  <color id="brewerset2_3" value="#8DA0CB"/>
-  <color id="brewerset2_4" value="#E78AC3"/>
-  <color id="brewerset2_5" value="#A6D854"/>
-  <color id="brewerset2_6" value="#FFD92F"/>
-  <color id="brewerset2_7" value="#E5C494"/>
-  <color id="brewerset2_8" value="#B3B3B3"/>
-
-  <!-- ColorBrewer, Dark2 -->
-  <color id="brewerdark2_1" value="#1B9E77"/>
-  <color id="brewerdark2_2" value="#D95F02"/>
-  <color id="brewerdark2_3" value="#7570B3"/>
-  <color id="brewerdark2_4" value="#E7298A"/>
-  <color id="brewerdark2_5" value="#66A61E"/>
-  <color id="brewerdark2_6" value="#E6AB02"/>
-  <color id="brewerdark2_7" value="#A6761D"/>
-  <color id="brewerdark2_8" value="#666666"/>
-
-  <!-- Tableau 10 -->
-  <color id="tableau10_1" value="#4E79A7"/>
-  <color id="tableau10_2" value="#F28E2B"/>
-  <color id="tableau10_3" value="#E15759"/>
-  <color id="tableau10_4" value="#76B7B2"/>
-  <color id="tableau10_5" value="#59A14F"/>
-  <color id="tableau10_6" value="#EDC948"/>
-  <color id="tableau10_7" value="#B07AA1"/>
-  <color id="tableau10_8" value="#FF9DA7"/>
-  <color id="tableau10_9" value="#9C755F"/>
-  <color id="tableau10_10" value="#BAB0AC"/>
 
   <!-- Default color names from HTML/CSS2 color table -->
   <color id="AliceBlue" value="#F0F8FF"/>

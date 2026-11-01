@@ -18,7 +18,7 @@ import { handleInvoke } from '../ipc/handleInvoke';
 
 export function getSysConfigPath(): string {
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'cuemol2', 'share', 'sysconfig.xml')
+    return path.join(process.resourcesPath, 'cuemol2', 'share', 'sysconfig_cuemol3.xml')
   }
   return ''
 }

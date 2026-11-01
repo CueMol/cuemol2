@@ -20,6 +20,11 @@ export interface RawStyleEntry {
 /**
  * Parse `StyleManager.getStyleNamesJSON` for a scope into raw style entries.
  *
+ * The JSON lists every style set of the scope, newest first, so a style
+ * redefined by a later set (cuemol3_style.xml over default_style.xml, or a
+ * user style file) appears once per set. Only its last entry is kept: the one
+ * from the set that defines it in full, at its place in that set's order.
+ *
  * @param ctx - worker context (provides `styleMgr`)
  * @param sceneId - scope id (0 for the global style set, a scene uid for local)
  * @returns the parsed entries, or `[]` on any error (null/empty JSON,
@@ -31,7 +36,10 @@ export function fetchStyleEntries(ctx: WorkerContext, sceneId: number): RawStyle
         if (!json) return [];
         const parsed = JSON.parse(json) as unknown;
         if (!Array.isArray(parsed)) return [];
-        return parsed as RawStyleEntry[];
+        const entries = parsed as RawStyleEntry[];
+        const lastIndex = new Map<string | undefined, number>();
+        entries.forEach((e, i) => lastIndex.set(e.name, i));
+        return entries.filter((e, i) => e.name === undefined || lastIndex.get(e.name) === i);
     } catch {
         return [];
     }

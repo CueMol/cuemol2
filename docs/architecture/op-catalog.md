@@ -384,7 +384,7 @@ set は名前で指す。同じ名前があれば scene の set を global (syst
   - `load_file` (`load`) の引数は `path` / `rendererType` / `selection` / `name` だけで、オプションは reader の既定値。
   - **renderer 未指定の load** (`load_file` / `load_<format>` / `fetch_pdb` / `fetch_url`、PyMOL console の
     `load` / `fetch` も同じ `buildHeadlessFileOpenOptions` を通る): `rendererType` も `selection` も null の分子は
-    preset `DefaultPymRendPreset` (`data/default_style.xml`) で描く。現行 PyMOL の `auto_show_classified`
+    preset `DefaultPymRendPreset` (`data/cuemol3_style.xml`) で描く。現行 PyMOL の `auto_show_classified`
     (load 時に residue を分類して表示を決める) に合わせたもので、protein -> `ribbon` (PyMOL の cartoon にあたる)、nucleic -> `nucl`、
     炭素を含む ligand 残基 -> `ballstick` (Stick style)、炭素を含まない ligand 残基 (イオン等) -> `cpk`、
     水 -> `simple` (結合の無い原子は十字)。group 名は GUI の preset と同じ命名 (`defaultpym_1`)。

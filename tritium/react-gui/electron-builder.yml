@@ -104,7 +104,7 @@ files:
 # at Contents/Resources/app/node_modules/@cuemol/core/build/lib/, which is
 # exactly where the @loader_path/../lib rpath in cuemol_internal.node resolves.
 #
-# Only sysconfig.xml and the data tree need to be in cuemol2/share/;
+# Only sysconfig_cuemol3.xml and the data tree need to be in cuemol2/share/;
 # main/ipcHandlers.ts computes this path via process.resourcesPath when packaged.
 #
 # .app bundle layout (relevant parts):
@@ -116,7 +116,7 @@ files:
 #           lib/libcuemol2.dylib, libboost_*.dylib
 #       cuemol2/
 #         share/
-#           sysconfig.xml
+#           sysconfig_cuemol3.xml
 #           data/
 #           ...
 #         bin/
