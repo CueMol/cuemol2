@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
+import * as path from 'path'
 
 vi.mock('./helpers', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./helpers')>()),
@@ -49,7 +50,7 @@ describe('save', () => {
     expect(writer.sel).toBe(SEL)
     expect(writer.convToLink).toBe(false)
     expect(writer.attached).toBe(OBJ)
-    expect(writer.path).toBe('/tmp/part.pdb')
+    expect(writer.path).toBe(path.resolve('/tmp/part.pdb'))
     expect(writer.write).toHaveBeenCalledOnce()
   })
 })

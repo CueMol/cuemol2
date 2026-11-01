@@ -1,7 +1,7 @@
 /**
  * @file plugins/getpdb/index.ts
  * @description The Get PDB plugin: fetch a structure and its density maps
- * from RCSB or PDBe by accession code.
+ * from RCSB, PDBe or EMDB by accession code, or find the entry by keywords.
  *
  * A whole feature in one directory -- the dialog, its input history, the
  * server URL table and the download chain -- reaching the core only through
@@ -13,6 +13,7 @@
 import { definePlugin } from '@renderer/plugin-host/api'
 import { getPdbManifest } from './manifest'
 import { GetPdbRoot } from './renderer/GetPdbRoot'
+import './renderer/getpdb.css'
 
 export const getPdbPlugin = /* @__PURE__ */ definePlugin({
   manifest: getPdbManifest,

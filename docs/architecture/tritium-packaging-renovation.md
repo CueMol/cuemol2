@@ -106,7 +106,7 @@ tag push 時のリリース成果物は旧 UXP GUI のみ。
 | 4-1 | 当面 (未署名継続): README に **macOS の quarantine 解除手順**と **Windows 未署名インストーラーの SmartScreen 「詳細情報 -> 実行」回避手順**を明記し、dev/internal 配布専用と注記 | drift-5, sign-1 |
 | 4-2 | 準備 (雛形のみ可): `build/entitlements.mac.plist` (allow-jit / allow-unsigned-executable-memory / disable-library-validation) を用意。loose dylib + .node の inner->outer 署名順序メモ (署名後の rpath 書換禁止) | bp-2, sign-2/6 |
 | 4-3 | Developer ID 取得後: identity を Developer ID、`hardenedRuntime:true`、`mac.notarize`(notarytool)+staple、`CSC_*`/`APPLE_*` を CI secret に。dylib/.node を inner-first 署名。Windows は Authenticode (後続) | sign-1/3, xplat-5 |
-| 4-4 | auto-update: 署名を待たずに自前の updater で実装した (macOS のみ、[auto-update.md](auto-update.md))。electron-updater は ad-hoc 署名と 4 桁バージョンに合わないので使わない | sign-5, bp-4 |
+| 4-4 | auto-update: 署名を待たずに自前の updater で実装した (macOS / Windows、[auto-update.md](auto-update.md))。electron-updater は ad-hoc 署名と 4 桁バージョンに合わないので使わない | sign-5, bp-4 |
 
 #### 横断トラック -- Electron EOL 対応 (配布前必須)
 

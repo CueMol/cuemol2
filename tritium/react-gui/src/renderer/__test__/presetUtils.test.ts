@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { presetNamePrefix } from '@renderer/dialogs/fopen-opt-dlgs/presetUtils'
+import { presetNamePrefix } from '@renderer/worker/shared/fileOpenDefaults'
 
 describe('presetNamePrefix', () => {
     it('strips the RendPreset suffix, lowercases and appends an underscore', () => {

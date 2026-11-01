@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import path from 'path'
 
 type Listener = (...args: unknown[]) => void
 
@@ -25,6 +26,8 @@ let whenReadyCb: (() => void) | null = null
 
 const app = {
   setName: vi.fn(),
+  // Called at module scope on Windows only.
+  setAppUserModelId: vi.fn(),
   commandLine: { appendSwitch: vi.fn() },
   whenReady: vi.fn(() => ({
     then: vi.fn((cb: () => void) => {
@@ -147,7 +150,7 @@ describe('shell open wiring (main/index.ts)', () => {
 
     await import(indexEntry)
 
-    expect(queue.takeShellOpen().paths).toEqual(['/data/1crn.pdb'])
+    expect(queue.takeShellOpen().paths).toEqual([path.resolve('/data/1crn.pdb')])
   })
 
   it("registers 'open-file' at module scope and preventDefaults it", async () => {
@@ -162,7 +165,7 @@ describe('shell open wiring (main/index.ts)', () => {
 
     // Without preventDefault Electron warns and drops the path.
     expect(event.preventDefault).toHaveBeenCalled()
-    expect(queue.takeShellOpen().paths).toEqual(['/data/2abc.pdb'])
+    expect(queue.takeShellOpen().paths).toEqual([path.resolve('/data/2abc.pdb')])
   })
 
   it('does not ping when no window exists yet', async () => {
@@ -197,7 +200,7 @@ describe('shell open wiring (main/index.ts)', () => {
     expect(focusMainWindow).toHaveBeenCalled()
     // UXP parity: open into the running window, never create a second one.
     expect(createWindow).not.toHaveBeenCalled()
-    expect(queue.takeShellOpen().paths).toEqual(['/work/rel/3xyz.pdb'])
+    expect(queue.takeShellOpen().paths).toEqual([path.resolve('/work/rel/3xyz.pdb')])
   })
 
   describe('when the single-instance lock is lost', () => {

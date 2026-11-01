@@ -6,12 +6,16 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import path from 'path';
 import {
   buildFfmpegArgs,
   movieFileName,
   movieOutputPath,
   type FfmpegEncodeOptions,
 } from '@renderer/worker/server/services/renderjob/ffmpegEncode';
+
+/** A file in the output dir, joined with this platform's separator. */
+const out = (name: string) => path.join('/out', name);
 
 const base: FfmpegEncodeOptions = {
   outputDir: '/out',
@@ -26,13 +30,13 @@ describe('ffmpeg encode args', () => {
   it('builds the h264 command with the frame pattern, count, bitrate and yuv420p', () => {
     const args = buildFfmpegArgs(base);
     expect(args).toContain('-r 30');
-    expect(args).toContain('-i "/out/movie_frm_%04d.png"');
+    expect(args).toContain(`-i "${out('movie_frm_%04d.png')}"`);
     expect(args).toContain('-vframes 60');
     expect(args).toContain('-b:v 1024k');
     expect(args).toContain('-c:v libx264 -f mp4');
     expect(args).toContain('-vf "fps=30,format=yuv420p"');
     expect(args).toContain('-y');
-    expect(args).toContain('"/out/movie.mp4"');
+    expect(args).toContain(`"${out('movie.mp4')}"`);
   });
 
   it('omits the bit rate for the raw codec', () => {
@@ -41,13 +45,13 @@ describe('ffmpeg encode args', () => {
     expect(args).toContain('-c:v rawvideo -f mov');
     // No yuv420p for a non-h264/h265 codec.
     expect(args).toContain('-vf "fps=30"');
-    expect(args).toContain('"/out/movie.mov"');
+    expect(args).toContain(`"${out('movie.mov')}"`);
   });
 
   it('emits no codec option for animated GIF', () => {
     const args = buildFfmpegArgs({ ...base, format: 'gifanim' });
     expect(args).not.toContain('-c:v');
-    expect(args).toContain('"/out/movie.gif"');
+    expect(args).toContain(`"${out('movie.gif')}"`);
   });
 
   it('tags HEVC for QuickTime H.265', () => {
@@ -59,8 +63,6 @@ describe('ffmpeg encode args', () => {
   it('maps the output file name to the format extension', () => {
     expect(movieFileName('clip', 'mp4_h264')).toBe('clip.mp4');
     expect(movieFileName('clip', 'gifanim')).toBe('clip.gif');
-    expect(movieOutputPath({ ...base, baseName: 'clip', format: 'wmv2' })).toBe(
-      '/out/clip.wmv',
-    );
+    expect(movieOutputPath({ ...base, baseName: 'clip', format: 'wmv2' })).toBe(out('clip.wmv'));
   });
 });

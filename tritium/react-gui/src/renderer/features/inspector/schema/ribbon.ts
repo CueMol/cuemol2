@@ -66,7 +66,7 @@ function ribbonSectionRows(prefix: string, opts: RibbonSectionOpts = {}): PropRo
     )
   }
   rows.push(
-    { kind: 'num', key: `${prefix}.width`, label: 'Width', min: 0, max: 5, step: 0.05, decimals: 2, unit: 'Å' },
+    { kind: 'num', key: `${prefix}.width`, label: 'Width', min: 0, max: 1.5, step: 0.01, decimals: 2, unit: 'Å' },
     { kind: 'num', key: `${prefix}.tuber`, label: 'Tuber', min: 0.2, max: 10, step: 0.1, decimals: 1 },
     {
       kind: 'num',

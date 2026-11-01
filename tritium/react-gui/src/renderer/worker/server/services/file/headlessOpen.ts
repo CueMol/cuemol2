@@ -9,6 +9,11 @@
  * half (from C++, via `getReaderDefaultOptions`), and the standard renderer
  * row for the other.
  *
+ * One difference from the dialog: a molecule given no renderer is drawn with
+ * the PyMOL-like preset (`MOLECULE_LOAD_PRESET`) -- cartoon / nucl for the
+ * polymer, sticks / spheres for the other residues, lines for water -- as
+ * PyMOL's `auto_show_classified` does on load, rather than as one `simple`.
+ *
  * `centerView` is left on: a file someone just asked for should be in frame
  * when it appears.
  *
@@ -25,6 +30,8 @@ import {
   getDefaultRendererOptions,
   initialRendererType,
   mapReaderDefaultsToFormatOptions,
+  MOLECULE_LOAD_PRESET,
+  presetNamePrefix,
 } from '@renderer/worker/shared/fileOpenDefaults'
 import { getReaderDefaultOptions } from './getReaderDefaultOptions'
 import { getCompatibleRendererNames } from './getCompatibleRendererNames'
@@ -34,7 +41,11 @@ export interface HeadlessOpenArgs {
   readerName: string
   /** Name for the new object; also seeds the renderer name. */
   objectName: string
-  /** Renderer to create, or null for the object type's default (`initialRendererType`). */
+  /**
+   * Renderer to create, or null for the object type's default: the
+   * PyMOL-like preset for a molecule drawn whole, `initialRendererType`
+   * otherwise.
+   */
   rendererType: string | null
   /** The file being loaded, if any; only to ask its reader's object what it can show. */
   filePath?: string
@@ -57,13 +68,20 @@ export function buildHeadlessFileOpenOptions(
   const rendererType = args.rendererType ??
     initialRendererType(getCompatibleRendererNames(ctx, { filePath: args.filePath ?? '', readerName: args.readerName }).types)
   const renderer = getDefaultRendererOptions(args.objectName, rendererType || undefined)
+  // Only when nothing was chosen: a named type is drawn as that one renderer,
+  // and a selection needs one renderer to carry it (a preset group has none).
+  const presetName =
+    args.rendererType === null && args.selection === null && rendererType === 'simple'
+      ? MOLECULE_LOAD_PRESET
+      : undefined
 
   return {
     format,
     renderer: {
       ...renderer,
       objectName: args.objectName,
-      rendererName: `${renderer.rendererType}1`,
+      rendererName: presetName ? `${presetNamePrefix(presetName)}1` : `${renderer.rendererType}1`,
+      ...(presetName ? { presetName } : {}),
       selectionEnabled: args.selection !== null,
       selection: args.selection ?? '*',
       centerView: true,

@@ -8,6 +8,7 @@
  * defaults are).
  */
 
+import { fetchEmdbMapInfo, fetchEntryInfo, searchPdbEntries } from './entryInfo';
 import { getCompatibleRendererNames } from './getCompatibleRendererNames';
 import { getOpenFilters } from './getOpenFilters';
 import { getReaderDefaultOptions } from './getReaderDefaultOptions';
@@ -28,8 +29,12 @@ export const services = {
     listSavableObjects,
     streamLoadFromUrl,
     cancelStreamLoad,
+    fetchEntryInfo,
+    fetchEmdbMapInfo,
+    searchPdbEntries,
 };
 
+export type * from './entryInfo';
 export type * from './getCompatibleRendererNames';
 export type * from './getOpenFilters';
 export type * from './getReaderDefaultOptions';

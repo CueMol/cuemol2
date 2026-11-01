@@ -1,29 +1,43 @@
 /**
  * @file plugins/getpdb/renderer/pdbIdHistory.ts
- * @description localStorage-backed PDB ID input history for the Get PDB
- * dialog. Mirrors UXP `util.History` semantics (LRU, deduplicated, capped),
- * and patterns selHistory.ts in h3-kit/MolSelList/.
+ * @description localStorage-backed input history for the Get PDB dialog:
+ * the IDs that were downloaded and the keywords that were searched for, in
+ * one list, most recent first. Mirrors UXP `util.History` semantics (LRU,
+ * deduplicated, capped), and patterns selHistory.ts in h3-kit/MolSelList/.
  *
- * IDs are normalized to lowercase. Reads validate against the PDB ID regex
- * so corrupted storage (or mixed entries from another app version) cannot
- * surface garbage in the picker. Built on the shared
+ * An accession code is stored in its canonical form (`parseAccession`: PDB
+ * IDs lowercase, EMDB IDs `EMD-<num>`), so `1MBN` and `1mbn` are one entry;
+ * keywords are stored as typed, with the whitespace collapsed. Reads apply
+ * the same check as pushes, so corrupted storage cannot surface a blank or
+ * oversized entry in the picker. Built on the shared
  * `createLruStringHistory` factory.
  */
 
-import { PDB_ID_RE } from '@renderer/worker/shared/pdbUrls';
+import { parseAccession } from '@renderer/worker/shared/pdbUrls';
 import { createLruStringHistory } from '@renderer/utils/createLruStringHistory';
 
 export const STORAGE_KEY = 'cuemol.getPdbDialog.history';
 export const MAX_ENTRIES = 20;
 
-// Same shape as UXP openPDB.js:104-111 -- first char digit, remaining alnum.
+/** Longest keyword string kept; anything longer is not a search someone repeats. */
+export const MAX_ENTRY_LENGTH = 200;
+
+/** The canonical form of an ID, or the keywords with their whitespace collapsed. */
+function normalize(v: string): string {
+    const t = v.trim().replace(/\s+/g, ' ');
+    return parseAccession(t)?.id ?? t;
+}
+
+function isStorable(v: string): boolean {
+    return v.length > 0 && v.length <= MAX_ENTRY_LENGTH;
+}
 
 const store = createLruStringHistory({
     key: STORAGE_KEY,
     max: MAX_ENTRIES,
-    normalize: (v) => v.trim().toLowerCase(),
-    guard: (v) => PDB_ID_RE.test(v),
-    readGuard: (v) => PDB_ID_RE.test(v),
+    normalize,
+    guard: isStorable,
+    readGuard: isStorable,
 });
 
 export const getHistory = store.getHistory;

@@ -24,6 +24,18 @@ runtime_class MapRenderer extends Renderer
   property real maxLevel => redirect(getMaxLevel, XXX) (readonly);
   property real minLevel => redirect(getMinLevel, XXX) (readonly);
 
+  /// The level range worth offering in a UI (background to the top 0.01%
+  /// of grid points, not the raw extremes an outlier sets), in absolute
+  /// density units and in the native unit of siglevel
+  property real ui_abslevel_min => redirect(getUiAbsLevelMin, XXX) (readonly);
+  property real ui_abslevel_max => redirect(getUiAbsLevelMax, XXX) (readonly);
+  property real ui_level_min => redirect(getUiLevelMin, XXX) (readonly);
+  property real ui_level_max => redirect(getUiLevelMax, XXX) (readonly);
+
+  /// siglevel as drawn: a default top percent on a cryo-EM map is capped
+  /// at the UI range
+  property real siglevel_effective => redirect(getEffectiveSigLevelProp, XXX) (readonly);
+
   /// coloring mode
   enumdef colormode {
     solid = xtal::MapRenderer::MAPREND_SIMPLE;

@@ -22,7 +22,8 @@ import type { Object as CObject } from '@cuemol/core/src/wrappers/Object';
 import type { MapRenderer } from '@cuemol/core/src/wrappers/MapRenderer';
 import { getDefaultStyleName } from '../helpers/getDefaultStyleName';
 import { makeColor } from '../helpers/makeColor';
-export type DensityMapType = '2fofc' | 'fofc';
+/** `em` is a cryo-EM map from EMDB; the other two are crystallographic. */
+export type DensityMapType = '2fofc' | 'fofc' | 'em';
 
 interface ContourSpec {
     name: string;
@@ -39,12 +40,25 @@ const SPEC_FOFC: ContourSpec[] = [
     { name: 'neg-cont', color: '#FF0000', sigma: -3.0 },
 ];
 
+/**
+ * Create the preset renderers of a freshly downloaded map.
+ *
+ * @param mapType - which map: the crystallographic ones get contour meshes,
+ *   a cryo-EM map one isosurface (see `setupEmMapRenderer`)
+ * @param contourLevel - cryo-EM only: the absolute level to draw at, or
+ *   null for the style's default (top 1 percent of grid points)
+ */
 export function setupDensityMapRenderers(
     ctx: WorkerContext,
     scene: Scene,
     obj: CObject,
     mapType: DensityMapType,
+    contourLevel: number | null = null,
 ): void {
+    if (mapType === 'em') {
+        setupEmMapRenderer(obj, contourLevel);
+        return;
+    }
     const specs = mapType === '2fofc' ? SPEC_2FOFC : SPEC_FOFC;
     // EDS maps are crystallographic: the xtal default style, sigma levels.
     const styleName = getDefaultStyleName('contour');
@@ -62,5 +76,26 @@ export function setupDensityMapRenderers(
         // Callers run obj.fitView once after all contours are created
         // (matches UXP openMapImpl flow), so we deliberately do not
         // recenter each renderer here.
+    }
+}
+
+/**
+ * One isosurface in the cryo-EM default style (`CryoEMIsoSurf`, which also
+ * turns on `use_abslevel`). Writing `level` stores the absolute level; C++
+ * converts it to the native `siglevel` and marks that modified, so "reset to
+ * default" still returns to the style's top-percent level.
+ */
+function setupEmMapRenderer(obj: CObject, contourLevel: number | null): void {
+    const rend = (obj as unknown as {
+        createRenderer: (type: string) => MapRenderer | null;
+    }).createRenderer('isosurf');
+    if (!rend) return;
+    (rend as unknown as { name: string }).name = 'isosurf';
+    const styleName = getDefaultStyleName('isosurf', 'em');
+    if (styleName) {
+        (rend as unknown as { applyStyles: (n: string) => void }).applyStyles(styleName);
+    }
+    if (contourLevel !== null && Number.isFinite(contourLevel)) {
+        (rend as unknown as { level: number }).level = contourLevel;
     }
 }

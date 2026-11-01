@@ -17,7 +17,8 @@ import { readToolArgs } from '@renderer/worker/server/catalog/toolSchema'
 import type { AnyOp } from '@renderer/worker/server/catalog/op'
 import type { ParamMap } from '@renderer/worker/server/catalog/params'
 
-const GOLDEN = fs.readFileSync(path.join(__dirname, 'fixtures/qax/v1.qax'), 'utf8')
+// LF whatever the checkout wrote: writeQax always writes LF.
+const GOLDEN = fs.readFileSync(path.join(__dirname, 'fixtures/qax/v1.qax'), 'utf8').replace(/\r\n/g, '\n')
 
 const param = (kind: string, extra: Record<string, unknown> = {}) => ({ kind, description: '', optional: true, ...extra })
 

@@ -43,6 +43,11 @@ export function getMapRendererState(
         use_abslevel: boolean;
         maxLevel: number;
         minLevel: number;
+        siglevel_effective: number;
+        ui_level_min: number;
+        ui_level_max: number;
+        ui_abslevel_min: number;
+        ui_abslevel_max: number;
         maxExtent: number;
         region_mode_resolved: string;
         getClientObj: () => { den_sigma: number; map_type_resolved?: string } | null;
@@ -81,12 +86,16 @@ export function getMapRendererState(
                 return typeof v === 'string' ? v : '';
             }, ''),
             extent: safeRead(() => r.extent, 0),
-            siglevel: safeRead(() => r.siglevel, 0),
+            // As drawn: a default top percent on a cryo-EM map is capped at
+            // the UI range, and the field shows that value.
+            siglevel: safeRead(() => num(r.siglevel_effective, r.siglevel), 0),
             useAbsLevel: safeRead(() => r.use_abslevel, false),
             level: safeRead(() => r.level, 0),
             levelUnit: mapType === 'em' ? 'percent' : 'sigma',
             maxLevel: safeRead(() => r.maxLevel, 10),
             minLevel: safeRead(() => r.minLevel, -10),
+            uiLevelRange: [safeRead(() => num(r.ui_level_min, NaN), NaN), safeRead(() => num(r.ui_level_max, NaN), NaN)],
+            uiAbsLevelRange: [safeRead(() => num(r.ui_abslevel_min, NaN), NaN), safeRead(() => num(r.ui_abslevel_max, NaN), NaN)],
             maxExtent: safeRead(() => r.maxExtent, 100),
             denSigma,
             regionResolved,
@@ -94,6 +103,11 @@ export function getMapRendererState(
             defaults,
         },
     };
+}
+
+/** `v` when the renderer has it (a number), else `fallback` (an older addon). */
+function num(v: unknown, fallback: number): number {
+    return typeof v === 'number' ? v : fallback;
 }
 
 /**

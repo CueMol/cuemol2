@@ -72,6 +72,15 @@ export interface MapRendererState {
     levelUnit: 'sigma' | 'percent';
     maxLevel: number;
     minLevel: number;
+    /**
+     * The range the panel's Level field offers, in the native unit (`siglevel`)
+     * and in absolute units (`level`): background to the top 0.01% of grid
+     * points, so neither the masked background of a cryo-EM map nor an
+     * outlier maximum takes up the field. Other writers (the inspector) are
+     * bounded by the map's real extremes only.
+     */
+    uiLevelRange: [number, number];
+    uiAbsLevelRange: [number, number];
     maxExtent: number;
     /** Sigma scale factor from the parent ScalarObject; falls back to 1. */
     denSigma: number;

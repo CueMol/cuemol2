@@ -201,6 +201,32 @@ describe('show / hide on the console-owned renderer', () => {
     expect(emptied.sort()).toEqual([20, 21])
     expect(services.setNodeVisible).toHaveBeenCalledWith(ctx, expect.objectContaining({ nodeId: 21, visible: false }))
   })
+
+  it('takes pym:nucl along with cartoon, each kept to its own residues', () => {
+    // PyMOL's cartoon covers nucleic acids, which the load preset draws with
+    // nucl. Unscoped, `show cartoon` widened nucl to the protein (drawn as
+    // flat nucl tubes over the ribbon) and the ribbon to the nucleic acid.
+    sceneWith([{ id: 21, name: 'pym:cartoon' }, { id: 22, name: 'pym:nucl' }, { id: 23, name: 'pym:sticks' }])
+    command('show').run(ctx, { representation: 'cartoon', selection: 'chain B', state: '0' }, cc)
+    const written = Object.fromEntries(services.setGenericProp.mock.calls
+      .map((c) => c[1] as { nodeId: number; propName: string; value: string })
+      .filter((a) => a.propName === 'sel')
+      .map((a) => [a.nodeId, a.value]))
+    expect(written).toEqual({
+      21: '(chain A) or ((chain B) and (not (nucleic)))',
+      22: '(chain A) or ((chain B) and (nucleic))',
+    })
+
+    // `as cartoon` keeps the companion shown and steps the rest aside.
+    vi.clearAllMocks()
+    services.getGenericProps.mockReturnValue({ ok: true, entries: [{ key: 'sel', value: '*', type: 'object<MolSelection>' }] })
+    command('as').run(ctx, { representation: 'cartoon', selection: '' }, cc)
+    const hidden = services.setNodeVisible.mock.calls
+      .map((c) => c[1] as { nodeId: number; visible: boolean })
+      .filter((a) => !a.visible)
+      .map((a) => a.nodeId)
+    expect(hidden).toEqual([23])
+  })
 })
 
 describe('an object name inside a selection', () => {

@@ -48,7 +48,8 @@ function setup(newAppStarts: boolean) {
   return { root, app, run, read }
 }
 
-describe('swap helper', () => {
+// Runs /bin/sh, so not on Windows.
+describe.skipIf(process.platform === 'win32')('swap helper', () => {
   it('keeps the new app and drops the backup once the new app reports it started', () => {
     const t = setup(true)
     t.run()

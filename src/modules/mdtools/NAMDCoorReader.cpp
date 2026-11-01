@@ -65,6 +65,12 @@ constexpr qfloat64 SNIFF_COORD_MAX = 10000.0;  // Angstrom -- normal MD coords s
 /// IEEE-finite and within a sane magnitude. Try both native and
 /// byte-swapped interpretations (the file's endian matches the
 /// machine that wrote the paired PSF).
+///
+/// Each coordinate must also be zero or a normal double. Two small
+/// int32 words read as one float64 always give a subnormal value, so
+/// this rejects binary headers made of small integers (e.g. the
+/// CCP4/MRC NC, NR, NS, MODE words), which would otherwise pass as
+/// coordinates close to zero.
 int NAMDCoorReader::canHandleContent(qlib::InStream &ins) const
 {
   constexpr int HEADER_SIZE = 4 + 3 * 8;  // int32 natoms + 3 * float64 xyz
@@ -77,9 +83,12 @@ int NAMDCoorReader::canHandleContent(qlib::InStream &ins) const
   }
   if (total < HEADER_SIZE) return CONTENT_UNKNOWN;
 
-  auto plausible = [](qint32 natoms, qfloat64 x, qfloat64 y, qfloat64 z) -> bool {
+  auto coordLike = [](qfloat64 v) -> bool {
+    return v == 0.0 || std::fpclassify(v) == FP_NORMAL;
+  };
+  auto plausible = [&coordLike](qint32 natoms, qfloat64 x, qfloat64 y, qfloat64 z) -> bool {
     if (natoms < 1 || natoms > SNIFF_MAX_NATOMS) return false;
-    if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)) return false;
+    if (!coordLike(x) || !coordLike(y) || !coordLike(z)) return false;
     if (std::abs(x) > SNIFF_COORD_MAX) return false;
     if (std::abs(y) > SNIFF_COORD_MAX) return false;
     if (std::abs(z) > SNIFF_COORD_MAX) return false;

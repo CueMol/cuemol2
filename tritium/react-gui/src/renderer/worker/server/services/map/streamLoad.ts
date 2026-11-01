@@ -1,7 +1,8 @@
 // Runs in Web Worker thread. Streaming download of an electron density map
 // from RCSB validation reports (cif.gz / mmcifmap reader) or EBI PDBe
-// (.mtz / mtzmap reader). Mirrors UXP openMapImpl + netpdbopen.js
-// (uxp_gui/cuemol2/base/content/tools/netpdbopen.js, L329-428).
+// (.mtz / mtzmap reader), mirroring UXP openMapImpl + netpdbopen.js
+// (uxp_gui/cuemol2/base/content/tools/netpdbopen.js, L329-428), or of a
+// cryo-EM map from EMDB (.map.gz / ccp4map reader).
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
@@ -12,10 +13,10 @@ import { streamFetchToReader } from '@renderer/worker/server/services/helpers/st
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { recordOp } from '@renderer/worker/server/actions/serviceOps';
-import { pickMapUrl, type MapServerType } from '@renderer/worker/shared/pdbUrls';
+import { pickEmdbMapUrl, pickMapUrl, type EmdbServerType, type MapServerType } from '@renderer/worker/shared/pdbUrls';
 const log = console;
 
-export type DensityMapReaderName = 'mmcifmap' | 'mtzmap';
+export type DensityMapReaderName = 'mmcifmap' | 'mtzmap' | 'ccp4map';
 
 export interface StreamLoadDensityMapArgs {
     reqId: string;
@@ -26,6 +27,11 @@ export interface StreamLoadDensityMapArgs {
     mapType: DensityMapType;
     /** Object name to assign after load (e.g. '1mbn_2fofc'). */
     objectName: string;
+    /**
+     * Cryo-EM only: the absolute contour level to draw at (the EMDB author's
+     * recommended level). Absent or null leaves the style's default.
+     */
+    contourLevel?: number | null;
     sceneId: number;
     viewId: number;
 }
@@ -38,7 +44,7 @@ const DEFAULT_GRID_SIZE = 0.25;
 
 function configureMtzColumns(
     reader: ObjReader,
-    mapType: DensityMapType,
+    mapType: '2fofc' | 'fofc',
 ): void {
     // 2Fo-Fc -> FWT/PHWT, Fo-Fc -> DELFWT/PHDELWT (UXP openMapImpl L350-359).
     // The wrapper types these as numbers (enum) but the C++ runtime expects
@@ -56,6 +62,7 @@ function configureMtzColumns(
 
 /** The entry and server `fetch_map` downloads this URL from, or null for a URL it does not build. */
 function fetchMapSpec(args: StreamLoadDensityMapArgs): { pdbId: string; source: MapServerType } | null {
+    if (args.mapType === 'em') return null;
     const m = /\/validation_reports\/[0-9a-z]{2}\/([0-9][0-9a-z]{3})\//i.exec(args.url)
         ?? /\/pdbe\/coordinates\/files\/([0-9][0-9a-z]{3})_map\.mtz$/i.exec(args.url);
     if (!m) return null;
@@ -67,8 +74,35 @@ function fetchMapSpec(args: StreamLoadDensityMapArgs): { pdbId: string; source: 
     return null;
 }
 
-/** Record the download as `fetch_map`; a URL it does not build is not recorded. */
+/** The EMDB entry and mirror `fetch_emdb` downloads this URL from, or null for a URL it does not build. */
+function fetchEmdbSpec(args: StreamLoadDensityMapArgs): { num: string; source: EmdbServerType } | null {
+    const m = /\/EMD-(\d+)\/map\/emd_\d+\.map\.gz$/.exec(args.url);
+    if (!m) return null;
+    for (const source of ['WWPDB', 'EBI'] as const) {
+        const spec = pickEmdbMapUrl(m[1], source);
+        if (spec.url === args.url && spec.readerName === args.readerName) return { num: m[1], source };
+    }
+    return null;
+}
+
+/**
+ * Record the download: `fetch_emdb` for a cryo-EM map, with the level it was
+ * drawn at (so a replay draws it the same even if EMDB's recommendation
+ * changes), `fetch_map` for a crystallographic one. A URL neither op builds
+ * is not recorded.
+ */
 function recordFetchMap(ctx: WorkerContext, sceneId: number, args: StreamLoadDensityMapArgs): void {
+    if (args.mapType === 'em') {
+        const em = fetchEmdbSpec(args);
+        if (!em) return;
+        recordOp(ctx, sceneId, 'fetch_emdb', {
+            id: `EMD-${em.num}`,
+            name: args.objectName === `emd_${em.num}` ? null : args.objectName,
+            source: em.source === 'WWPDB' ? null : em.source,
+            level: args.contourLevel ?? null,
+        });
+        return;
+    }
     const spec = fetchMapSpec(args);
     if (!spec) return;
     recordOp(ctx, sceneId, 'fetch_map', {
@@ -95,10 +129,13 @@ export async function streamLoadDensityMap(
         // compress is enum-typed in the wrapper but accepts strings at runtime.
         (reader as unknown as { compress: string }).compress = 'gzip';
     }
-    if (args.readerName === 'mtzmap') {
-        configureMtzColumns(reader, args.mapType);
+    if (args.mapType !== 'em') {
+        // Structure-factor readers only: a cryo-EM map is already gridded.
+        if (args.readerName === 'mtzmap') {
+            configureMtzColumns(reader, args.mapType);
+        }
+        (reader as unknown as { gridsize: number }).gridsize = DEFAULT_GRID_SIZE;
     }
-    (reader as unknown as { gridsize: number }).gridsize = DEFAULT_GRID_SIZE;
 
     let fetched: Awaited<ReturnType<typeof streamFetchToReader>>;
     try {
@@ -123,8 +160,15 @@ export async function streamLoadDensityMap(
         (obj as any).name = args.objectName;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (scene as any).addObject(obj);
+        if (args.mapType === 'em') {
+            // An EMDB map is cryo-EM by definition: say so before the
+            // renderer is created, so it takes the cryo-EM default style
+            // rather than relying on the header label being detected.
+            // enum props take their string id at runtime
+            (obj as unknown as { map_type: string }).map_type = 'em';
+        }
 
-        setupDensityMapRenderers(ctx, scene, obj, args.mapType);
+        setupDensityMapRenderers(ctx, scene, obj, args.mapType, args.contourLevel ?? null);
 
         // Center view on the new map (UXP renderer.js L196-198).
         // fitView is on DensityMap; obj is typed as Object so cast.

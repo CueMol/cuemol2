@@ -422,6 +422,25 @@ namespace xtal {
     double getMaxLevel() const;
     double getMinLevel() const;
 
+    /// The level range worth offering in a UI, in absolute density units:
+    /// background to the top 0.01% of grid points (not the raw maximum,
+    /// which an outlier can put far above anything drawable). On a cryo-EM
+    /// map the background ends at mean + 1 sigma; on a crystallographic map
+    /// the range starts at the minimum (difference maps contour negative).
+    void getUiAbsLevelRange(const ScalarObject *pMap, double &lo, double &hi) const;
+    double getUiAbsLevelMin() const;
+    double getUiAbsLevelMax() const;
+    /// The same range in the native unit of siglevel (sigma or top percent;
+    /// on a percent map the low level is the high percent).
+    double getUiLevelMin() const;
+    double getUiLevelMax() const;
+
+    /// siglevel as drawn: on a cryo-EM map whose siglevel is still the
+    /// default, the top percent is capped at the UI range so a mostly empty
+    /// (masked) map does not start at its background.
+    double getEffectiveSigLevel(const ScalarObject *pMap) const;
+    double getEffectiveSigLevelProp() const;
+
     ScalarObject *getScalarObj() const
     {
       MapRenderer *pthis = const_cast<MapRenderer *>(this);

@@ -7,7 +7,8 @@
  * only after the dialog is confirmed, so cancelling never leaves a stray
  * empty tab; the coordinate file goes through the same file-open option
  * dialog a local file would; the density maps skip it and take the worker's
- * preset contour colour and sigma (UXP `openMapImpl`).
+ * preset contour colour and sigma (UXP `openMapImpl`), and a cryo-EM map the
+ * cryo-EM default style at the EMDB author's recommended level.
  *
  * Downloads are streamed by `StreamManager.supplyDataAsync`, so nothing is
  * written to a temporary file. See
@@ -27,8 +28,8 @@ import { fetchPresetTypes } from '@renderer/features/file-io/fetchPresetTypes'
 import type { Result } from '@renderer/worker/shared/result'
 import { GET_PDB_COMMAND } from '../manifest'
 import { useShowGetPdbDialog } from './GetPdbDialogProvider'
-import type { MapServerType } from './GetPdbDialog'
-import { pickCoordUrl, pickMapUrl } from './pdbUrls'
+import type { EmMapRequest, MapServerType } from './GetPdbDialog'
+import { pickCoordUrl, pickEmdbMapUrl, pickMapUrl } from './pdbUrls'
 import { pushHistory as pushPdbIdHistory } from './pdbIdHistory'
 
 /** A request id the progress events can be matched against. */
@@ -90,16 +91,17 @@ export function useGetPdbCommand(): void {
       const info = await ensureActiveScene()
       if (!info) return
 
-      // Persist the accepted PDB ID to the dropdown history (LRU, dedup,
+      // Persist the accepted ID to the dropdown history (LRU, dedup,
       // capped) so future invocations can quickly recall it.
-      pushPdbIdHistory(inputs.pdbid)
+      pushPdbIdHistory(inputs.accession.id)
+      const pdbid = inputs.accession.id
 
       const tasks: Array<() => Promise<Result<object>>> = []
 
       // Coord task: same flow as Open File... + pre-resolved readerName.
       if (inputs.coord) {
-        const { url, readerName, ext } = pickCoordUrl(inputs.pdbid, inputs.coord.serverType)
-        const virtualFilename = `${inputs.pdbid}.${ext}`
+        const { url, readerName, ext } = pickCoordUrl(pdbid, inputs.coord.serverType)
+        const virtualFilename = `${pdbid}.${ext}`
         // Pass readerName explicitly so the renderer-list lookup matches the
         // load reader. Skipping it re-introduces the .cif ambiguity
         // (mmcifmap wins by JSON order).
@@ -127,12 +129,12 @@ export function useGetPdbCommand(): void {
           })
           if (options !== null) {
             tasks.push(() =>
-              streamWithProgress(cm, streamProgress, `Downloading ${inputs.pdbid}...`, (reqId) =>
+              streamWithProgress(cm, streamProgress, `Downloading ${pdbid}...`, (reqId) =>
                 cm.invokeService('streamLoadFromUrl', {
                   reqId,
                   url,
                   readerName,
-                  objectName: inputs.pdbid,
+                  objectName: pdbid,
                   sceneId: info.scene_uid,
                   options,
                 }),
@@ -145,8 +147,8 @@ export function useGetPdbCommand(): void {
       // 2Fo-Fc / Fo-Fc tasks: skip FileOpenOptionDialog, use preset contour
       // color/sigma in the worker (UXP openMapImpl).
       const buildMapTask = (server: MapServerType, mapType: '2fofc' | 'fofc') => {
-        const { url, readerName, gzip } = pickMapUrl(inputs.pdbid, server, mapType)
-        const objectName = `${inputs.pdbid}_${mapType}`
+        const { url, readerName, gzip } = pickMapUrl(pdbid, server, mapType)
+        const objectName = `${pdbid}_${mapType}`
         return () =>
           streamWithProgress(cm, streamProgress, `Downloading ${objectName}...`, (reqId) =>
             cm.invokeService('streamLoadDensityMap', {
@@ -163,6 +165,29 @@ export function useGetPdbCommand(): void {
       }
       if (inputs.map2fofc) tasks.push(buildMapTask(inputs.map2fofc.serverType, '2fofc'))
       if (inputs.mapFofc) tasks.push(buildMapTask(inputs.mapFofc.serverType, 'fofc'))
+
+      // EMDB maps: also no option dialog; the worker marks the map cryo-EM and
+      // draws it at the recommended level the dialog read from EMDB.
+      const buildEmMapTask = (req: EmMapRequest) => {
+        const num = req.emdbId.replace(/^EMD-/i, '')
+        const { url, readerName, gzip } = pickEmdbMapUrl(num, req.serverType)
+        const objectName = `emd_${num}`
+        return () =>
+          streamWithProgress(cm, streamProgress, `Downloading ${req.emdbId}...`, (reqId) =>
+            cm.invokeService('streamLoadDensityMap', {
+              reqId,
+              url,
+              readerName,
+              gzip,
+              mapType: 'em',
+              objectName,
+              contourLevel: req.contourLevel,
+              sceneId: info.scene_uid,
+              viewId: info.view_id,
+            }),
+          )
+      }
+      for (const req of inputs.emMaps) tasks.push(buildEmMapTask(req))
 
       // Run sequentially. Stop the chain on user cancel or on any failure.
       // Failures arrive as a Result now (never a rejection): the try/catch

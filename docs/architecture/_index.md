@@ -21,9 +21,10 @@ instead. If a change ports a UXP surface it belongs there; if it adds
 something UXP never had, or concerns build / packaging / internal
 architecture, it belongs here.
 
-- [アプリの自動更新 (署名なし、macOS)](auto-update.md) (日本語) -- electron-updater を使わず、
-  main が GitHub Releases API (4 桁タグ) から DMG を Node で取得して SHA-256 を照合し、staging へ展開、
-  終了後にヘルパー sh が置換して起動を確認する (起動しなければロールバック)。VS Code 風の通知と
+- [アプリの自動更新 (署名なし、macOS / Windows)](auto-update.md) (日本語) -- electron-updater を使わず、
+  main が GitHub Releases API (4 桁タグ) からインストーラを Node で取得して SHA-256 を照合し、
+  終了後にヘルパーが置換して起動を確認する (起動しなければロールバック)。mac は DMG から `.app` を
+  rename で置換、Windows は `CueMol3 Updater.exe` で昇格して NSIS を silent 実行し、install dir を退避して戻す。VS Code 風の通知と
   Settings の行の 2 経路、`@cuemol/updater` パッケージ。
 
 - [Console の Tab 補完](console-completion.md) (日本語) -- console panel と tritium_cli で共通の
@@ -236,6 +237,15 @@ architecture, it belongs here.
   `MapRenderer.region_mode` (box / full) の 2 層モデル、PBC 適格条件の一本化、MRC2014 ORIGIN、
   full モードの budget 由来 stride (ChimeraX `limit_voxels` 流) とノード整列、却下案とロードマップ
   (chunk メモリ、reader streaming、zoom 連動 refine)。
+- [Get PDB の cryo-EM (EMDB) 対応](get-pdb-emdb.md) (日本語) --
+  Get PDB で PDB ID / EMDB ID を受け、RCSB GraphQL と EMDB API で entry を照会して map セクションを
+  結晶 (2Fo-Fc / Fo-Fc) と cryo-EM (EMDB map) に出し分ける。map 種類の判定と推奨 contour level の
+  規則 (Mol* 準拠)、照会失敗時の fallback、`streamLoadDensityMap` の em 経路 (`map_type` を renderer
+  作成前に確定、推奨 level を絶対値で設定)、推奨 level が高すぎる map の既知の問題。
+- [Get PDB のキーワード検索](get-pdb-keyword-search.md) (日本語) --
+  ID 欄にキーワードも入れ、RCSB Search API の全文検索から entry を選んで取得する。1 入力欄で ID /
+  キーワードを自動判定する UI、Method の絞り込みとサーバー側の Sort、More による追加と件数表示、
+  GraphQL で行を埋めて検索順に並べ直す処理、検索語も入る入力履歴。
 - [Renderer identity: the `name` default and name-based group membership](renderer-group-identity.md) --
   why `name` carries a declared default that a bare `setName()` never clears
   (a locked "default" name in the inspector; the name dropped on save), why
@@ -252,6 +262,9 @@ architecture, it belongs here.
   vertex = `defaultcolor`, separate per-mode target names,
   `setupParentData("multi_grad")` placement, `target` kept as an inert
   string) and the test map.
+- [分子の既定の色分け (パレットのテーマ)](default-paint-palette.md) (日本語) -- 読み込んだ分子の
+  PaintColoring: n 番目の分子が style で選んだテーマ (既定 Okabe-Ito) の n 番目の色を主色にし、
+  核酸 / coil は NamedColor の修飾子で派生させる。使った色は scene の style set に複製して qsc に保存する。
 - [Surface atom colouring: `AtomColorMemo` and the shared colouring pass](surface-atom-coloring.md) --
   how `dsurface`, `molsurf` and the map isosurface colour a vertex by its
   atom (molecule colour mode and `showsel`): the molstr pieces they share

@@ -80,7 +80,15 @@ export function useDragValue(
 
         // Ctrl / Cmd stays a snap-only modifier: coarsening multiplies the
         // pixels each step costs, so it is visible without touching the rate.
-        const raw = d.startValue + d.accumValue;
+        // Travel past an end is dropped, not banked: the accumulator is pulled
+        // back to the end it crossed, so the first move the other way leaves
+        // the end at once. Banking it made an overshoot stick at max (or min)
+        // until the same distance was dragged back, and a start value already
+        // outside the range (set elsewhere) began the drag that far away.
+        let raw = d.startValue + d.accumValue;
+        if (raw > max) raw = max;
+        else if (raw < min) raw = min;
+        d.accumValue = raw - d.startValue;
         const snap = fine
             ? fineStep
             : e.ctrlKey || e.metaKey

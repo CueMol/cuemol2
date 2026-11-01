@@ -25,7 +25,7 @@ export function molPostProc(
 
     if (newObj) {
         try {
-            const coloring = createDefPaintColoring(ctx, sceneUid);
+            const coloring = createDefPaintColoring(ctx, sceneUid, mol.uid);
             if (coloring) {
                 mol.coloring = coloring;
                 log.info('*** default paint coloring set');

@@ -280,7 +280,9 @@ double DensityMap::getLevelAtTopFraction(double frac) const
     return m_dMaxMap;
   if (frac>=1.0)
     return m_dMinMap;
-  const qint64 target = (qint64) ceil(double(ntotal) * frac);
+  // the epsilon keeps a fraction produced by getTopFractionAtLevel()
+  // (count/ntotal) from rounding up to one sample more
+  const qint64 target = (qint64) ceil(double(ntotal) * frac - 1e-6);
 
   // walk down from the top bin until the cumulative count reaches the
   // requested fraction of the samples

@@ -9,7 +9,7 @@ import {
 import { PDB_ID_RE, pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
 import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/file/headlessOpen'
 import { defineOp } from '../op'
-import { LOAD_RENDERER_PARAMS, applyRendererArgs, loadObjectFile, openTarget, SCENE_FILE_RE } from '../fileLoad'
+import { LOAD_RENDERER_PARAMS, NULL_RENDERER_DOC, applyRendererArgs, loadObjectFile, openTarget, SCENE_FILE_RE } from '../fileLoad'
 import type { OpContext, OpOutcome } from '../op'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { enumOf, optional, path, rendererType, selection, string } from '../params'
@@ -63,7 +63,7 @@ export const fetchPdb = defineOp({
     pdbId: string('Four-character PDB accession code, for example 1CRN.'),
     format: enumOf(['mmcif', 'pdb'], 'Which file to fetch. Prefer mmcif.'),
     rendererType: optional(
-      rendererType("Renderer to create for it, for example cartoon. Null uses the reader's default."),
+      rendererType(`Renderer to create for it, for example cartoon. ${NULL_RENDERER_DOC}`),
     ),
     selection: optional(selection('Draw only this selection. Null draws everything.')),
     name: optional(string('Name of the new object. Null uses the accession code.')),
@@ -102,7 +102,7 @@ export const fetchUrl = defineOp({
     url: string('The URL (http or https).'),
     reader: string('Reader to read it with, for example pdb or mmcif.'),
     name: string('Name of the new object.'),
-    rendererType: optional(rendererType("Renderer to create for it. Null uses the reader's default.")),
+    rendererType: optional(rendererType(`Renderer to create for it. ${NULL_RENDERER_DOC}`)),
     selection: optional(selection('Draw only this selection. Null draws everything.')),
     ...FETCH_RENDERER_PARAMS,
   },
@@ -125,7 +125,7 @@ export const loadFile = defineOp({
     'a new object AND a default renderer, so call get_scene_state afterwards to learn their ids.',
   params: {
     path: path('Absolute path of the file to open.'),
-    rendererType: optional(rendererType("Renderer to create for it. Null uses the reader's default.")),
+    rendererType: optional(rendererType(`Renderer to create for it. ${NULL_RENDERER_DOC}`)),
     selection: optional(selection('Draw only this selection. Null draws everything.')),
     name: optional(string('Name of the new object. Null uses the file name.')),
     ...LOAD_RENDERER_PARAMS,

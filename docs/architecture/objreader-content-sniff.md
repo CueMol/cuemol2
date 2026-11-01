@@ -214,11 +214,15 @@ under **either** native or byte-swapped interpretation:
 
 - the leading integer count is positive and within a plausible upper
   bound,
-- every float field is `std::isfinite` (rules out NaN/Inf),
+- every float field is zero or a normal number (`std::fpclassify` is
+  `FP_NORMAL`; rules out NaN/Inf and subnormals),
 - every float field's magnitude is within a domain-specific cap.
 
-Stray ASCII or unrelated binary input fails the float-sanity check
-almost certainly, so the false-positive risk is low. The
+The subnormal rule matters: a binary header of small integers (CCP4/MRC
+starts with NC, NR, NS, MODE) read as `float64` gives subnormal values,
+which are finite and tiny and used to pass as coordinates near zero, so
+a CCP4 map sniffed as NAMD coordinates. With it, stray ASCII or
+unrelated binary input fails the float-sanity check almost certainly. The
 endian-pair retry mirrors the runtime swap-detection that the
 reader's `read()` already performs. `NAMDCoorReader::canHandleContent`
 implements this pattern.

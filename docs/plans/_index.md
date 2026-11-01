@@ -21,7 +21,6 @@
 |---|---|---|
 | [260908-tritium-plugin-system-plan.md](260908-tritium-plugin-system-plan.md) | tritium の plugin システム (JS/TS + C++ 両レーン)。VSCode 拡張機構の調査、C++ 登録機構の seam、packaging と配置、Phase 0/A/A'/B/C | **Phase 0 のみ実装済み** (react 側の in-tree plugin host。`../architecture/tritium_plugin/`)。実行時ロード (Phase A)、C++ レーン (Phase A')、schema 駆動 UI / sideload (Phase B)、重い native の分離 (Phase C) は未実装 |
 | [umbreon-process-isolation-plan.md](umbreon-process-isolation-plan.md) | umbreon GI(OIDN) の大確保が Chromium PartitionAlloc で crash する件と、恒久対策としての process 分離 (mmap zero-copy) | **未実装 / 当面着手しない**。§2 の原因究明は確定した調査結果。着手条件は crash が実害になったとき |
-| [261011-tritium-auto-update-plan.md](261011-tritium-auto-update-plan.md) | コード署名なしの自動更新。electron-updater は使わず、main process が GitHub Releases API (4 桁タグを比較) から asset を Node で取得し、SHA-256 を照合して OS ごとに置換する (mac は DMG から `.app` を置換、Windows は昇格した NSIS の silent install、Linux は AppImage の置換、deb は通知のみ) | **macOS 分は実装済み**。仕様は `../architecture/auto-update.md`。Windows は未実装 (spike が要る)。Linux は当分実装しないので、Windows が終われば完了 |
 | [260925-molcoord-atom-vector-plan.md](260925-molcoord-atom-vector-plan.md) | `MolCoord` の原子プール (`std::map<int, MolAtomPtr>` + 検索用の索引 vector) を、所有も持つ vector に置き換える案。互換 `AtomIter`、見込み (メモリ 5-6% 減) と着手時の確認事項 | **未実装 / 今後の課題**。GRO 読み込み高速化 (`perf/gro-load`) では索引の併設までで止めた |
 | [pymconsole-research-260529.md](pymconsole-research-260529.md) | PyMOL コマンド言語に部分互換な「pym console」導入の調査報告 (着手前の調査記録) | §4 の写像総表は 260928 の候補の出どころとして有効。§0 の embedded Python パーサ / C++ 新 API は不採用 (TS 実装)。実装済みの仕様は `../architecture/console-pymol-dialect.md` |
 | [261013-action-record-coverage-plan.md](261013-action-record-coverage-plan.md) | MD trajectory (mdtools plugin) の編集を op として記録する。plugin から op を足す仕組みを作るときに、開く・block の追加・削除・並べ替えの op を足す | **未実装** |
@@ -29,6 +28,8 @@
 | [260928-pymconsole-remaining-plan.md](260928-pymconsole-remaining-plan.md) | console の PyMOL dialect に残ったコマンドの候補: MD trajectory 系 (`load_traj`・`intra_fit`・`smooth`・`split_states` など)、picking 依存、重量級アルゴリズム、既存コマンドの小改善 | **未着手 / 後日**。実装済みの仕様は `../architecture/console-pymol-dialect.md` |
 | [261017-tube-gpu-mesh-plan.md](261017-tube-gpu-mesh-plan.md) | tube 系 renderer の GPU mesh 化の残り: VBO 転送量のさらなる削減 (4b / 4c、計測次第)、再生中だけ詳細度を落とす案 (4d、方針判断が要る) | **tube / ribbon / cartoon / nucl の GPU mesh と座標更新の高速化は実装済み** (`../architecture/tube-gpu-mesh.md`)。残りは未着手 |
 | [261017-tube-color-texture-plan.md](261017-tube-color-texture-plan.md) | tube 系の色を頂点色から「残基ごとの色 texture + 静的な色キー」に変え、色変更で VBO に触らないようにする案 | **未実装 / 今後実装する案**。色の更新がボトルネックになったら着手 |
+| [261027-palette-set-switch-plan.md](261027-palette-set-switch-plan.md) | 分子の既定の色分けのテーマ (`default_paint`) を GUI から選ぶ | **未実装 / 今後の課題**。テーマの定義と style での手動切り替えは実装済み (`../architecture/default-paint-palette.md`) |
+| [261028-get-pdb-emdb-followups-plan.md](261028-get-pdb-emdb-followups-plan.md) | Get PDB の EMDB 対応で後回しにした項目 (subsample、検証値の表示、EMDB 単独 entry の検索、Volume Server) | **未実装 (候補の一覧)**。EMDB 対応とキーワード検索は実装済み (`../architecture/get-pdb-emdb.md`、`../architecture/get-pdb-keyword-search.md`) |
 | [261017-tube-raycast-memo-plan.md](261017-tube-raycast-memo-plan.md) | tube / cartoon の GPU raycast (impostor) の設計メモ: dev201608 の rctube の経緯、掃引パラメータの 1D 求根 + 断面 SDF 案、文献調査 | **検討メモ**。着手前に CPU で試作して安定性を確かめる |
 
 ## 実装済み (旧ルールで残っているもの)

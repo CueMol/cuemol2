@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { fetchKind } from './fileCommands'
+import { fetchKind, parseEmdbFetchCode } from './fileCommands'
 import { contactMode } from './measureCommands'
 import { fileStem } from './helpers'
 
@@ -19,12 +19,19 @@ describe('fetch type', () => {
     ['pdb2', { kind: 'assembly', n: 2 }],
     ['2fofc', { kind: 'map', mapType: '2fofc' }],
     ['fofc', { kind: 'map', mapType: 'fofc' }],
+    ['emd', { kind: 'emd' }],
   ])('reads %s', (type, kind) => {
     expect(fetchKind(type)).toEqual(kind)
   })
 
   it('refuses a type it has no source for', () => {
-    expect(fetchKind('emd')).toBeNull()
+    expect(fetchKind('cc')).toBeNull()
+  })
+
+  // As in PyMOL, a prefixed code is an EMDB map whatever the type; bare
+  // digits are one only with type=emd.
+  it('reads an EMD- / emd_ code as an EMDB entry', () => {
+    expect([parseEmdbFetchCode('EMD-3489'), parseEmdbFetchCode('emd_3489'), parseEmdbFetchCode('3489')]).toEqual(['3489', '3489', null])
   })
 })
 

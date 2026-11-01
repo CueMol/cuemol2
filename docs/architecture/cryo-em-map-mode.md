@@ -31,6 +31,8 @@ UXP には無かった機能なので migration ADR ではなくここに置く�
 | `MapRenderer` | `siglevel` (real, 永続化) | 既定 1.1 (class) / 1.0 (`CryoEM*` style) | contour level の **native 単位の値**: `xtal` では σ 倍数、`em` では「グリッド点の上位 N% を囲む level」の N (ChimeraX の初期 contour 規則)。絶対 level は描画時に `MapRenderer::resolveLevel()` が map kind で解決する |
 | `MapRenderer` | `level` (real, nopersist) | | `siglevel` の絶対密度単位 view。書くと map kind で逆変換 (EM は `DensityMap::getTopFractionAtLevel()`) して `siglevel` を **modified** にする (以前は default flag を落とさず、EM の初期 level が `.qsc` に保存されなかった) |
 | `MapRenderer` | `use_abslevel` (bool) | 既定 false (class) / true (`CryoEM*` style) | UI の表示単位フラグ: native (σ / %) か絶対値か。描画には影響しない。EM は ChimeraX と同じく絶対値表示が既定 |
+| `MapRenderer` | `siglevel_effective` (real, readonly) | | 描画に使う native 値。EM で `siglevel` が既定 (style 値を含む) のまま、top % が下記 UI 範囲の上限を超えるときは上限に寄せた値 |
+| `MapRenderer` | `ui_level_min/max`, `ui_abslevel_min/max` (real, readonly) | | UI (Density map pane の Level) が操作できる範囲。native 単位と絶対値。背景から上位 0.01% の level まで (下記) |
 
 - **contour level も data 非依存の値を持ち描画時に解決する**: `siglevel` の既定 (class 1.1 / CryoEM style 1.0) は
   map に依らず静的なので、`.qsc` に書かれず、reset で戻り、map を差し替えても相対的に同じ見え方になる。
@@ -40,6 +42,15 @@ UXP には無かった機能なので migration ADR ではなくここに置く�
   class 既定のまま) と `CryoEMContour` / `CryoEMIsoSurf` (`siglevel="1.0"`)。renderer 生成時に object の
   `map_type_resolved` で選び (`helpers/getDefaultStyleName.ts` + `helpers/mapRendererStyles.ts`)、
   `Renderer::resetProperty` / `getPropDefault` は style 値を class 既定より優先するので reset が mode の値に戻る。
+- **UI の level 範囲 (`MapRenderer::getUiAbsLevelRange`)**: 上端は上位 0.01% の格子点の level (外れ値の最大値は
+  使わない。最大値が数十 σ の map で範囲の大半が何も描かない level になるため)。下端は xtal では最小値 (差 map は
+  負の contour を使う)、EM では背景の境目 mean + 1σ を描画の 8 bit bin の下端に揃えた値。percent 表示では
+  0.01% 〜「mean + 1σ を超える格子点の割合」。マスク済み EM map (例 EMD-60887: 93% が 0、最大値 80σ) では
+  ChimeraX 規則の top 1% が背景の bin に落ちて level が最小値 (負) になるので、既定のままの `siglevel` はこの
+  上限に寄せる (`getEffectiveSigLevel`)。pane / Inspector で値を書けば (`siglevel` modified) 寄せない。
+  範囲は Density map pane の Level フィールドだけが使い、Inspector は `minLevel` / `maxLevel` (実際の範囲) で制限する。
+  ChimeraX は float 値の 10000 bin で境目 bin の右端を返すが、CueMol の描画は 8 bit の bin で閾値を取る
+  (`floor((level - base) / step)`) ので、左端のままにして level と描画される割合を一致させている
   `map_type` を後から変えたときは generic prop 書込 (`props/write.ts`) が同じ undo txn 内で
   `Default*` ↔ `CryoEM*` を入れ替える (`syncMapRendererStyles`; ユーザーが別 style にした renderer は触らない)。
   mode の source of truth は object の `map_type_resolved` 1 つで、style は数値を供給するだけ
@@ -224,8 +235,8 @@ boundary で切り取った region を budget 由来の stride で** 表示し�
   `level` (絶対値) を追加。native 表示では `siglevel` を σ または % で書き、`use_abslevel` (メニュー
   "Use absolute contour level") では `level` を絶対値で書く (C++ が map kind で逆変換し `siglevel` を
   modified にする。以前の pane 側 `× denSigma` 換算は廃止)。EM は `CryoEM*` style の `use_abslevel=true`
-  で既定が絶対値表示。% 表示のドラッグ範囲は 0–10% (step 0.01): `DragNumericField` の感度は範囲比例
-  (幅の 3/4 で min→max) なので 0–100 では 1 px ≈ 1% になり実用域 (0.1–5%) を操作できない。Level 行の下に
+  で既定が絶対値表示。ドラッグ範囲は renderer の UI 範囲 (`ui_level_*` / `ui_abslevel_*`、上記): `DragNumericField`
+  の感度は範囲比例 (幅の 3/4 で min→max) なので、背景や外れ値まで含めると実用域がごく一部になる。Level 行の下に
   反対単位の値を caption で出す (`DragRow.hint`)。abort / realtime commit の default flag 復元は `level`
   書込でも `siglevel` の flag を使う (`map/props.ts`)。renderer の Style サブメニューには "Default" /
   "Cryo-EM" が並び、手動でも切り替えられる
@@ -346,6 +357,8 @@ signature 不一致で明示的に拒否する。`QdfDenMapWriter::setChunkLimit
   `Array3D` と一致、copy/move/resize
 - `test_map_histogram.cpp` — `getHistogramJSON` が直接 rebinning と一致、再ロードで cache 破棄、
   `getLevelAtTopFraction` と逆関数 `getTopFractionAtLevel` の bin 解像度での往復
+- `test_maprenderer_uilevel.cpp` — マスク済み EM 相当の map で、UI 範囲が背景と外れ値の最大値を避けること、既定の
+  top % が範囲内に寄って level が正になり、値を書いた後は寄らないこと
 - `src/tests/qlib/test_seekable_stream.cpp` — 文字列 / file / 二進 adaptor の seek、gzip は非 seekable
 - `test_ccp4map_stream.cpp` — 合成 MRC で全軸順・BE・mode 0/1/6・header stats 無効 (2 pass)・嘘 header
   (seek 再読込)・gzip (buffered)・truncate/normalize・subsample・max_voxels・probeHeader を

@@ -11,7 +11,7 @@
  */
 
 import path from 'node:path'
-import { readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 
 /** The helper's outcome. */
 export interface SwapResult {
@@ -34,6 +34,21 @@ export function handoffPaths(workDir: string) {
 /** Record that the app is handing over from `from` to `to`. */
 export function writePending(workDir: string, from: string, to: string): void {
   writeFileSync(handoffPaths(workDir).pending, JSON.stringify({ from, to }))
+}
+
+/**
+ * Whether a helper may still be at work: a handover was written less than
+ * `maxAgeMs` ago and no outcome has cleared it. The app the helper launched
+ * starts while the helper still needs the backup (and, on Windows, its
+ * signal files), so the start-up cleanup must wait. An old pending file is
+ * from a helper that died, and no longer holds anything back.
+ */
+export function handoverInProgress(workDir: string, maxAgeMs: number, now = Date.now()): boolean {
+  try {
+    return now - statSync(handoffPaths(workDir).pending).mtimeMs < maxAgeMs
+  } catch {
+    return false
+  }
 }
 
 /**

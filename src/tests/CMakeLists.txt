@@ -263,6 +263,7 @@ add_executable(test_xtal
   modules/xtal/test_mapsurf_box_outside.cpp
   modules/xtal/test_maprenderer_color.cpp
   modules/xtal/test_maprenderer_region.cpp
+  modules/xtal/test_maprenderer_uilevel.cpp
   modules/xtal/test_mapsurf_molfanc.cpp
   modules/xtal/test_mapsurf_atom_color.cpp
   modules/xtal/test_mapsurf_pin.cpp

@@ -167,6 +167,12 @@ describe('getMapRendererState', () => {
             use_abslevel: false,
             maxLevel: 5,
             minLevel: -5,
+            // the level as drawn and the range the Level field offers
+            siglevel_effective: 1.4,
+            ui_level_min: -3,
+            ui_level_max: 12,
+            ui_abslevel_min: -1.26,
+            ui_abslevel_max: 5.04,
             maxExtent: 60,
             getClientObj: () => parent,
             // getPropsJSON drives the per-prop default flags surfaced for the
@@ -187,13 +193,15 @@ describe('getMapRendererState', () => {
             color: '#FF0000',
             colormode: 'multigrad',
             extent: 25,
-            siglevel: 1.5,
+            siglevel: 1.4,
             useAbsLevel: false,
             level: 0.63,
             // no map kind exposed -> the native unit falls back to sigma
             levelUnit: 'sigma',
             maxLevel: 5,
             minLevel: -5,
+            uiLevelRange: [-3, 12],
+            uiAbsLevelRange: [-1.26, 5.04],
             maxExtent: 60,
             denSigma: 0.42,
             // neither the renderer nor the parent expose the resolved

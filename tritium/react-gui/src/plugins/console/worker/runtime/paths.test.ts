@@ -31,7 +31,10 @@ describe('a path list', () => {
       fs.writeFileSync(path.join(dir, f), '')
     }
     expect(expandGlob(dir, '*/*.pdb')).toEqual(['set1/a.pdb', 'set1/b.pdb', 'set2/c.pdb'])
-    expect(expandGlob(dir, `${dir}/set?/c.*`)).toEqual([`${dir}/set2/c.pdb`, `${dir}/set2/c.txt`])
+    // A pattern escapes a literal backslash, so a Windows temp dir is given
+    // with forward slashes, which Windows takes as separators too.
+    const abs = dir.split(path.sep).join('/')
+    expect(expandGlob(dir, `${abs}/set?/c.*`)).toEqual([`${abs}/set2/c.pdb`, `${abs}/set2/c.txt`])
     expect(expandGlob(dir, 'set1/.*')).toEqual(['set1/.y.pdb'])
 
     const list = readPathList(dir, 'set2/c.txt set1/*.pdb zz*')

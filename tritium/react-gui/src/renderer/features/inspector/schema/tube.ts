@@ -64,7 +64,7 @@ const num = (ctx: PropCtx, key: string): number => Number(ctx.value(key))
  * axis is stored as would divide by it.
  */
 const AXIS_MIN = 0.01
-const AXIS_MAX = 3
+const AXIS_MAX = 1.5
 const AXIS_STEP = 0.01
 
 /**

@@ -29,11 +29,10 @@ import {
     type SetStateAction,
 } from 'react';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
-import { initialRendererType } from '@renderer/worker/shared/fileOpenDefaults';
+import { initialRendererType, presetNamePrefix } from '@renderer/worker/shared/fileOpenDefaults';
 import type { PresetTypeEntry, RendererOptions } from './types';
 import { getDefaultRendType, setDefaultRendType } from './rendTypeHistory';
 import { pushHistory } from '@renderer/h3-kit/MolSelList';
-import { presetNamePrefix } from './presetUtils';
 
 export interface UseRendererOptionsArgs {
     /** Dialog visibility -- a false->true transition resets the state. */

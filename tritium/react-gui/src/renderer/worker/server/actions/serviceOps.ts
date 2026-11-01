@@ -214,8 +214,12 @@ function orNull(text: string): string | null {
 function formatLoad(format: FormatOptions): [string, Record<string, unknown>] {
   switch (format.kind) {
     case 'pdb':
-    case 'mmcif':
       return ['load_pdb', { ...format.options }]
+    case 'mmcif': {
+      // The mmCIF reader has no segment ids, so load_mmcif takes none.
+      const { loadSegid: _segid, ...options } = format.options
+      return ['load_mmcif', options]
+    }
     case 'mtz': {
       const o = format.options
       return ['load_mtz', {

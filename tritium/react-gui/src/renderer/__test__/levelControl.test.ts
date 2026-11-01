@@ -11,6 +11,8 @@ function state(over: Partial<MapRendererState>): MapRendererState {
         alpha: 1, color: '', colormode: 'solid', extent: 10,
         siglevel: 1.5, useAbsLevel: false, level: 0.3, levelUnit: 'sigma',
         maxLevel: 5, minLevel: -5, maxExtent: 100, denSigma: 0.2,
+        // unreadable (an older addon): the field falls back to the raw range
+        uiLevelRange: [NaN, NaN], uiAbsLevelRange: [NaN, NaN],
         regionResolved: 'box', mapType: 'xtal',
         defaults: { alpha: false, siglevel: false, extent: false },
         ...over,
@@ -31,5 +33,14 @@ describe('levelControlFor', () => {
         const abs = levelControlFor(state({ levelUnit: 'percent', siglevel: 1.0, useAbsLevel: true }))
         expect(abs).toMatchObject({ prop: 'level', value: 0.3, min: -1, max: 1, unit: '' })
         expect(abs.hint).toBe('= top 1.00 % of grid points')
+    })
+
+    it("offers the renderer's UI range, not the raw extremes, in every mode", () => {
+        // A masked cryo-EM map: everything above 0.66 % is background, and the
+        // maximum is an outlier far above the top 0.01 %.
+        const ui = { uiLevelRange: [0.01, 0.66] as [number, number], uiAbsLevelRange: [0.027, 0.97] as [number, number] }
+        expect(levelControlFor(state({ ...ui, levelUnit: 'percent', siglevel: 0.66 }))).toMatchObject({ min: 0.01, max: 0.66 })
+        expect(levelControlFor(state({ ...ui, levelUnit: 'percent', useAbsLevel: true }))).toMatchObject({ min: 0.027, max: 0.97 })
+        expect(levelControlFor(state({ ...ui, uiLevelRange: [-4, 12] }))).toMatchObject({ min: -4, max: 12 })
     })
 })

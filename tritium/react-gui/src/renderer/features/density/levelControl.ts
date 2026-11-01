@@ -35,20 +35,28 @@ export function absoluteStep(rangeAbs: number): number {
     return Math.pow(10, Math.floor(Math.log10(rangeAbs / 100)))
 }
 
+/** `range` when both ends are finite and ordered, else `fallback`. */
+function rangeOr(range: [number, number], fallback: [number, number]): [number, number] {
+    const [lo, hi] = range
+    return Number.isFinite(lo) && Number.isFinite(hi) && hi > lo ? [lo, hi] : fallback
+}
+
 /**
  * Field parameters for the Level row.
  *
  * `DragNumericField` scales its drag rate to the range (three quarters of the
- * field sweeps min..max), so the percent range is capped at 10: over 0..100
- * the useful 0.1..5 percent band would be a few pixels wide.
+ * field sweeps min..max), so the range is the one the renderer offers for a
+ * UI (`uiLevelRange` / `uiAbsLevelRange`): background to the top 0.01% of
+ * grid points. Over the raw extremes, the masked background of a cryo-EM map
+ * or an outlier maximum would take up most of the sweep and draw nothing.
+ * The inspector still reaches the whole range.
  */
 export function levelControlFor(state: MapRendererState | null): LevelControl {
     if (!state) {
         return { prop: 'siglevel', value: 0, min: -10, max: 10, step: 0.1, unit: SIGMA, hint: '' }
     }
     if (state.useAbsLevel) {
-        const min = state.minLevel * state.denSigma
-        const max = state.maxLevel * state.denSigma
+        const [min, max] = rangeOr(state.uiAbsLevelRange, [state.minLevel * state.denSigma, state.maxLevel * state.denSigma])
         const hint =
             state.levelUnit === 'percent'
                 ? `= top ${state.siglevel.toFixed(2)} % of grid points`
@@ -58,13 +66,15 @@ export function levelControlFor(state: MapRendererState | null): LevelControl {
     const abs = Number.isFinite(state.level) ? state.level.toPrecision(3) : '?'
     const hint = `= ${abs} (absolute)`
     if (state.levelUnit === 'percent') {
-        return { prop: 'siglevel', value: state.siglevel, min: 0, max: 10, step: 0.01, unit: '%', hint }
+        const [min, max] = rangeOr(state.uiLevelRange, [0, 10])
+        return { prop: 'siglevel', value: state.siglevel, min, max, step: 0.01, unit: '%', hint }
     }
+    const [min, max] = rangeOr(state.uiLevelRange, [state.minLevel, state.maxLevel])
     return {
         prop: 'siglevel',
         value: state.siglevel,
-        min: state.minLevel,
-        max: state.maxLevel,
+        min,
+        max,
         step: 0.1,
         unit: SIGMA,
         hint,
