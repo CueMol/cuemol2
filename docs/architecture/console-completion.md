@@ -7,7 +7,8 @@ console panel (GUI) と `tritium_cli` (CLI) の Tab は同じ補完を使い、z
 
 | どこ | 何をするか |
 |------|-----------|
-| worker `plugins/console/worker/completion/complete.ts` | 行 (カーソル前) を読み、候補を集める |
+| worker: dialect の `DialectSyntax.complete` (カンマ文法は `plugins/console/worker/parser/commaComplete.ts`) | 行 (カーソル前) をその dialect の文法で読み、選んだ候補をその文法で書き戻す (区切り・`name=`・引用符) |
+| worker `plugins/console/worker/completion/engine.ts` | dialect に依存しない部分: ファイルの列挙、候補の照合、1 つ / 複数 / 無しへの振り分け (`settle`) |
 | `tritium/console-kit/src/completion.ts` | 候補の型、段組み (`layoutSections`)、メニューの状態遷移 (`moveMenu` / `menuText`) |
 | GUI `plugins/console/renderer/ConsolePanel.tsx` | キーを menu の操作に変え、候補のグリッドを描く |
 | CLI `tritium/cli/src/tritium_cli.ts` (`installCompletion`) | 同上を端末で。readline の `_ttyWrite` を包んでキーを先に見る |
@@ -29,9 +30,11 @@ console panel (GUI) と `tritium_cli` (CLI) の Tab は同じ補完を使い、z
 
 ## 行の読み方と候補源
 
+- 行の読み方と書き戻し方は dialect の文法 (`DialectSyntax`) のもので、completion service と engine は
+  文法を持たない。以下はカンマ文法 (native / PyMOL、`parser/commaSyntax.ts`) の場合。
 - 行は実行時と同じ規則で読む: `scanArgs` (`parser/parseArgs.ts`。書きかけの括弧・引用符は throw せず
   入力中の引数として返し、行の中の開始位置を持つ) と、dialect の割り当て規則 `assignArgs`
-  (`ConsoleDialect.argRule`。native は Python の呼び出しと同じ、PyMOL は PyMOL のまま。
+  (`commaSyntax` の `rule`。native は Python の呼び出しと同じ、PyMOL は PyMOL のまま。
   [op-catalog.md](op-catalog.md) §5)。カンマの数で位置を決めないので、括弧や引用符の中のカンマで
   ずれない。補完後の行は元の行を引数の開始位置で切って作るので、入力した空白や引用符は残る。
 - 候補源は引数ごとに宣言する: `ConsoleCommand.completions[i]` が `params[i]` の
@@ -42,7 +45,7 @@ console panel (GUI) と `tritium_cli` (CLI) の Tab は同じ補完を使い、z
 - 候補は文字列か `CompletionItem { text, then }` (LSP の CompletionItem に倣う)。`then: 'continue'`
   は区切りを付けない (`name=`、`obj.`、ディレクトリ)。区切りは候補ごとに決まり、位置で固定しない。
 - 名前付き引数 (`name=`) の候補は両 dialect で出す。候補が無いときにファイル名へ fall back するのは
-  PyMOL dialect だけ (`ConsoleDialect.fileFallback`)。
+  PyMOL dialect だけ (`commaSyntax` の `fileFallback`)。
 
 ## メニュー
 

@@ -11,23 +11,24 @@
 
 import type { ConsoleDialect } from '@plugins/console/worker/runtime/types'
 import { metaOf } from '@plugins/console/shared/dialectMeta'
+import { commaSyntax } from '@plugins/console/worker/parser/commaSyntax'
 import { commandNames, PYM_COMMANDS } from './commands/registry'
 import { candidatesFor } from './sources'
 import type { CompletionSourceId } from './sources'
 
 export const PYMOL_DIALECT: ConsoleDialect = {
   meta: metaOf('pymol'),
-  // PyMOL's own matching, which its scripts rely on.
-  argRule: 'pymol',
-  // PyMOL lists files wherever it has nothing better.
-  fileFallback: true,
+  // The comma grammar with PyMOL's own matching, which its scripts rely on;
+  // Tab lists files wherever it has nothing better, as PyMOL does.
+  syntax: commaSyntax({
+    rule: 'pymol',
+    fileFallback: true,
+    pythonRefusal: 'Error: Python expressions are not available in this console',
+  }),
   commands: () => PYM_COMMANDS,
-  refuseLine: (cmd) =>
-    cmd.python ? 'Error: Python expressions are not available in this console' : null,
   // PyMOL runs these through `run`, and warns when they are given to `@`.
   refuseScript: (filePath) => {
     if (/\.(py|pym)$/i.test(filePath)) return `Error: ${filePath} is a Python script; Python is not available in this console`
-    if (/\.qax$/i.test(filePath)) return `Error: ${filePath} is a qax file; switch the console to the native dialect to run it`
     return null
   },
   candidates: (id, ctx, sc) => candidatesFor(id as CompletionSourceId, ctx, sc, commandNames()),

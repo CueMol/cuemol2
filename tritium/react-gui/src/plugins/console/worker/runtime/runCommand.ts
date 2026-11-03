@@ -34,12 +34,7 @@ import type {
   RunCommandResult,
   SceneRequest,
 } from '../../shared/consoleTypes'
-import { BindError, bindArgs } from '../parser/bindArgs'
-import { lookupCommand } from '../parser/commandLookup'
-import { ParseError, parseArgs } from '../parser/parseArgs'
 import * as fs from 'fs'
-import { joinCommands, splitCommands } from '../parser/splitCommands'
-import type { SplitCommand } from '../parser/splitCommands'
 import { dialectOf } from '../dialects'
 import { scriptOwner } from '../../shared/dialectMeta'
 import { resolvePath } from './paths'
@@ -47,7 +42,7 @@ import { beginRun, endRun, isStopped, noteRunStream } from './runControl'
 import { writeLog } from './commandLog'
 import { isQaxPath, readQaxFile, runQaxItems } from './runQax'
 import type { QaxRunner } from './runQax'
-import type { CmdContext, CmdOutcome, ConsoleCommand, ConsoleDialect } from './types'
+import type { CmdContext, CmdOutcome, ConsoleCommand, ConsoleDialect, DialectLine } from './types'
 
 const log = console
 
@@ -123,10 +118,6 @@ class EntrySink {
  */
 const MAX_SCRIPT_DEPTH = 8
 
-/** Commands that are never written to the log: they are about the log. */
-// The log commands of both dialects: native open_log / close_log, PyMOL log_open / log_close.
-const UNLOGGED = new Set(['log', 'log_open', 'log_close', 'open_log', 'close_log'])
-
 /** What one submission accumulates as its commands run. */
 interface Submission {
   dialect: ConsoleDialect
@@ -144,19 +135,22 @@ interface Submission {
   rest?: string
 }
 
-/** The command a typed word names in this dialect, by unique prefix. */
+/** The command a line names in this dialect, as its syntax reads it. */
 function resolveCommand(
   dialect: ConsoleDialect,
-  word: string,
+  text: string,
 ): { kind: 'found'; spec: ConsoleCommand } | { kind: 'error'; error: string } {
-  const commands = dialect.commands()
-  const found = lookupCommand(word, commands.map((c) => c.name))
-  if (found.kind === 'ambiguous') {
-    return { kind: 'error', error: `Error: ambiguous command: ${found.candidates.join(', ')}` }
-  }
-  const spec = found.kind === 'found' ? commands.find((c) => c.name === found.name) : undefined
-  if (!spec) return { kind: 'error', error: `Error: unknown command: "${word}"` }
-  return { kind: 'found', spec }
+  return dialect.syntax.resolve(text, dialect.commands())
+}
+
+/**
+ * Why `filePath` cannot run in this dialect because it is another dialect's
+ * script (by extension, `dialectMeta.ts`), or null.
+ */
+function scriptRefusal(dialect: ConsoleDialect, filePath: string): string | null {
+  const owner = scriptOwner(filePath)?.meta
+  if (!owner || owner.id === dialect.meta.id) return null
+  return `Error: ${filePath} is a ${owner.label} script; switch the console to the ${owner.label} dialect to run it`
 }
 
 /**
@@ -166,7 +160,7 @@ function resolveCommand(
  */
 async function runScriptFile(sub: Submission, filePath: string, depth: number): Promise<CmdOutcome> {
   const resolved = resolvePath(sub.dir.get(), filePath)
-  const refusal = sub.dialect.refuseScript(resolved)
+  const refusal = scriptRefusal(sub.dialect, filePath) ?? sub.dialect.refuseScript(resolved)
   if (refusal !== null) return { ok: false, error: refusal.replace(resolved, filePath) }
   if (depth >= MAX_SCRIPT_DEPTH) {
     return { ok: false, error: `Error: scripts nested more than ${MAX_SCRIPT_DEPTH} deep (does ${filePath} run itself?)` }
@@ -178,7 +172,7 @@ async function runScriptFile(sub: Submission, filePath: string, depth: number): 
   } catch {
     return { ok: false, error: `Error: cannot read script: ${resolved}` }
   }
-  const completed = await runLines(sub, splitCommands(text), depth + 1)
+  const completed = await runLines(sub, sub.dialect.syntax.split(text), depth + 1)
   // The failing line has already said why; the caller only has to stop.
   return completed ? { ok: true } : { ok: false, error: '' }
 }
@@ -198,16 +192,9 @@ function qaxRunner(sub: Submission, depth: number): QaxRunner {
   return {
     ctx: sub.ctx,
     cmdContext: () => cc,
-    runLine: (text) => runLines(sub, splitCommands(text), depth + 1),
+    runLine: (text) => runLines(sub, sub.dialect.syntax.split(text), depth + 1),
     error: (text) => sub.sink.push('error', text),
   }
-}
-
-/** Why a qax file cannot run in this dialect, or null. */
-function qaxRefusal(dialect: ConsoleDialect, filePath: string): string | null {
-  const owner = scriptOwner(filePath)?.meta
-  if (!owner || owner.id === dialect.meta.id) return null
-  return `Error: ${filePath} is a qax file; switch the console to the ${owner.id} dialect to run it`
 }
 
 /**
@@ -215,7 +202,7 @@ function qaxRefusal(dialect: ConsoleDialect, filePath: string): string | null {
  * other commands on the line): its actions become part of this one.
  */
 async function runQaxInline(sub: Submission, resolved: string, depth: number): Promise<CmdOutcome> {
-  const refusal = qaxRefusal(sub.dialect, resolved)
+  const refusal = scriptRefusal(sub.dialect, resolved)
   if (refusal !== null) return { ok: false, error: refusal }
   const doc = readQaxFile(resolved)
   if ('error' in doc) return { ok: false, error: doc.error }
@@ -266,7 +253,7 @@ async function runSpec(spec: ConsoleCommand, ctx: WorkerContext, bound: Record<s
  * @param depth - 0 for what the user typed, 1 and up inside scripts.
  * @returns whether every command ran.
  */
-async function runLines(sub: Submission, commands: SplitCommand[], depth: number): Promise<boolean> {
+async function runLines(sub: Submission, commands: DialectLine[], depth: number): Promise<boolean> {
   const { dialect, ctx, args, entries, sink } = sub
   for (const [index, cmd] of commands.entries()) {
     if (isStopped(args.runId)) {
@@ -275,16 +262,15 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
       return false
     }
     sink.reset()
-    if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.meta.prompt} ${cmd.script ? '@' : ''}${cmd.text}` })
+    if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.meta.prompt} ${cmd.display}` })
 
-    const refusal = dialect.refuseLine(cmd)
-    if (refusal !== null) {
-      sink.push('error', refusal)
+    if (cmd.error !== undefined) {
+      sink.push('error', cmd.error)
       return false
     }
-    if (cmd.script) {
-      if (depth === 0 && !cmd.quiet) writeLog(`@${cmd.text}`)
-      const res = await runScriptFile(sub, cmd.text, depth)
+    if (cmd.scriptPath !== undefined) {
+      if (depth === 0 && !cmd.quiet) writeLog(cmd.display)
+      const res = await runScriptFile(sub, cmd.scriptPath, depth)
       if (!res.ok) {
         if (res.error !== '') sink.push('error', res.error)
         return false
@@ -292,35 +278,28 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
       continue
     }
 
-    const word = cmd.text.split(/\s+/)[0]
-    const resolved = resolveCommand(dialect, word)
+    const resolved = resolveCommand(dialect, cmd.text)
     if (resolved.kind === 'error') {
       sink.push('error', resolved.error)
       return false
     }
     const spec = resolved.spec
     // A lone undo or redo was handled before the transaction opened.
-    if (spec.name === 'undo' || spec.name === 'redo') {
+    if (spec.undoStack) {
       sink.push('error', `Error: ${spec.name} must be the only command on the line`)
       return false
     }
 
-    let bound: Record<string, string>
-    try {
-      const parsed = parseArgs(cmd.text, spec.mode)
-      const result = bindArgs(spec.name, spec.params, parsed, spec.mode, dialect.argRule)
-      if (result.kind === 'usage') {
-        sink.push('output', result.usage)
-        continue
-      }
-      bound = result.args
-    } catch (e) {
-      if (e instanceof ParseError || e instanceof BindError) {
-        sink.push('error', e.message)
-        return false
-      }
-      throw e
+    const result = dialect.syntax.bind(spec, cmd.text)
+    if (result.kind === 'usage') {
+      sink.push('output', result.usage)
+      continue
     }
+    if (result.kind === 'error') {
+      sink.push('error', result.error)
+      return false
+    }
+    const bound = result.args
     // A lone one of these was handled before the transaction opened.
     if (spec.outsideTxn?.(bound)) {
       sink.push('error', `Error: this ${spec.name} must be the only command on the line`)
@@ -329,8 +308,8 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
 
     // What was typed, not what a script it ran contained: replaying the log
     // runs the script again.
-    if (depth === 0 && !cmd.quiet && !UNLOGGED.has(spec.name)) {
-      if (!writeLog(cmd.text)) sink.push('warning', 'Warning: the log file could not be written; logging stopped')
+    if (depth === 0 && !cmd.quiet && !spec.unlogged) {
+      if (!writeLog(cmd.display)) sink.push('warning', 'Warning: the log file could not be written; logging stopped')
     }
 
     let commandMutated = false
@@ -343,7 +322,7 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
       requestScene: (req) => {
         if (depth > 0) return false
         sub.sceneRequest = req
-        sub.rest = joinCommands(commands.slice(index + 1))
+        sub.rest = commands.slice(index + 1).map((c) => c.source).join('\n')
         return true
       },
     })
@@ -377,44 +356,40 @@ async function runStandalone(
   dialect: ConsoleDialect,
   ctx: WorkerContext,
   args: RunCommandArgs,
-  commands: SplitCommand[],
+  commands: DialectLine[],
 ): Promise<RunCommandResult | null> {
-  if (commands.length !== 1 || commands[0].script || dialect.refuseLine(commands[0]) !== null) return null
+  if (commands.length !== 1 || commands[0].scriptPath !== undefined || commands[0].error !== undefined) return null
   const cmd = commands[0]
-  const resolved = resolveCommand(dialect, cmd.text.split(/\s+/)[0])
+  const resolved = resolveCommand(dialect, cmd.text)
   if (resolved.kind !== 'found') return null
   const spec = resolved.spec
 
   const entries: ConsoleEntry[] = []
   const dir = workDirFor(args)
   const cwdOut = args.cwd !== undefined ? { cwd: dir.get() } : {}
-  const echo = (): void => { if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.meta.prompt} ${cmd.text}` }) }
+  const echo = (): void => { if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.meta.prompt} ${cmd.display}` }) }
 
-  if (spec.name === 'undo' || spec.name === 'redo') {
+  if (spec.undoStack) {
     echo()
-    const res = spec.name === 'undo' ? undo(ctx, { sceneId: args.sceneId }) : redo(ctx, { sceneId: args.sceneId })
+    const which = spec.undoStack
+    const res = which === 'undo' ? undo(ctx, { sceneId: args.sceneId }) : redo(ctx, { sceneId: args.sceneId })
     if (!res.ok) {
-      entries.push({ kind: 'error', text: `Error: nothing to ${spec.name}` })
+      entries.push({ kind: 'error', text: `Error: nothing to ${which}` })
       return ok({ entries, mutated: false, aborted: true, interrupted: false, ...cwdOut })
     }
-    if (!cmd.quiet) writeLog(cmd.text)
+    if (!cmd.quiet) writeLog(cmd.display)
     return ok({ entries, mutated: false, aborted: false, interrupted: false, ...cwdOut })
   }
 
   if (!spec.outsideTxn) return null
-  let bound: Record<string, string>
-  try {
-    const result = bindArgs(spec.name, spec.params, parseArgs(cmd.text, spec.mode), spec.mode, dialect.argRule)
-    // Usage and argument errors are reported by the ordinary path.
-    if (result.kind === 'usage') return null
-    bound = result.args
-  } catch {
-    return null
-  }
+  const result = dialect.syntax.bind(spec, cmd.text)
+  // Usage and argument errors are reported by the ordinary path.
+  if (result.kind !== 'args') return null
+  const bound = result.args
   if (!spec.outsideTxn(bound)) return null
 
   echo()
-  if (!cmd.quiet) writeLog(cmd.text)
+  if (!cmd.quiet) writeLog(cmd.display)
   const sink = new EntrySink(entries)
   let openScene: string | undefined
   const cc = makeCmdContext(args, dir, sink, {
@@ -436,23 +411,22 @@ async function runStandalone(
 }
 
 /**
- * The qax file a submission runs when it is exactly `@file.qax` or
- * `run file.qax`; null for anything else.
+ * The qax file a submission runs when it is that file alone: a script line
+ * (`@file.qax`), or a command that runs a script (`scriptParam`, `run
+ * file.qax`); null for anything else.
  */
-function loneQaxScript(dialect: ConsoleDialect, commands: SplitCommand[]): string | null {
+function loneQaxScript(dialect: ConsoleDialect, commands: DialectLine[]): string | null {
   if (commands.length !== 1) return null
   const cmd = commands[0]
-  if (cmd.script) return isQaxPath(cmd.text) ? cmd.text.trim() : null
-  const resolved = resolveCommand(dialect, cmd.text.split(/\s+/)[0])
-  if (resolved.kind !== 'found' || resolved.spec.name !== 'run') return null
-  try {
-    const result = bindArgs('run', resolved.spec.params, parseArgs(cmd.text, resolved.spec.mode), resolved.spec.mode, dialect.argRule)
-    if (result.kind !== 'args') return null
-    const file = (result.args.file ?? '').trim()
-    return isQaxPath(file) ? file : null
-  } catch {
-    return null
-  }
+  if (cmd.error !== undefined) return null
+  if (cmd.scriptPath !== undefined) return isQaxPath(cmd.scriptPath) ? cmd.scriptPath.trim() : null
+  const resolved = resolveCommand(dialect, cmd.text)
+  const param = resolved.kind === 'found' ? resolved.spec.scriptParam : undefined
+  if (resolved.kind !== 'found' || param === undefined) return null
+  const result = dialect.syntax.bind(resolved.spec, cmd.text)
+  if (result.kind !== 'args') return null
+  const file = (result.args[param] ?? '').trim()
+  return isQaxPath(file) ? file : null
 }
 
 /**
@@ -466,25 +440,25 @@ async function runQaxStandalone(
   ctx: WorkerContext,
   args: RunCommandArgs,
   scene: NonNullable<ReturnType<typeof getSceneOrNull>>,
-  cmd: SplitCommand,
+  cmd: DialectLine,
   filePath: string,
 ): Promise<RunCommandResult> {
   const entries: ConsoleEntry[] = []
   const sub: Submission = {
     dialect, ctx, args, entries, sink: new EntrySink(entries), mutated: false, interrupted: false, dir: workDirFor(args),
   }
-  if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.meta.prompt} ${cmd.script ? '@' : ''}${cmd.text}` })
+  if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.meta.prompt} ${cmd.display}` })
   const cwdOut = (): { cwd?: string } => (args.cwd !== undefined ? { cwd: sub.dir.get() } : {})
   const stop = (text: string): RunCommandResult => {
     sub.sink.push('error', text)
     return ok({ entries, mutated: false, aborted: true, interrupted: false, ...cwdOut() })
   }
   const resolved = resolvePath(sub.dir.get(), filePath)
-  const refusal = qaxRefusal(dialect, filePath)
+  const refusal = scriptRefusal(dialect, filePath)
   if (refusal !== null) return stop(refusal)
   const doc = readQaxFile(resolved)
   if ('error' in doc) return stop(doc.error)
-  if (!cmd.quiet) writeLog(cmd.script ? `@${cmd.text}` : cmd.text)
+  if (!cmd.quiet) writeLog(cmd.display)
 
   let completed = true
   let anyMutated = false
@@ -518,10 +492,10 @@ async function runQaxStandalone(
 }
 
 /** Whether the first command of a submission is a tab command, which needs no scene. */
-function startsWithTabCommand(dialect: ConsoleDialect, commands: SplitCommand[]): boolean {
+function startsWithTabCommand(dialect: ConsoleDialect, commands: DialectLine[]): boolean {
   const first = commands[0]
-  if (!first || first.script) return false
-  const resolved = resolveCommand(dialect, first.text.split(/\s+/)[0])
+  if (!first || first.scriptPath !== undefined || first.error !== undefined) return false
+  const resolved = resolveCommand(dialect, first.text)
   return resolved.kind === 'found' && resolved.spec.group === 'tabs'
 }
 
@@ -534,7 +508,7 @@ async function runWithoutScene(
   dialect: ConsoleDialect,
   ctx: WorkerContext,
   args: RunCommandArgs,
-  commands: SplitCommand[],
+  commands: DialectLine[],
 ): Promise<RunCommandResult> {
   const entries: ConsoleEntry[] = []
   const sub: Submission = {
@@ -578,7 +552,7 @@ async function runScriptPath(
   if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found')
   if (txnBusy()) return fail(TXN_BUSY_MESSAGE, 'unsupported')
   if (!isQaxPath(scriptPath)) return fail(`${scriptPath}: this script cannot be run by its path`, 'unsupported')
-  const cmd: SplitCommand = { text: scriptPath, quiet: false, python: false, script: true }
+  const cmd: DialectLine = { text: scriptPath, display: `@${scriptPath}`, quiet: false, scriptPath, source: `@${scriptPath}` }
   return runQaxStandalone(dialect, ctx, args, scene, cmd, scriptPath)
 }
 
@@ -594,7 +568,7 @@ export async function runCommand(
 ): Promise<RunCommandResult> {
   const dialect = dialectOf(args.dialect)
   if (args.scriptPath !== undefined) return runScriptPath(dialect, ctx, args, args.scriptPath)
-  const commands = splitCommands(args.text)
+  const commands = dialect.syntax.split(args.text)
   const scene = getSceneOrNull(ctx, args.sceneId)
   if (!scene) {
     // No tab is open. A tab command (list_scenes, create_scene) needs none, so

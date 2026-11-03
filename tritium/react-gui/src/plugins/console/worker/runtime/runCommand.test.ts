@@ -111,8 +111,12 @@ vi.mock('@renderer/worker/server/services/helpers/streamFetchToReader', () => ({
 /** Which dialect the stub stands for; a qax file runs only in the native one. */
 const dialect = vi.hoisted(() => ({ id: 'pymol' }))
 
-vi.mock('../dialects', () => ({
-  dialectOf: () => ({
+vi.mock('../dialects', async () => {
+  // The comma grammar with PyMOL's rule, as the stub commands are written in it.
+  const { commaSyntax } = await import('../parser/commaSyntax')
+  const syntax = commaSyntax({ rule: 'pymol', fileFallback: true, pythonRefusal: 'Error: no Python' })
+  return { dialectOf: () => ({
+    syntax,
     meta: {
       id: dialect.id,
       label: dialect.id,
@@ -124,11 +128,10 @@ vi.mock('../dialects', () => ({
       cliColor: 'cyan',
     },
     commands: () => STUBS,
-    refuseLine: () => null,
     refuseScript: () => null,
     candidates: () => null,
-  }),
-}))
+  }) }
+})
 
 import * as fs from 'fs'
 import * as os from 'os'

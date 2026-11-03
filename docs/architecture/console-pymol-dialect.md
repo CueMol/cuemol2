@@ -13,7 +13,7 @@ runtime (1 submit = 1 txn、Stop、script、log)、引数パーサ、補完、he
 
 - パーサとコマンドは **TS で Web Worker に置く**。embedded Python は使わない (C++ に PyMOL 用の
   入口は無く、cuetty / pymod とは共有しない)。Python を要するものは理由付きで断る:
-  `/` で始まる行 (`refuseLine`)、`@x.py` / `@x.pym` (`refuseScript`)、`run x.py`、`log_open x.py`。
+  `/` で始まる行 (`commaSyntax` の `pythonRefusal`)、`@x.py` / `@x.pym` (`refuseScript`)、`run x.py`、`log_open x.py`。
 - 各コマンドは既存の worker service を呼ぶ薄い adapter で、計算は service か C++ に置く。
   PyMOL 固有の解釈 (引数の文法、PyMOL の名前と文言、selection 翻訳) は `dialects/pymol/` の中に閉じ、
   runtime と native dialect はここを import しない。
@@ -25,9 +25,8 @@ runtime (1 submit = 1 txn、Stop、script、log)、引数パーサ、補完、he
 | 項目 | 値 |
 |---|---|
 | `txnPrefix` | `pym: ` (undo の label は `pym: <入力行>`) |
-| `argRule` | `'pymol'`: 位置引数は名前付きも数えた全体の番号に入る、重複は後勝ち、コマンドごとの `mode: 'legacy'` (`select foo=chain A` を名前と式に読む) |
-| `fileFallback` | `true`: 補完候補が無い位置ではファイル名を出す |
-| `refuseLine` / `refuseScript` | Python の行と `.py` / `.pym` を断る |
+| `syntax` | `commaSyntax({ rule: 'pymol', fileFallback: true, ... })` (`parser/commaSyntax.ts`)。`rule: 'pymol'`: 位置引数は名前付きも数えた全体の番号に入る、重複は後勝ち、コマンドごとの `mode: 'legacy'` (`select foo=chain A` を名前と式に読む)。`fileFallback`: 補完候補が無い位置ではファイル名を出す。`/` の行は `pythonRefusal` で断る |
+| `refuseScript` | `.py` / `.pym` を断る (別の dialect の script、`.qax` は runtime が共通の文言で断る) |
 | 履歴 | dialect ごと。PyMOL は旧 pymconsole の key (`cuemol.pymconsole.history`) を引き継ぐ |
 
 ### 構成

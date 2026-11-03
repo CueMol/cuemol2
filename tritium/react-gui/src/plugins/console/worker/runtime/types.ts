@@ -3,10 +3,12 @@
  * @description What a console command is, and what a dialect is.
  *
  * The console runs one language at a time, a dialect: the native one, whose
- * commands are generated from the core op catalogue, or the PyMOL one, whose
- * commands are written by hand in PyMOL's terms. Everything else -- the
- * transaction a submission runs in, Stop, scripts, the log, Tab -- is the
- * runtime's and is the same for both.
+ * commands are generated from the core op catalogue, or one written by hand
+ * in another program's terms (PyMOL). A dialect owns how its lines are read
+ * (`DialectSyntax`: splitting, the command word, the arguments, Tab); the
+ * runtime owns what is the same for all of them -- the transaction a
+ * submission runs in, Stop, scripts, the log -- and knows no dialect's
+ * grammar.
  *
  * A command declares its name, its parameters and a `run` that reaches the
  * existing worker services. The declaration and the body are deliberately
@@ -17,9 +19,9 @@
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { OpGroup } from '@renderer/worker/server/catalog/op'
 import type { ArgMode } from '../parser/parseArgs'
-import type { ArgRule, ParamSpec } from '../parser/bindArgs'
-import type { SplitCommand } from '../parser/splitCommands'
+import type { ParamSpec } from '../parser/bindArgs'
 import type { SceneRequest } from '../../shared/consoleTypes'
+import type { CompletionContext, CompletionOutcome } from '../completion/engine'
 import type { DialectMeta } from '../../shared/dialectMeta'
 
 export type { ParamSpec } from '../parser/bindArgs'
@@ -131,7 +133,7 @@ export interface ConsoleCommand {
   name: string
   /** Its parameters, in order. */
   params: ParamSpec[]
-  /** How the argument list is read. */
+  /** How the argument list is read, for a dialect with the comma grammar (`parser/`). */
   mode: ArgMode
   /** Whether a successful run changes the scene, for the undo transaction. */
   mutates: boolean
@@ -142,7 +144,7 @@ export interface ConsoleCommand {
   /**
    * Where Tab finds each parameter's values: `completions[i]` is for
    * `params[i]`, whatever position or name it is typed at. A parameter with
-   * no entry offers no values (a dialect with `fileFallback` lists files).
+   * no entry offers no values (the PyMOL dialect then lists files).
    */
   completions?: (ArgCompletion | null)[]
   /**
@@ -151,6 +153,20 @@ export interface ConsoleCommand {
    * Such a call must then be the only command on the line, like `undo`.
    */
   outsideTxn?: (args: Record<string, string>) => boolean
+  /**
+   * `undo` / `redo`: the runtime runs a lone one outside the submission's
+   * transaction, since it moves the undo stack; `run` is reached only when
+   * one shares a line with other commands, where it cannot run.
+   */
+  undoStack?: 'undo' | 'redo'
+  /** Never written to the log: a command about the log itself (`open_log`, `log`). */
+  unlogged?: boolean
+  /**
+   * The parameter naming a script file it runs (`run file`). Alone on the
+   * line with a qax file, the runtime replays it one undo step per action,
+   * as the file was recorded.
+   */
+  scriptParam?: string
   /**
    * Do it.
    *
@@ -185,6 +201,51 @@ export interface SourceContext {
   pattern: string
 }
 
+/** One command of a submission, as the dialect split it. */
+export interface DialectLine {
+  /** The command, as `resolve` and `bind` read it. */
+  text: string
+  /** What the transcript echoes after the prompt, and the log records. */
+  display: string
+  /** Run it, but keep it out of the transcript and the log (PyMOL's `_ `). */
+  quiet: boolean
+  /** A line that only runs a script file (PyMOL's `@file`): the file. */
+  scriptPath?: string
+  /** Why the dialect will not run this line at all (PyMOL's `/python`). */
+  error?: string
+  /**
+   * The line as typed, so the commands after a scene command can be
+   * submitted again (`RunCommandOutcome.rest`), one per line.
+   */
+  source: string
+}
+
+/** What a dialect made of a command's arguments. */
+export type BindResult =
+  | { kind: 'args'; args: Record<string, string> }
+  /** The user asked for the usage (PyMOL's `cmd ?`): print it, run nothing. */
+  | { kind: 'usage'; usage: string }
+  | { kind: 'error'; error: string }
+
+/**
+ * How a dialect's lines are read. Every dialect has one: the runtime and the
+ * completion service call these and never read a line themselves, so one
+ * dialect's grammar is never another's default.
+ */
+export interface DialectSyntax {
+  /** The commands of a submission (or a script's text), in order. */
+  split(text: string): DialectLine[]
+  /** The command a line names, or why none. */
+  resolve(text: string, commands: readonly ConsoleCommand[]): { kind: 'found'; spec: ConsoleCommand } | { kind: 'error'; error: string }
+  /** The line's arguments, bound to `spec`'s parameters (defaults filled in). */
+  bind(spec: ConsoleCommand, text: string): BindResult
+  /**
+   * Tab on `line`: the line rewritten, written back in this grammar (its
+   * separators, how an argument is named, what needs quoting).
+   */
+  complete(ctx: WorkerContext, line: string, cc: CompletionContext): CompletionOutcome
+}
+
 /** One command language the console can speak. */
 export interface ConsoleDialect {
   /**
@@ -192,22 +253,15 @@ export interface ConsoleDialect {
    * command after), undo label prefix, action-log source and script files.
    */
   meta: DialectMeta
-  /** How typed arguments are matched to parameters (`parser/bindArgs.ts`). */
-  argRule: ArgRule
-  /** Every command, sorted by name. */
+  /** How its lines are read. */
+  syntax: DialectSyntax
+  /** Every command. */
   commands(): readonly ConsoleCommand[]
   /**
-   * Why a split line cannot run in this dialect at all (PyMOL's `/python`),
-   * or null when it can.
+   * Why a script file cannot run in this dialect (a Python file), or null.
+   * A file that is another dialect's script is refused by the runtime.
    */
-  refuseLine(cmd: SplitCommand): string | null
-  /** Why a script file cannot run in this dialect, or null when it can. */
   refuseScript(filePath: string): string | null
-  /**
-   * PyMOL's habit: where a parameter has no values to offer, list files.
-   * Off for a dialect whose path parameters say so themselves.
-   */
-  fileFallback: boolean
   /** The candidates for one completion source, or null when it has none to offer. */
   candidates(id: string, ctx: WorkerContext, sc: SourceContext): (string | CompletionItem)[] | null
   /**

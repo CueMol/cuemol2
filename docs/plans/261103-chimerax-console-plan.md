@@ -35,79 +35,12 @@ tritium の console plugin には native dialect と PyMOL dialect (旧 pymconso
 
 ## 1. PR の分け方
 
-stacked PR にしない。1 つマージしてから次を作る。
+CI を何度も走らせないよう、dialect の基盤 (registry 化と、runtime を dialect 中立にする refactoring) と
+ChX console を 1 つの PR に積む。基盤の仕様は `docs/architecture/op-catalog.md` §5
+(dialect の一覧と `DialectSyntax`)、`console-completion.md`、`local-api-server.md` §5 にある。
+以下は、その上に載せる ChX console の作業。
 
-| PR | 内容 | 挙動の変化 |
-|---|---|---|
-| PR 0b | runtime を dialect 中立にする refactoring (§2.2)。native / PyMOL 側の変更を含む | なし |
-| PR 1 | ChX console の基盤と基本コマンド (§3) | ChimeraX dialect が増える |
-
-- PR 0b は native / PyMOL の既存テストが通ることで退行を確認する。
-- テストは、ファイルの移動に合わせて置き場所を移すだけにし、期待値は変えない。
-
-## 2. PR 0b: dialect のための共有基盤
-
-dialect の一覧 (`shared/dialectMeta.ts` の `DIALECT_METAS`) と、`/console/info` の `dialects`・`/console/run` の
-`scriptPath` の仕様は `docs/architecture/op-catalog.md` §5 と `local-api-server.md` §5 にある。以下はその上に載せる残りの作業。
-
-### 2.2 runtime を dialect 中立にする (native / PyMOL の refactoring を含む)
-
-今の runtime (`runtime/`、`completion/`、`parser/`) には、PyMOL の文法と native 固有の処理が混ざっている。
-
-| 場所 | 混ざっているもの |
-|---|---|
-| `parser/splitCommands.ts` | PyMOL の行の分割。行末 `\` の継続、`_` (quiet)、`/` (Python)、`@` (script) の prefix |
-| `parser/bindArgs.ts` | `ArgRule = 'pymol' \| 'python'` と LEGACY 展開。`ConsoleDialect.argRule` で runtime が選ぶ |
-| `runtime/runCommand.ts` | 全体が PyMOL 式の `parseArgs` / `bindArgs` を直接呼ぶ (:308, :404, :446)。`.qax` の特別扱いと `qaxRefusal` (`dialect.id === 'native'`)。log コマンド名の固定集合 `UNLOGGED` (:127)。undo / redo を名前で判定 (:300, :390)。action source を `'pym'` で判定 (:603) |
-| `completion/complete.ts` | PyMOL `Parser._complete` の移植で、`scanArgs` / `assignArgs` と `dialect.fileFallback` に依存する |
-| `SplitCommand` 型 | PyMOL の `quiet` / `python` / `script` を持つ |
-
-ChX を「既定の経路に hook を足す」形で載せると、PyMOL 文法が既定のまま残る。その結果、
-runtime は PyMOL 寄りで、他の dialect は例外という非対称が固定してしまう。そこで、**行の読み方は
-すべての dialect が必ず自分で持つ**形に直す。runtime は、その結果を受けて txn・実行・出力・script・log だけを扱う。
-
-**`DialectSyntax` (どの dialect も必須で持つ)**
-
-| メンバー | 役割 |
-|---|---|
-| `split(text): Line[]` | submit を行に分ける。`Line` は `{ text, echo: boolean, script?: path }` だけの中立な型にする。PyMOL の `/python` の拒否は split の段階で error の `Line` として返す (`refuseLine` を廃止) |
-| `resolve(text): { cmd, rest } \| error` | コマンド名の解決 |
-| `bind(cmd, rest): Bound \| UsageRequest \| error` | 引数の束縛。`run` に渡す `Record<string, string>` を作る。`?` による usage の要求もここで判定する |
-| `scan(line): ScanState` | 補完用。入力途中の行から、コマンド、束縛済みの引数、caret の位置の param、pattern、**置き換える範囲**を返す。`bind` と同じ読み方を共有する |
-| `write(cand, state): Insertion` | 補完の候補を、その dialect で実行できる文字列にして書き戻す。値の後の区切り (PyMOL / native は `, `、ChX は空白)、keyword の表記 (`name=` か `name `)、空白などを含む値の quote を決める |
-| `usage(cmd): string` | usage 行の書式 |
-
-- PyMOL の文法は `parser/` の今のコードをそのまま使い、`dialects/pymol/syntax.ts` から呼ぶ。
-  - `splitCommands`、`parseArgs`、`bindArgs` の `'pymol'` 規則が該当する。
-  - native は同じ `parser/` を `'python'` 規則で使う `dialects/native/syntax.ts` を持つ。
-  - `parser/` は「カンマ区切りの引数文法のライブラリ」として残し、runtime からは呼ばない。
-    `ConsoleDialect.argRule` は廃止する。
-- `completion/complete.ts` は 2 つに分ける。
-  - **中立なエンジン** (completion 側に残す): `scan` の結果から候補源を引き、行を組み立てる。
-  - **PyMOL 式の行の読み取り** (`syntax.scan` へ移す): `scanArgs` / `assignArgs`。
-  - `fileFallback` (候補が無ければファイル名を出す、PyMOL の挙動) は PyMOL の `candidates` 側に移す。
-  - 書き戻しの文法も dialect に移す。今の `complete.ts` の `completeArgument` / `typeable` / `prefixAt` には、
-    PyMOL の文法が入っている (値の後の `, `、keyword の `name=`、空白を含むファイル名を quote しないこと)。
-    これを `syntax.write` / `syntax.scan` に移し、エンジンには文法を残さない。
-    native / PyMOL の `write` は今の処理をそのまま持つ。
-- **script**: runtime の `.qax` 特別扱いを、拡張子による一般の規則に置き換える。
-  - script の拡張子は dialect meta の `scripts` で宣言する。runtime は拡張子から持ち主の dialect を引く。
-  - 持ち主が今の dialect と違えば、`<file> is a <label> script; switch the console to <label> to run it`
-    と共通の文言で断る (`qaxRefusal` を廃止)。
-  - 実行は dialect の `runScript` に委ねる。`.pml` / `.cxc` は行を読んで `split` に渡し、`.qax` は native の
-    `runScript` が今の `runQax` を使う。lone の `.qax` が action ごとに txn を分ける処理も native に移す。
-- **コマンド名による判定をやめ、コマンド側の flag にする**:
-  - `UNLOGGED` の代わりに `ConsoleCommand.unlogged`
-  - undo / redo の判定には `ConsoleCommand.undoStack: 'undo' | 'redo'`
-  - action source は dialect meta の値を使う
-- `ConsoleCommand.run(ctx, args: Record<string, string>, cc)` と `CmdContext` は変えない。
-  既存のコマンド本体 (`dialects/pymol/commands/*`、`dialects/native/*`) には触らない。
-  - 例外は `CmdContext.runScript` の doc comment の「`.pml`」の記述を中立にすること。
-
-この refactoring の後、ChX は native / PyMOL と**同じ形**で `DialectSyntax` を実装するだけになる。
-runtime に ChX 用の分岐は 1 つも入らない。
-
-## 3. PR 1: ChX console の基盤と基本コマンド
+## 3. ChX console の基盤と基本コマンド
 
 ### 3.1 登録 (PR 1 で触る共有ファイル)
 
@@ -120,7 +53,7 @@ runtime に ChX 用の分岐は 1 つも入らない。
 
 | ファイル | 役割 |
 |---|---|
-| `index.ts` | `CHIMERAX_DIALECT`。§2.2 の `DialectSyntax` を `cli/` で実装してつなぐ。`.cxc` の `runScript` |
+| `index.ts` | `CHIMERAX_DIALECT`。`DialectSyntax` (`op-catalog.md` §5) を `cli/` で実装してつなぐ |
 | `cli/split.ts` | 改行と、引用符の外の `;` で分ける。コマンド名の位置の `#` から行末はコメント。PyMOL の行末 `\` 継続は持たない (Windows パスが壊れるため) |
 | `cli/tokenize.ts` | 空白で区切る。`'..'` / `".."` で quote する。escape の処理は String / Enum 型だけで行い、FileName 型ではしない (cli.py:1208 と同じ。`"C:\Users\..."` を壊さない) |
 | `cli/argTypes.ts` | cli.py の Annotation の TS 版。各型は `parse(text) -> { value, consumed } \| fail` で、取れる限り取る。基盤として用意するのは Bool、Int、Float、String、Enum、Or、ListOf、NoArg、Color、Objects (spec)、FileName |
@@ -332,7 +265,9 @@ ChX は前者 (op を通る側) に揃える。
 - **PyMOL dialect は今回は op に載せ替えない**。63 コマンドに及び、挙動を変えずに移すには別の計画が要る。
   ChX が足した op は PyMOL からも使えるので、載せ替えるときの足場になる。
 
-### 3.10 レビュー (`261103-chimerax-console-review.md`) への対応
+### 3.10 レビューへの対応
+
+1 回目のレビュー:
 
 | # | 指摘 | 判断 | 対応 |
 |---|---|---|---|
@@ -342,23 +277,23 @@ ChX は前者 (op を通る側) に揃える。
 | 4 [P2] | `view` の対応先の op では複数 model を fit できない | **有益** (引数なしの `view` は最もよく使うコマンドの 1 つで、selection を書き換える副作用も実害がある) | ChX の中で範囲を求め、`set_view` で書く (§3.9。第 3 回のレビューを受けて、新しい op を作る案から変更) |
 | 5 [P2] | insertion code を残基名と誤読する | **有益** (誤った原子を選んでしまう。直すのも安い) | 判定を ChimeraX の `_parse_as_res_id` と同じにする (§3.4) |
 
-2 回目のレビュー (`261103-chimerax-console-review-2.md`):
+2 回目のレビュー:
 
 | # | 指摘 | 判断 | 対応 |
 |---|---|---|---|
 | 1 [P2] | paint への切り替えを毎回行うと、前の着色が消える | **有益** (連続した `color` という最も普通の使い方で起きる。`setRendererColoring` が毎回新しい表を作ることをコードで確認した。直すのは条件分岐 1 つ) | 未切り替えのときだけ切り替える (§3.7)。テストを 1 件足す |
 | 2 [P2] | `fit_view` の selection が全対象で共通なので、`view (#1/A \| #2/B)` を表せない | **有益** (誤った範囲に fit してしまう) | 範囲を object ごとの式で求める (§3.9)。op は作らないことにしたので、引数の問題は ChX の中で閉じる。テストの条件を足す |
 
-3 回目のレビュー (`261103-chimerax-console-review-3.md`):
+3 回目のレビュー:
 
 | # | 指摘 | 判断 | 対応 |
 |---|---|---|---|
-| 1 [P2] | 補完の書き戻し (区切り・keyword の表記・quote) が PyMOL の文法のまま、補完のエンジンに残る | **有益** (このまま PR 1 に入ると、ChX の補完結果が実行できない。PR 0b で境界を決めないと、分離をやり直すことになる) | `DialectSyntax` に `write` を足し、`scan` に置き換える範囲を持たせる (§2.2)。ダミー dialect のテストを「補完した行が実行できる」に強める |
+| 1 [P2] | 補完の書き戻し (区切り・keyword の表記・quote) が PyMOL の文法のまま、補完のエンジンに残る | **有益** (このまま PR 1 に入ると、ChX の補完結果が実行できない。PR 0b で境界を決めないと、分離をやり直すことになる) | `DialectSyntax.complete` で dialect が補完の書き戻しまで持つ (`op-catalog.md` §5)。ダミー dialect のテストを「補完した行が実行できる」に強める |
 | 2 [P2] | CLI が script を本文で送るかパスで送るかを、dialect の宣言では表せない | **有益** (固定表を外すと `.qax` の CLI 実行が壊れる。`inputs.ts` で確認した) | meta の `scripts` に `submit: 'text' \| 'path'` を持たせ、`path` は `/console/run` の `scriptPath` で送る (`local-api-server.md` §5) |
 | 3 [P2] | `fit_view` の構造化した引数を表す種類が catalog に無い | **指摘は正しいが、op を作らない方が安い** | 公開 op はやめ、ChX の中で範囲を求めて既存の `set_view` を使う (§3.9)。catalog・MCP・qax への波及を避ける。公開 op は要望が出たら別途作る |
 | 4 [P2] | registry 化で `CONSOLE_SOURCES` から `'qax'` が落ちる | **有益** (`open_log` 中の qax 再生が記録されなくなる退行。直すのは 1 行) | meta の source に `'qax'` を加えて作ると明記する (`op-catalog.md` §5) |
 
-4 回目のレビュー (`261103-chimerax-console-review-4.md`):
+4 回目のレビュー:
 
 | # | 指摘 | 判断 | 対応 |
 |---|---|---|---|
@@ -374,7 +309,7 @@ ChX は前者 (op を通る側) に揃える。
   - op catalog (`@renderer/worker/server/catalog` の op と `invokeOp`)
   - worker service の直接呼び出しは、§3.9 で例外とした読み取り専用の補助だけ
 - **`dialects/pymol/` と `dialects/native/` は import しない**。逆に、それらと runtime は `dialects/chimerax/` を import しない。
-- runtime と completion のエンジンには、特定の dialect の名前や文法を書かない (§2.2)。dialect ごとの違いは `DialectSyntax`、dialect meta、`ConsoleCommand` の flag で表す。
+- runtime と completion のエンジンには、特定の dialect の名前や文法を書かない (`op-catalog.md` §5)。dialect ごとの違いは `DialectSyntax`、dialect meta、`ConsoleCommand` の flag で表す。
 - 上の規則は eslint の `no-restricted-imports` (ディレクトリごとの override) で機械的に検査する。
   `dialects/chimerax/` からの `@renderer/worker/server/services/*` の import も、§3.9 で例外としたものを除いて禁止する。
 - ChX を外すときは、`dialects/chimerax/` を消し、§3.1 の 2 行を消せば済む。
@@ -421,10 +356,6 @@ op が足りなければ、先に catalog へ op を足す (§3.9)。その op �
 ## 6. ドキュメント
 
 - この plan は `docs/plans/261103-chimerax-console-plan.md` (`_index.md` に登録済み)。
-- PR 0b のマージ時:
-  - `docs/architecture/op-catalog.md` §5 (console runtime) に、dialect の registry、`DialectSyntax`、script の拡張子規則を書く。
-  - `console-completion.md` に、エンジンと `scan` の分担を書く。
-  - `console-pymol-dialect.md` §1 の表 (`argRule`、`refuseLine`、`fileFallback`) を、新しい置き場所に合わせて直す。
 - PR 1 のマージ時:
   - `docs/architecture/console-chimerax-dialect.md` を新設する。内容は位置づけ、文法、atom spec の変換表、model 番号、表示モデル、コマンド表、分離の規則。
   - `docs/architecture/_index.md` に 1 項目足す。
@@ -433,19 +364,6 @@ op が足りなければ、先に catalog へ op を足す (§3.9)。その op �
 - UXP に無い機能なので、migration の ADR / mapping は対象外。
 
 ## 7. 検証
-
-**PR 0b**
-
-- 次がすべて既存のまま通ること:
-  - `cd tritium/react-gui && npm test`
-  - `npx tsc -p tsconfig.web.json --noEmit`、`npx tsc -p tsconfig.node.json --noEmit`
-  - `cd build_scripts && task test_tritium_cli` (`tritium/cli` と `tritium/console-kit` の型検査と Vitest。
-    react-gui の `npm test` と tsc はこの 2 つを対象にしないので、`scriptPath` と dialect の一覧の契約はここで検証する)
-  - `task build_tritium`
-- アプリを起動し、native と PyMOL の切替え、履歴、`tritium_cli` の `--dialect` と `.pml` の実行が変わらないことを確かめる。
-- 追加するテスト:
-  - 最小の `DialectSyntax` を持つダミー dialect (PyMOL と違う区切りを使う) で、補完で書き戻した行を、そのままその dialect で実行できる 1 件。runtime と補完のエンジンが dialect 中立であることの pin
-  - 別の dialect の script 拡張子を共通の文言で断る 1 件 (`qaxRefusal` を置き換えた分)
 
 **PR 1**
 

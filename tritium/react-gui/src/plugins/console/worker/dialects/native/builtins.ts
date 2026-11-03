@@ -88,6 +88,7 @@ const run: ConsoleCommand = {
   name: 'run',
   group: 'console',
   params: [{ name: 'file' }],
+  scriptParam: 'file',
   mode: 'strict',
   mutates: false,
   summary: `Run a ${NATIVE_SCRIPT_EXT} file (each action its own undo step when run alone), or a text file of commands (the same as @file).`,
@@ -100,6 +101,7 @@ const run: ConsoleCommand = {
 const logOpen: ConsoleCommand = {
   name: 'open_log',
   group: 'console',
+  unlogged: true,
   params: [{ name: 'file', default: `log${NATIVE_SCRIPT_EXT}` }, { name: 'mode', default: 'w' }],
   mode: 'strict',
   mutates: false,
@@ -121,6 +123,7 @@ const logOpen: ConsoleCommand = {
 const logClose: ConsoleCommand = {
   name: 'close_log',
   group: 'console',
+  unlogged: true,
   params: [],
   mode: 'strict',
   mutates: false,
@@ -136,6 +139,7 @@ const logClose: ConsoleCommand = {
 const logLine: ConsoleCommand = {
   name: 'log',
   group: 'console',
+  unlogged: true,
   params: [{ name: 'text', default: '' }],
   mode: 'literal1',
   mutates: false,
@@ -214,6 +218,7 @@ function undoStack(name: 'undo' | 'redo'): ConsoleCommand {
   return {
     name,
     group: 'edit',
+    undoStack: name,
     params: [],
     mode: 'strict',
     mutates: false,
