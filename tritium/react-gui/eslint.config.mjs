@@ -376,7 +376,7 @@ export default tseslint.config(
       },
       {
         regex:
-          '^@renderer/worker/server/services/(?!(props/read|coloring/panelList|file/getCompatibleRendererNames|helpers/sceneResolver|helpers/makeSel|scene/listSceneObjects)$)',
+          '^@renderer/worker/server/services/(?!(props/read|coloring/panelList|file/getCompatibleRendererNames|helpers/sceneResolver|helpers/makeSel|helpers/simplifySel|scene/listSceneObjects)$)',
         message:
           'The ChX dialect runs op catalog ops (invokeOp), not worker services; only the read-only helpers listed in eslint.config.mjs may be imported.',
       },

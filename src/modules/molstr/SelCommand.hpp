@@ -79,6 +79,28 @@ namespace molstr {
 
     LString dumpNodes() const;
 
+    /// An equivalent, usually shorter expression (SelSimplifier), checked to
+    /// compile; the expression as it is when the shorter one does not.
+    /// For expressions the GUI or a console builds by wrapping the current
+    /// one; an expression a user typed is not rewritten behind their back.
+    LString simplify() const;
+
+    /// not (this), simplified (so that inverting twice gives this back).
+    /// "*" for an empty selection.
+    LString invertSimplified() const;
+
+    /// bysidech (this), or the inside when this is bysidech already.
+    LString toggleSidechain() const;
+
+    /// this around dist (byres when bByres), replacing an around already at
+    /// the root, so that choosing another distance does not stack them.
+    LString rewriteAround(double dist, bool bByres) const;
+
+  private:
+    LString rewriteChecked(int nEdit, double dist, bool bByres, const LString &fallback) const;
+
+  public:
+
     void setErrorMsg(const LString &msg) {
         m_errorMsg = msg;
     }

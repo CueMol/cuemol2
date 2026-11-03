@@ -59,6 +59,10 @@ architecture, it belongs here.
   `HitData` を GPU 経路の正式なデータ経路に昇格させた判断、頂点整数属性 / pick shader / CPU fallback 規則、
   uxp_gui を従来経路のまま保つ gating、hover UI (`naviHover` / throttle / busy 非計上)、採らなかった案
   (色に ID を埋め込む方式)。
+- [selection 式の簡単化 (構文木の同値変換)](selection-simplify.md) (日本語) -- 組み立てた selection の式
+  (GUI の選択の追加・Selection Builder・console の dialect) を、C++ の構文木に同値な書き換え規則を繰り返して
+  短くし、再コンパイルできる文字列に戻す (`SelSimplifier`、`SelCommand::simplify`)。規則の一覧、同一性の判定と
+  書き戻しの方針、簡単にする場所、context menu の Invert / Toggle sidechain / Around を構文木で行うこと。
 - [Op catalog と console (native / PyMOL / ChimeraX dialect)](op-catalog.md) (日本語) --
   AI agent の tool と console のコマンドを生成する core の op catalog。`.qif` 型に合わせた param DSL と
   意味型 (node 名・property path・selection)、`invokeOp` / `runInTxn`、agent の toolset と

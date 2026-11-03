@@ -18,6 +18,7 @@ SimpleRendererGLSL.cpp
 MolAtomRenderer.cpp
 SelCommand.cpp
 SelNodes.cpp
+SelSimplifier.cpp
 SelCacheMgr.cpp
 SelAroundImpl.cpp
 SelAroundImpl2.cpp

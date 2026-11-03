@@ -143,8 +143,8 @@ renderer で表し、**その selection と paint が表示の状態そのもの
     (ChimeraX では sphere)。ALA が非表示のうちの `style :ALA sphere` も効かない。もう一度 `style` を打てば直り、データは
     壊れない。保持するには style ごとの原子集合を scene に別に持つ必要があり、その代償 (selection 一覧が散らかる、
     状態の二重化) に見合わないので行っていない。
-  - selection の式は、組み合わせるたびに前の式を括弧で包んで伸びる (簡単にしない)。表示の結果は正しい。抑える案は
-    [selection 式の簡単化](../plans/261103-selection-simplify-plan.md)。
+  - selection の式は、組み合わせた後、書き込む前に簡単にする (`writeSel`、[selection 式の簡単化](selection-simplify.md))。
+    `show` / `hide` / `style` を繰り返しても伸びないが、最短になるとは限らない。
 
 ## 6. コマンド
 

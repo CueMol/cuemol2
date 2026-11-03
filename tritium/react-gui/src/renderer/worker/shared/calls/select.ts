@@ -36,6 +36,10 @@ import type {
   SelectObjectMolResult,
 } from '@renderer/worker/server/services/select/selectObjectMol'
 import type {
+  SimplifySelectionArgs,
+  SimplifySelectionResult,
+} from '@renderer/worker/server/services/select/simplifySelection'
+import type {
   ValidateSelectionArgs,
   ValidateSelectionResult,
 } from '@renderer/worker/server/services/select/validateSelection'
@@ -45,6 +49,7 @@ export interface SelectCalls {
   getSelHitCount:             { args: GetSelHitCountArgs; result: GetSelHitCountResult }
   saveSelDef:                 { args: SaveSelDefArgs; result: SaveSelDefResult }
   validateSelection:          { args: ValidateSelectionArgs; result: ValidateSelectionResult }
+  simplifySelection:          { args: SimplifySelectionArgs; result: SimplifySelectionResult }
   selectObjectMol:            { args: SelectObjectMolArgs; result: SelectObjectMolResult }
   getMolChains:               { args: GetMolChainsArgs; result: GetMolChainsResult }
   getMolResidues:             { args: GetMolResiduesArgs; result: GetMolResiduesResult }
@@ -61,6 +66,7 @@ export const SELECT_KEYS = [
   'getSelHitCount',
   'saveSelDef',
   'validateSelection',
+  'simplifySelection',
   'selectObjectMol',
   'getMolChains',
   'getMolResidues',

@@ -15,6 +15,7 @@ import { lassoSelect } from './lassoSelect';
 import { rectSelect } from './rectSelect';
 import { saveSelDef } from './saveSelDef';
 import { selectObjectMol } from './selectObjectMol';
+import { simplifySelection } from './simplifySelection';
 import { validateSelection } from './validateSelection';
 
 export const services = {
@@ -30,6 +31,7 @@ export const services = {
     rectSelect,
     saveSelDef,
     selectObjectMol,
+    simplifySelection,
     validateSelection,
 };
 
@@ -41,4 +43,5 @@ export type * from './lassoSelect';
 export type * from './rectSelect';
 export type * from './saveSelDef';
 export type * from './selectObjectMol';
+export type * from './simplifySelection';
 export type * from './validateSelection';

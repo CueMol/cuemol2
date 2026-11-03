@@ -12,7 +12,7 @@ import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import type { SelectMolKind } from '@shared/types/sceneCtxMenu';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
-import { invertSelStr, rewriteAround, toggleSidechainStr } from '@renderer/worker/server/services/helpers/selStrTransforms';
+import { aroundSel, invertSel, toggleSidechainSel } from '@renderer/worker/server/services/helpers/simplifySel';
 import { withUndoTxn } from '../withUndoTxn';
 import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
@@ -62,6 +62,8 @@ const AROUND_KIND_DIST: Record<string, { dist: number; byres: boolean }> = {
 };
 
 function resolveSelStr(
+    ctx: WorkerContext,
+    sceneId: number,
     kind: SelectMolKind,
     prevSelStr: string,
 ): { selStr: string; label: string } | null {
@@ -71,7 +73,7 @@ function resolveSelStr(
         case 'unselect':
             return { selStr: '', label: 'Unselect molecule' };
         case 'invert':
-            return { selStr: invertSelStr(prevSelStr), label: 'Invert mol selection' };
+            return { selStr: invertSel(ctx, prevSelStr, sceneId), label: 'Invert mol selection' };
         case 'protein':
             return { selStr: 'protein', label: 'Select protein' };
         case 'nucleic':
@@ -85,7 +87,7 @@ function resolveSelStr(
         case 'sidechain':
             // sidechain toggle is a no-op when nothing is currently selected.
             if (!prevSelStr) return null;
-            return { selStr: toggleSidechainStr(prevSelStr), label: 'Toggle bysidech' };
+            return { selStr: toggleSidechainSel(ctx, prevSelStr, sceneId), label: 'Toggle bysidech' };
         case 'around3':
         case 'around5':
         case 'around7':
@@ -99,7 +101,7 @@ function resolveSelStr(
             if (!prevSelStr) return null;
             const { dist, byres } = AROUND_KIND_DIST[kind];
             return {
-                selStr: rewriteAround(prevSelStr, dist, byres),
+                selStr: aroundSel(ctx, prevSelStr, sceneId, dist, byres),
                 label: 'Around mol selection',
             };
         }
@@ -117,7 +119,7 @@ export function selectObjectMol(
 
     // sel may not exist on non-molecular objects -- bail safely.
     const prevSelStr = safeRead(() => (mol.sel ? mol.sel.toString() : '')) ?? '';
-    const resolved = resolveSelStr(args.kind, prevSelStr);
+    const resolved = resolveSelStr(ctx, scene.uid, args.kind, prevSelStr);
     if (!resolved) return { ok: false };
 
     withUndoTxn(scene, resolved.label, () => {

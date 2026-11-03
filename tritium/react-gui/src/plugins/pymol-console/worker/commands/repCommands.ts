@@ -30,6 +30,7 @@ import { setGenericProp } from '@renderer/worker/server/services/props/write'
 import { setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import { renameNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
 import { applyMolSelString } from '@renderer/worker/server/services/select/applyMolSelString'
+import { simplifySel } from '@renderer/worker/server/services/helpers/simplifySel'
 import { setRendererColoring } from '@renderer/worker/server/services/coloring/applyColoring'
 import { getRendererPaintInfo } from '@renderer/worker/server/services/coloring/panelList'
 import { paintRendererSelection } from '@renderer/worker/server/services/coloring/paintCrud'
@@ -345,12 +346,16 @@ function updateOwned(
   // An empty selection is one never set (the renderer a load makes), which
   // draws everything.
   const current = readProp(ctx, cc.sceneId, existing.id, 'sel')?.trim() || '*'
+  // show / hide wrap what is drawn; simplified, so that repeating them does
+  // not nest the expression deeper each time
   const next =
     name === 'as'
       ? selStr
-      : name === 'show'
-        ? `(${current}) or (${selStr})`
-        : `(${current}) and not (${selStr})`
+      : simplifySel(
+          ctx,
+          name === 'show' ? `(${current}) or (${selStr})` : `(${current}) and not (${selStr})`,
+          cc.sceneId,
+        )
   if (!writeSelection(ctx, cc.sceneId, existing.id, next)) {
     return { ok: false, error: `Error: could not change ${rep} on "${obj.name}"` }
   }

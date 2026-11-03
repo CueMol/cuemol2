@@ -28,6 +28,7 @@ import { objectNodes, rendererNodesOf } from '@renderer/worker/server/catalog/re
 // is not an operation of its own).
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import { getRendererPaintInfo } from '@renderer/worker/server/services/coloring/panelList'
+import { simplifySel } from '@renderer/worker/server/services/helpers/simplifySel'
 import type { CmdContext } from '@plugins/console/worker/dialect-api'
 import { opContextOf } from '@plugins/console/worker/dialect-api'
 import { emitFor, NONE } from './spec/emit'
@@ -171,10 +172,15 @@ export function intersect(a: string, b: string): string {
   return `(${a}) and (${b})`
 }
 
-/** Write a renderer's selection when it changes. */
+/**
+ * Write a renderer's selection when it changes. `next` wraps the current
+ * selection (union / minus / intersect), so it is simplified first: repeated
+ * commands would otherwise nest it deeper every time.
+ */
 export async function writeSel(ctx: WorkerContext, cc: CmdContext, rendId: number, next: string): Promise<Ran> {
-  if (readSel(ctx, cc.sceneId, rendId) === next) return { ok: true }
-  return runOp(ctx, cc, 'set_renderer_selection', { rendId, selection: next })
+  const selection = simplifySel(ctx, next, cc.sceneId)
+  if (readSel(ctx, cc.sceneId, rendId) === selection) return { ok: true }
+  return runOp(ctx, cc, 'set_renderer_selection', { rendId, selection })
 }
 
 /** The atom renderers' uids, by style. */

@@ -46,6 +46,27 @@ export function useHitCountResolver(
     );
 }
 
+/**
+ * Build a stable `simplify` for the SelectionBuilder, bound to a scene, or
+ * `undefined` when there is none. Composed expressions go to the read-only
+ * `simplifySelection` worker service, which returns an equivalent, shorter one.
+ */
+export function useSelSimplifier(
+    cm: AsyncCueMol | null,
+    sceneID: number | undefined,
+): ((selStr: string) => Promise<string>) | undefined {
+    return useMemo(
+        () =>
+            cm && sceneID !== undefined
+                ? (selStr: string): Promise<string> =>
+                      cm
+                          .invokeService('simplifySelection', { sceneId: sceneID, selStr })
+                          .then((r) => r.selStr)
+                : undefined,
+        [cm, sceneID],
+    );
+}
+
 const DEBOUNCE_MS = 250;
 
 /**

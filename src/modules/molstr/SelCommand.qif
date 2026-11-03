@@ -28,6 +28,19 @@ runtime_class SelCommand extends MolSelection
 
   string dumpNodes();
 
+  /// Equivalent, usually shorter expression (for expressions built by
+  /// wrapping the current one)
+  string simplify();
+
+  /// not (this), simplified; "*" for an empty selection
+  string invertSimplified();
+
+  /// bysidech (this), or the inside when this is bysidech already
+  string toggleSidechain();
+
+  /// this around dist (byres when byres), replacing an around at the root
+  string rewriteAround(real dist, boolean byres);
+
   property string error_msg => redirect(getErrorMsg, setErrorMsg);
   default error_msg = "";
   
