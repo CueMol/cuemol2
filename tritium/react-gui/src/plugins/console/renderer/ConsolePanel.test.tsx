@@ -22,6 +22,7 @@ vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
 import { ConsolePanel } from './ConsolePanel'
 import { consoleSession } from './consoleSessionStore'
 import { historyOf } from './commandHistory'
+import { NATIVE_META } from '../shared/dialectMeta'
 
 function promptOf(root: HTMLElement): HTMLTextAreaElement {
   const el = root.querySelector('textarea')
@@ -40,12 +41,12 @@ function type(el: HTMLTextAreaElement, text: string): void {
 
 describe('ConsolePanel', () => {
   beforeEach(() => {
-    historyOf('native').clearHistory()
+    historyOf(NATIVE_META).clearHistory()
     consoleSession.reset()
   })
   afterEach(() => {
     consoleSession.reset()
-    historyOf('native').clearHistory()
+    historyOf(NATIVE_META).clearHistory()
   })
 
   it('sends a submitted line to the runner and shows what comes back', async () => {
@@ -207,7 +208,7 @@ describe('ConsolePanel', () => {
   })
 
   it('brings the previous line back with the up arrow', () => {
-    historyOf('native').pushHistory('fetch 1crn')
+    historyOf(NATIVE_META).pushHistory('fetch 1crn')
     const tree = mountTree(<ConsolePanel cm={null} />)
     act(() => consoleSession.setRunner(vi.fn()))
 

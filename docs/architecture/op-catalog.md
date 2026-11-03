@@ -22,8 +22,10 @@ plugin console/worker/
          parser/          カンマ文法 (PyMOL 由来の引数パーサ。native と PyMOL が DialectSyntax として使う)
          completion/      Tab 補完の dialect 非依存の部分 (engine.ts)
          dialects/native/ op catalog から生成するコマンド + console 自前の builtin
-         dialects/pymol/  PyMOL 語彙のコマンド、selection 翻訳 (sel/)
-         dialects/chimerax/ ChimeraX 語彙のコマンド (op を invokeOp で呼ぶ)、atom spec 翻訳 (spec/)
+         dialects/registry.ts  plugin が登録した dialect
+         dialect-api.ts   dialect を足す plugin に公開する唯一の入口
+plugin pymol-console/worker/     PyMOL 語彙のコマンド、selection 翻訳 (sel/)
+plugin chimerax-console/worker/  ChimeraX 語彙のコマンド (op を invokeOp で呼ぶ)、atom spec 翻訳 (spec/)
 ```
 
 op 本体は新しい層を作らず、既存の worker service 関数を呼ぶ。GUI と同じ service を通るので、
@@ -32,9 +34,9 @@ ServiceMap から tool を自動生成はしない (service の形は UI の都�
 `CmdId` (renderer の UI handler) とも層が違うので共通化しない。
 
 依存の向き (ESLint で強制): `worker/server` は plugin を import しない。console の runtime と
-native dialect は `dialects/pymol` と `dialects/chimerax` を import しない (例外は dialect 表 `dialects/index.ts`)。
-手書きの dialect どうし (PyMOL と ChimeraX) も互いを import しない。ChimeraX dialect は native dialect も import せず、
-worker service は許可した読み取り専用の補助だけを import する
+console plugin は dialect の plugin (`pymol-console` / `chimerax-console`) を import しない (登録を通して受け取る)。
+dialect の plugin は console の内部を `@plugins/console/worker/dialect-api` (と `shared/dialectMeta`) からしか
+使わず、互いを import しない。ChimeraX dialect は worker service を許可した読み取り専用の補助だけ import する
 ([console-chimerax-dialect.md](console-chimerax-dialect.md) §1)。
 
 ## 2. param DSL
@@ -161,12 +163,24 @@ defineOp({
 
 ## 5. Console
 
-**dialect の一覧**: console plugin の `shared/dialectMeta.ts` (`DIALECT_METAS`) が唯一の一覧で、dialect ごとに
-id・表示名 (`label`)・prompt・undo label の接頭辞 (`txnPrefix`)・action log の source (`actionSource`)・
-履歴の localStorage key (`historyKey`)・script ファイル (`scripts: { ext, submit }[]`)・`tritium_cli` での色を宣言する。
-panel (切り替え・prompt・履歴)、worker (undo label・action source・script の持ち主)、main と `tritium_cli`
-(`/console/info` の `dialects`) はこの宣言だけを読み、dialect の id を直書きしない。dialect を足す / 外すのは、
-この配列の 1 行と `worker/dialects/index.ts` の実装の 1 行。保存された pref に無い dialect の id は既定 (native) に落とす。
+**dialect の一覧**: native は console plugin 自身の dialect (`shared/dialectMeta.ts` の `NATIVE_META`)。それ以外は
+**dialect ごとの plugin** が足す (`plugins/pymol-console/`、`plugins/chimerax-console/`)。各 dialect は `DialectMeta`
+(id・表示名 `label`・prompt・undo label の接頭辞 `txnPrefix`・action log の source `actionSource`・履歴の localStorage
+key `historyKey`・script ファイル `scripts: { ext, submit }[]`・`tritium_cli` での色) を宣言する。
+
+- renderer: dialect の plugin は manifest の `contributes.extensions['console.dialect']` に meta を寄与する
+  ([plugin の寄与点](tritium_plugin/contributions.md) の extensions)。console の `useDialectMetas()` が native と
+  **有効な** plugin の meta を並べ、panel (切り替え・prompt・履歴)・`/console/info` の `dialects`・endpoint での
+  dialect の検証がそれを読む。plugin をオフにすると、その dialect は panel と `tritium_cli` から消え、endpoint が断る。
+  保存された pref が今は無い dialect を指していれば、既定 (native) に落とす。
+- worker: dialect の plugin の `worker/dialect.service.ts` が起動時に `registerDialect` (`dialect-api.ts`) で実装を登録する
+  (`dialects/registry.ts`)。worker は plugin のオン / オフを知らず、登録された dialect を全部持つ。undo label・action source・
+  script の持ち主 (`scriptOwner`) は登録された dialect の meta から引く。
+- 制約: オフの dialect の script (`.pml`) を native で走らせると、「その dialect に切り替えて」と言う
+  (切り替え先が今は無いことまでは言わない)。
+- dialect を外すのは、その plugin のディレクトリと `plugins/index.ts` の 1 行を消すだけ。console と native には手が入らない。
+- dialect の plugin が使える console の内部は `worker/dialect-api.ts` が re-export するものだけ (runtime の型、カンマ文法、
+  補完の共通部分、path・opContext・quit・log・help の補助)。eslint が検査する。
 
 **dialect の文法** (`runtime/types.ts` の `DialectSyntax`。どの dialect も必ず持つ): `split` (submit を行に分ける。
 script を走らせる行 (`@file`)、断る行 (PyMOL の `/python`)、echo と log に出す表記、scene コマンドの後の残りを

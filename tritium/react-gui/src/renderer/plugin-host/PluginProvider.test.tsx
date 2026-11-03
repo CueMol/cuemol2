@@ -22,7 +22,7 @@ import {
   flushPromises,
 } from '@renderer/__test__/helpers/testHarness'
 import { PluginProvider, usePlugins } from './PluginProvider'
-import { isPluginEnabled, selectActivePlugins, selectAvailablePlugins } from './pluginSelect'
+import { collectContributions, isPluginEnabled, selectActivePlugins, selectAvailablePlugins } from './pluginSelect'
 import type { RendererPlugin } from './types'
 
 void React
@@ -80,6 +80,17 @@ describe('plugin enabled state', () => {
     expect(ids(selectAvailablePlugins(all, false))).toEqual(['alpha'])
     // A stored choice cannot resurrect one either.
     expect(ids(selectActivePlugins(all, { devtool: true }, false))).toEqual(['alpha'])
+  })
+})
+
+describe('plugin extensions', () => {
+  it("joins the switched-on plugins' entries per extension point, and drops a switched-off plugin's", () => {
+    const withExt = (id: string, values: unknown[], how: Switchability = {}): RendererPlugin => ({
+      manifest: { id, name: id, version: '1.0.0', ...how, contributes: { extensions: { 'host.thing': values } } },
+    })
+    const all = [withExt('a', [1]), withExt('b', [2, 3]), withExt('c', [4], { defaultEnabled: false })]
+    const active = selectActivePlugins(all, {}, false)
+    expect(collectContributions(active).extensions).toEqual({ 'host.thing': [1, 2, 3] })
   })
 })
 

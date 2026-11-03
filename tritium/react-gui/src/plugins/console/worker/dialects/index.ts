@@ -1,26 +1,23 @@
 /**
  * @file plugins/console/worker/dialects/index.ts
- * @description The dialects the console can speak, by id.
+ * @description The dialect a call is in, by id.
+ *
+ * Native is the console's own. Any other is added by a plugin of its own
+ * (`pymol-console`, `chimerax-console`), whose worker module registers it
+ * when the worker loads plugin modules (`registry.ts`, reached through
+ * `dialect-api.ts`). The worker does not know which plugins are switched
+ * on: it holds every registered dialect, and the renderer only sends the
+ * ids of switched-on ones (the panel's switch, and the endpoint's check).
  */
 
-import { DEFAULT_DIALECT } from '../../shared/dialectMeta'
 import type { DialectId } from '../../shared/dialectMeta'
 import type { ConsoleDialect } from '../runtime/types'
 import { NATIVE_DIALECT } from './native'
-import { PYMOL_DIALECT } from './pymol'
-import { CHIMERAX_DIALECT } from './chimerax'
+import { registeredDialect } from './registry'
 
-/**
- * Every dialect's implementation, by id. Each has its row in
- * `shared/dialectMeta.ts` too; a dialect is added or removed in both places.
- */
-const DIALECTS: Readonly<Record<DialectId, ConsoleDialect>> = {
-  native: NATIVE_DIALECT,
-  pymol: PYMOL_DIALECT,
-  chimerax: CHIMERAX_DIALECT,
-}
+export { registeredMetas, registerDialect } from './registry'
 
-/** The dialect with this id, or the default one for an id no dialect has. */
+/** The dialect with this id, or native for an id no dialect has. */
 export function dialectOf(id: DialectId): ConsoleDialect {
-  return DIALECTS[id] ?? DIALECTS[DEFAULT_DIALECT]
+  return registeredDialect(id) ?? NATIVE_DIALECT
 }

@@ -170,14 +170,18 @@ contribute in a manifest. Currently `getpdb` and `sequence` (both `alwaysEnabled
 this way to keep the feature in one directory, not to make it removable), `catalog` (the
 component gallery), `agent` (the AI chat panel, OpenAI, Anthropic or Google Gemini through the Vercel AI
 SDK), `mdtools` (the MD trajectory GUI: the open flow plus the Trajectory bottom tab),
-`console` (a command line with three dialects: native, generated from the core op catalog in
-`renderer/worker/server/catalog/`, and partial PyMOL and ChimeraX dialects; see
-[`docs/architecture/op-catalog.md`](../docs/architecture/op-catalog.md)) and `mcp` (the op
+`console` (a command line whose own dialect is native, generated from the core op catalog in
+`renderer/worker/server/catalog/`; see
+[`docs/architecture/op-catalog.md`](../docs/architecture/op-catalog.md)), `pymol-console` and
+`chimerax-console` (partial PyMOL and ChimeraX dialects added to the console through its
+`console.dialect` extension point and worker `dialect-api`) and `mcp` (the op
 catalog served to MCP clients through main's local API server, with a status bar item; see
-[`docs/architecture/local-api-server.md`](../docs/architecture/local-api-server.md)) -- the last five
-ship in every build; all but `console` are `defaultEnabled: false`, so they appear only once
+[`docs/architecture/local-api-server.md`](../docs/architecture/local-api-server.md)) -- these
+ship in every build; `catalog`, `agent`, `mdtools` and `mcp` are `defaultEnabled: false`, so they appear only once
 someone switches them on in Settings > Plugins (`console` is on by default so that the bundled
-`tritium_cli` command works out of the box). `mdtools` is the one whose feature has a C++ module of its own
+`tritium_cli` command works out of the box, and the two dialect plugins are on as the dialects
+were inside the console). A plugin can add to another plugin through `contributes.extensions`
+(read with `usePluginExtensions`); see `docs/architecture/tritium_plugin/contributions.md`. `mdtools` is the one whose feature has a C++ module of its own
 (`src/modules/mdtools/`); that module is always loaded, so the switch gates the GUI only.
 
 Full spec, API reference and a how-to-write walkthrough:

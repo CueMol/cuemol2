@@ -27,7 +27,7 @@ import { commandHelp, table } from '../../help/helpMarkdown'
 import { OP_GROUPS } from '@renderer/worker/server/catalog/op'
 import type { OpGroup } from '@renderer/worker/server/catalog/op'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { metaOf } from '../../../shared/dialectMeta'
+import { NATIVE_META } from '../../../shared/dialectMeta'
 import { usageLine } from '../../parser/bindArgs'
 import { commaSyntax } from '../../parser/commaSyntax'
 import { lookupCommand } from '../../parser/commandLookup'
@@ -420,7 +420,7 @@ function expand(id: string, ctx: WorkerContext, sc: SourceContext): string[] | n
 }
 
 export const NATIVE_DIALECT: ConsoleDialect = {
-  meta: metaOf('native'),
+  meta: NATIVE_META,
   // The comma grammar, with arguments matched as in a Python call; path
   // parameters list files themselves, so Tab does not fall back to them.
   syntax: commaSyntax({

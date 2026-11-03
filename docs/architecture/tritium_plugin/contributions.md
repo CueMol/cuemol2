@@ -98,6 +98,7 @@ interface PluginContributes {
   bottomTabs?: PluginBottomTab[]
   statusBar?: PluginStatusBarItem[]
   settings?: PluginSettingDecl[]
+  extensions?: Record<string, readonly unknown[]>
 }
 ```
 
@@ -331,6 +332,28 @@ status bar の右側、Busy / Ready 表示の左に置かれます。host は置
 - 背景・余白は `status-item` class と hover 時の `--bg-hover` で揃える。
 - 設定ページを開くには `useOpenPluginSettings(pluginId)` ([api.md](api.md))。
 - 長い内容 (設定の snippet など) は popover に詰めず、popover から開く dialog に分ける。
+
+### extensions (別の plugin への寄与)
+
+```ts
+extensions?: Readonly<Record<string, readonly unknown[]>>
+```
+
+本体側ではなく、**別の plugin** が用意した受け口 (extension point) に寄与する。key は受け口の名前で、
+読む側の plugin の id を頭に付ける (`console.dialect`)。値の形は読む側が決めて検査する
+(host は中身を見ない)。
+
+- host は **有効な plugin の** `extensions` だけを受け口ごとに連結する (`collectContributions` ->
+  `PluginContributions.extensions`)。plugin をオフにすると、その寄与も消える。
+- 読む側は `usePluginExtensions(point)` ([api.md](api.md)) で読む。plugin の id で特別扱いしない。
+- worker 側には plugin の有効 / 無効の状態が無い。worker でも実装を渡す必要があるときは、寄与する
+  plugin の `worker/*.service.ts` (起動時に全部読まれる) が、読む側の plugin が公開した登録口を呼ぶ。
+  使ってよいかは renderer 側 (上の `extensions`) で決める。
+- 読む側に依存関係の宣言 (requires) は無い。読む側の plugin がオフなら、寄与はどこにも届かないだけ。
+
+実例: console plugin の `console.dialect`。`pymol-console` / `chimerax-console` が `DialectMeta` を寄与し、
+worker では `@plugins/console/worker/dialect-api` の `registerDialect` で実装を登録する
+([op-catalog.md](../op-catalog.md) §5)。
 
 ---
 

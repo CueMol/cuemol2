@@ -12,8 +12,7 @@
 
 import { createLruStringHistory } from '@renderer/utils/createLruStringHistory'
 import type { LruStringHistory } from '@renderer/utils/createLruStringHistory'
-import type { DialectId } from '../shared/consoleTypes'
-import { metaOf } from '../shared/dialectMeta'
+import type { DialectMeta } from '../shared/dialectMeta'
 
 /**
  * How many to keep.
@@ -31,8 +30,8 @@ const stores = new Map<string, LruStringHistory>()
  * Kept apart because a line in one language is rarely valid in another, and
  * recalling it would only produce an error.
  */
-export function historyOf(dialect: DialectId): LruStringHistory {
-  const key = metaOf(dialect).historyKey
+export function historyOf(dialect: DialectMeta): LruStringHistory {
+  const key = dialect.historyKey
   let store = stores.get(key)
   if (!store) {
     store = createLruStringHistory({ key, max: MAX_ENTRIES })

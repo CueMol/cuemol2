@@ -149,17 +149,33 @@ const NO_DEEP_RELATIVE = {
  * service at runtime, and the worker bundle pulling in a `components/`
  * module. A warning would not have stopped either.
  */
-/** Only the PyMOL dialect itself (and the dialect table) may import it. */
-const NO_PYMOL_DIALECT = {
-  group: ['**/dialects/pymol', '**/dialects/pymol/**'],
-  message: 'Only the PyMOL dialect itself (and the dialect table) may import from dialects/pymol.',
+/** The console does not import the plugins that add dialects to it (it reads them through registration). */
+const NO_DIALECT_PLUGINS = {
+  group: ['@plugins/pymol-console', '@plugins/pymol-console/**', '@plugins/chimerax-console', '@plugins/chimerax-console/**'],
+  message: 'The console reaches a dialect plugin only through its registration (dialect-api / console.dialect), never by import.',
 }
 
-/** Only the ChX dialect itself (and the dialect table) may import it. */
-const NO_CHIMERAX_DIALECT = {
-  group: ['**/dialects/chimerax', '**/dialects/chimerax/**'],
-  message: 'Only the ChX dialect itself (and the dialect table) may import from dialects/chimerax.',
+/** A dialect plugin reaches the console only through dialect-api (worker) and shared/dialectMeta. */
+const CONSOLE_DIALECT_API_ONLY = {
+  regex: '^(@plugins/|(\\.\\./)+)console/(?!(worker/dialect-api|shared/dialectMeta)$)',
+  message: 'A dialect plugin uses the console through @plugins/console/worker/dialect-api (and shared/dialectMeta) only.',
 }
+
+/** What a plugin's renderer half may not import: worker code by value, main, a kit's insides, deep relatives. */
+const PLUGIN_RENDERER_PATTERNS = [
+  {
+    group: ['@renderer/worker/server/**', '**/worker/server/**', '@plugins/*/worker/**'],
+    allowTypeImports: true,
+    message:
+      'Import the DTO with `import type`, or go through the plugin service client; a value import pulls worker code into the renderer bundle.',
+  },
+  {
+    group: ['@main/**', '**/main/**', 'electron'],
+    message: 'The renderer talks to main through window.electronAPI only.',
+  },
+  KIT_BARREL_ONLY,
+  NO_DEEP_RELATIVE,
+]
 
 const restrict = (...patterns) => ({
   '@typescript-eslint/no-restricted-imports': [
@@ -328,26 +344,21 @@ export default tseslint.config(
     rules: restrict(...PLUGIN_WORKER_PATTERNS),
   },
 
-  // --- The console runtime and native dialect stay free of PyMOL ---
-  // The PyMOL dialect bends CueMol to fit PyMOL's names and selections; the
-  // runtime and the native dialect must not inherit that. Only the dialect
-  // table may name it.
+  // --- The console does not import its dialect plugins ---
+  // PyMOL and ChimeraX are plugins of their own that register with the
+  // console; it never names them, so either can be switched off or removed.
   {
     files: ['src/plugins/console/worker/**/*.ts'],
-    ignores: [
-      'src/plugins/console/worker/dialects/pymol/**',
-      'src/plugins/console/worker/dialects/chimerax/**',
-      'src/plugins/console/worker/dialects/index.ts',
-    ],
-    rules: restrict(...PLUGIN_WORKER_PATTERNS, NO_PYMOL_DIALECT, NO_CHIMERAX_DIALECT),
+    rules: restrict(...PLUGIN_WORKER_PATTERNS, NO_DIALECT_PLUGINS),
   },
 
-  // --- The dialects do not lean on each other ---
-  // Each hand-written dialect is self-contained, so one can be removed (or
-  // moved into a plugin of its own) without touching another.
+  // --- A dialect plugin uses the console's dialect-api only, and not the other plugin ---
   {
-    files: ['src/plugins/console/worker/dialects/pymol/**/*.ts'],
-    rules: restrict(...PLUGIN_WORKER_PATTERNS, NO_CHIMERAX_DIALECT),
+    files: ['src/plugins/pymol-console/worker/**/*.ts'],
+    rules: restrict(...PLUGIN_WORKER_PATTERNS, CONSOLE_DIALECT_API_ONLY, {
+      group: ['@plugins/chimerax-console', '@plugins/chimerax-console/**'],
+      message: 'The dialect plugins do not import each other.',
+    }),
   },
 
   // --- The ChX (ChimeraX) dialect goes through the op catalog ---
@@ -355,13 +366,13 @@ export default tseslint.config(
   // native console do; a worker service is imported only for a read the
   // catalog does not make an op of (op-catalog.md 3.1), listed here.
   {
-    files: ['src/plugins/console/worker/dialects/chimerax/**/*.ts'],
+    files: ['src/plugins/chimerax-console/worker/**/*.ts'],
     rules: restrict(
       ...PLUGIN_WORKER_PATTERNS,
-      NO_PYMOL_DIALECT,
+      CONSOLE_DIALECT_API_ONLY,
       {
-        group: ['**/dialects/native', '**/dialects/native/**'],
-        message: 'The ChX dialect does not import the native dialect.',
+        group: ['@plugins/pymol-console', '@plugins/pymol-console/**'],
+        message: 'The dialect plugins do not import each other.',
       },
       {
         regex:
@@ -376,20 +387,14 @@ export default tseslint.config(
   {
     files: ['src/plugins/**/*.{ts,tsx}'],
     ignores: ['src/plugins/*/worker/**'],
-    rules: restrict(
-      {
-        group: ['@renderer/worker/server/**', '**/worker/server/**', '@plugins/*/worker/**'],
-        allowTypeImports: true,
-        message:
-          'Import the DTO with `import type`, or go through the plugin service client; a value import pulls worker code into the renderer bundle.',
-      },
-      {
-        group: ['@main/**', '**/main/**', 'electron'],
-        message: 'The renderer talks to main through window.electronAPI only.',
-      },
-      KIT_BARREL_ONLY,
-      NO_DEEP_RELATIVE,
-    ),
+    rules: restrict(...PLUGIN_RENDERER_PATTERNS),
+  },
+  // The console's renderer half: the same, and no import of its dialect
+  // plugins (a later block replaces a rule's options, hence restated here).
+  {
+    files: ['src/plugins/console/**/*.{ts,tsx}'],
+    ignores: ['src/plugins/console/worker/**'],
+    rules: restrict(...PLUGIN_RENDERER_PATTERNS, NO_DIALECT_PLUGINS),
   },
 
   // --- Tests may reach anywhere ---

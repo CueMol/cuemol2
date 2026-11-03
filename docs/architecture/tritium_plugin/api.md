@@ -164,6 +164,12 @@ prefix が service (`plugin.`) と別なのは意図的 ([contributions.md](cont
 
 ## 設定と secret
 
+### `usePluginExtensions(point): readonly unknown[]`
+
+有効な plugin が `contributes.extensions[point]` に寄与した値を、plugin の順に連結して返す。
+値の形は受け口 (読む側の plugin) が決めて検査する。オフの plugin の値は含まれない
+([contributions.md](contributions.md) の extensions)。実例: console の `useDialectMetas()`。
+
 ### `usePluginPrefs(pluginId): PluginPrefs`
 
 ```ts

@@ -33,7 +33,8 @@ import type {
 import { CONSOLE_PROTOCOL } from '@shared/types/localApi'
 import { consoleServices } from '../calls'
 import { CONSOLE_PLUGIN_ID, REMOTE_ACCESS_PREF } from '../shared/consoleTypes'
-import { DIALECT_METAS, isDialectId } from '../shared/dialectMeta'
+import { isDialectId } from '../shared/dialectMeta'
+import { useDialectMetas } from './useDialectMetas'
 import { beginCliRun } from './cliActivity'
 import { consoleSession } from './consoleSessionStore'
 import { runSubmission } from './runSubmission'
@@ -46,6 +47,8 @@ export function useConsoleEndpoint(): void {
   const ensureActiveScene = useEnsureActiveScene()
   const { activeSceneId, activeMolViewId } = useActiveScene()
   const { prefs } = usePluginPrefs(CONSOLE_PLUGIN_ID)
+  // The dialects a client may use: native and those of switched-on plugins.
+  const metas = useDialectMetas()
   // As for a panel run: the worker holds a transaction open.
   const calls = useTrackedEndpointCalls()
   const tabs = useSceneTabs()
@@ -63,7 +66,7 @@ export function useConsoleEndpoint(): void {
           version,
           build,
           protocol: CONSOLE_PROTOCOL,
-          dialects: DIALECT_METAS.map((m) => ({
+          dialects: metas.map((m) => ({
             id: m.id,
             label: m.label,
             prompt: m.prompt,
@@ -75,7 +78,7 @@ export function useConsoleEndpoint(): void {
       }
       // main checks only that a dialect is named; which ones exist is known here.
       const named = (payload as { dialect?: unknown } | null)?.dialect
-      if (!isDialectId(named)) return { error: `no such dialect: ${String(named)}` }
+      if (!isDialectId(metas, named)) return { error: `no such dialect: ${String(named)}` }
       if (kind === 'complete') {
         const p = payload as ConsoleCompleteRequest
         const res = await consoleServices.invoke(cm, 'complete', {

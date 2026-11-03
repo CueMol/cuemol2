@@ -121,6 +121,14 @@ export interface PluginContributes {
   bottomTabs?: PluginBottomTab[]
   statusBar?: PluginStatusBarItem[]
   settings?: PluginSettingDecl[]
+  /**
+   * What this plugin adds to another plugin, by extension point. The key is
+   * the point's name, prefixed with the id of the plugin that reads it
+   * (`console.dialect`); the values are in the form that plugin defines and
+   * checks. Only switched-on plugins' entries are collected, so switching a
+   * plugin off takes them away.
+   */
+  extensions?: Readonly<Record<string, readonly unknown[]>>
 }
 
 /** The static declaration of a plugin. */
@@ -241,4 +249,6 @@ export interface PluginContributions {
   bottomTabs: ResolvedPluginBottomTab[]
   statusBar: ResolvedPluginStatusBarItem[]
   settings: ResolvedPluginSetting[]
+  /** Every active plugin's `extensions` entries, joined per extension point. */
+  extensions: Readonly<Record<string, readonly unknown[]>>
 }
