@@ -414,20 +414,127 @@ namespace {
       pRes->setPropStr(nm, value);
     }
   }
-  
+
+  /// Atoms an edit took out of a molecule or put into it, kept so that undo
+  /// and redo can take them out again or put them back.
+  ///
+  /// Each atom is kept with the ID it held in the molecule and is put back
+  /// under that same ID: coordinate undo (MolXformEditInfo), aid selections
+  /// and the PDB writer's atom order all name atoms by ID, so an atom put
+  /// back under a new one would drop out of them. Taking out and putting
+  /// back always works on this recorded set, never on a selection evaluated
+  /// again (which may now mean other atoms).
+  class SavedAtoms
+  {
+  private:
+    struct SavedRes {
+      LString chain;
+      ResidIndex resid;
+      std::vector<std::pair<LString, LString>> props;
+    };
+
+    /// (atom ID in the molecule, detached copy of the atom)
+    std::vector<std::pair<int, MolAtomPtr>> m_atoms;
+
+    /// Properties of the residues the atoms belong to, for a residue that
+    /// has to be made anew when the atoms are put back.
+    std::vector<SavedRes> m_residues;
+
+  public:
+    /// Record the atoms of pmol with these IDs, as they are now.
+    void save(MolCoord *pmol, const std::set<int> &aids)
+    {
+      m_atoms.clear();
+      m_residues.clear();
+      std::set<std::pair<LString, ResidIndex>> resSeen;
+      for (int aid : aids) {
+        MolAtomPtr pAtom = pmol->getAtom(aid);
+        if (pAtom.isnull())
+          continue;
+        m_atoms.emplace_back(aid, MolAtomPtr(pAtom->clone_cast<MolAtom>()));
+
+        const LString &cname = pAtom->getChainName();
+        ResidIndex nresid = pAtom->getResIndex();
+        if (!resSeen.insert(std::make_pair(cname, nresid)).second)
+          continue;
+        MolResiduePtr pRes = pmol->getResidue(cname, nresid);
+        if (pRes.isnull())
+          continue;
+        SavedRes sr;
+        sr.chain = cname;
+        sr.resid = nresid;
+        std::set<LString> names;
+        pRes->getResPropNames(names);
+        for (const LString &nm : names) {
+          LString value;
+          if (pRes->getPropStr(nm, value))
+            sr.props.emplace_back(nm, value);
+        }
+        m_residues.push_back(sr);
+      }
+    }
+
+    /// Take the recorded atoms out of pmol.
+    bool remove(MolCoord *pmol) const
+    {
+      std::vector<int> aids;
+      aids.reserve(m_atoms.size());
+      for (const auto &elem : m_atoms)
+        aids.push_back(elem.first);
+      pmol->removeAtoms(aids);
+      pmol->applyTopology();
+      return true;
+    }
+
+    /// Put the recorded atoms back into pmol under their own IDs.
+    /// Puts back nothing and returns false when an ID or an atom name is
+    /// already taken.
+    bool restore(MolCoord *pmol) const
+    {
+      for (const auto &elem : m_atoms) {
+        const MolAtomPtr &pAtom = elem.second;
+        if (!pmol->getAtom(elem.first).isnull() ||
+            !pmol->getAtom(pAtom->getChainName(), pAtom->getResIndex(),
+                           pAtom->getName(), pAtom->getConfID()).isnull()) {
+          LOG_DPRINTLN("MolMergeEditInfo> cannot put atom %d (%s) back: already taken",
+                       elem.first, pAtom->getName().c_str());
+          return false;
+        }
+      }
+
+      for (const auto &elem : m_atoms) {
+        // put a fresh copy, so that the record survives the next removal
+        MolAtomPtr pNew(elem.second->clone_cast<MolAtom>());
+        if (pmol->appendAtomWithID(pNew, elem.first) < 0) {
+          // not expected after the check above
+          LOG_DPRINTLN("MolMergeEditInfo> put atom %d back failed", elem.first);
+        }
+      }
+
+      for (const SavedRes &sr : m_residues) {
+        MolResiduePtr pRes = pmol->getResidue(sr.chain, sr.resid);
+        if (pRes.isnull())
+          continue;
+        for (const auto &prop : sr.props)
+          pRes->setPropStr(prop.first, prop.second);
+      }
+
+      pmol->applyTopology();
+      return true;
+    }
+  };
+
+  /// Undo / redo of copyAtoms() (merge) and deleteAtoms().
   class MolMergeEditInfo : public qsys::EditInfo
   {
   private:
     /// Target Mol ID
     qlib::uid_t m_nTgtUID;
-    
-    MolCoordPtr m_pMol2;
 
-    SelectionPtr m_pSel;
-
+    /// true: the edit put the atoms in (merge); false: it took them out
     bool m_bCopy;
 
-    std::deque<LString> m_copyAtomIDs;
+    SavedAtoms m_atoms;
 
   public:
     MolMergeEditInfo() {
@@ -438,127 +545,51 @@ namespace {
     
     /////////////////////////////////////////////////////
     
-    /*
-    void createCopy(MolCoord *pMol1, const MolCoordPtr &pMol2, const SelectionPtr &pSel2) {
-      m_nTgtUID = pMol1->getUID();
-      m_pMol2 = pMol2;
-      m_pSel = pSel2;
-      m_bCopy = true;
-    }
-    */
-
-    void createCopy(MolCoord *pMol1, const MolCoordPtr &pMol2,
-		    const SelectionPtr &pSel2, const std::set<int> &aset2)
+    /// Record a merge, after the atoms (aids, in pMol1) were added.
+    void createCopy(MolCoord *pMol1, const std::set<int> &aids)
     {
       m_bCopy = true;
-
       m_nTgtUID = pMol1->getUID();
-      m_pMol2 = pMol2;
-
-      m_pSel = pSel2;
-      //m_pSel = SelectionPtr();
-
-      m_copyAtomIDs.clear();
-      std::set<int>::const_iterator it2 = aset2.begin();
-      std::set<int>::const_iterator end = aset2.end();
-      for (; it2!=end; it2++) {
-	int aid = *it2;
-	LString strid = pMol2->toStrAID(aid);
-	m_copyAtomIDs.push_back(strid);
-      }
+      m_atoms.save(pMol1, aids);
     }
 
-    void createDelete(MolCoord *pMol1, const SelectionPtr &pSel) {
-      m_nTgtUID = pMol1->getUID();
-      m_pSel = pSel;
+    /// Record a deletion, before the atoms (aids, including the alternate
+    /// conformations that go with them) are removed.
+    void createDelete(MolCoord *pMol1, const std::set<int> &aids)
+    {
       m_bCopy = false;
-      m_pMol2 = MolCoordPtr(MB_NEW MolCoord());
-      m_pMol2->copyAtoms(MolCoordPtr(pMol1), pSel);
+      m_nTgtUID = pMol1->getUID();
+      m_atoms.save(pMol1, aids);
     }
     
     /////////////////////////////////////////////////////
     
   private:
-    void deleteAtoms(MolCoord *pmol) {
-      // conv strid to aid&delete atom
-      std::deque<LString>::const_iterator iter = m_copyAtomIDs.begin();
-      std::deque<LString>::const_iterator end = m_copyAtomIDs.end();
-      for (; iter!=end; iter++) {
-	const LString &strid = *iter;
-	int aid = pmol->fromStrAID(strid);
-	if (aid<0) {
-	  LOG_DPRINTLN("undo copy: delete atom %s (%d) not found/failed", strid.c_str(), aid);
-	  continue;
-	}
+    bool apply(bool bPutBack) {
+      MolCoord *pmol =
+        qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
+      if (pmol==NULL)
+        return false;
 
-	pmol->removeAtom(aid);
-	//MB_DPRINTLN("undo copy: delete atom %s (%d) OK", strid.c_str(), aid);
-      }
+      bool bOK = bPutBack ? m_atoms.restore(pmol) : m_atoms.remove(pmol);
+      if (!bOK)
+        return false;
 
-      pmol->applyTopology();
+      pmol->setModifiedFlag(true);
+      pmol->fireTopologyChanged();
+      return true;
     }
 
   public:
     /// perform undo
     bool undo() override {
-      MolCoord *pmol =
-        qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
-      if (pmol==NULL)
-        return false;
-
-      MB_DPRINTLN("MolMergeEditInfo> perform UNDO");
-      MB_DPRINTLN("  bcopy=%d, mol1=%s, mol2=%s, sel=%s",
-		  m_bCopy, pmol->toString().c_str(),
-		  m_pMol2->toString().c_str(),
-		  m_pSel.isnull()?"(null)":m_pSel->toString().c_str());
-      bool bOK=true;
-      if (m_bCopy) {
-        // undo of copy --> delete (mol1, sel)
-        //bOK = pmol->deleteAtoms(m_pSel);
-	deleteAtoms(pmol);
-      }
-      else {
-        // undo of delete --> copy pmol <-- (m_pMol2, m_pSel)
-        bOK = pmol->copyAtoms(m_pMol2, m_pSel);
-      }
-
-      if (!bOK)
-        return false;
-
-      pmol->setModifiedFlag(true);
-      pmol->fireTopologyChanged();
-      
-      return true;
+      // undo of copy: take the atoms out; undo of delete: put them back
+      return apply(!m_bCopy);
     }
     
     /// perform redo
     bool redo() override {
-      MolCoord *pmol =
-        qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
-      if (pmol==NULL)
-        return false;
-
-      bool bOK=true;
-      if (m_bCopy) {
-        // redo of copy
-	// copy pmol <-- (m_pMol2, m_pSel)
-        bOK = pmol->copyAtoms(m_pMol2, m_pSel);
-
-	// // copy pmol <-- (m_pMol2, m_copyAtomIDs)
-	// copyAtoms(pmol);
-      }
-      else {
-        // redo of delete
-        bOK = pmol->deleteAtoms(m_pSel);
-      }
-
-      if (!bOK)
-        return false;
-
-      pmol->setModifiedFlag(true);
-      pmol->fireTopologyChanged();
-
-      return true;
+      return apply(m_bCopy);
     }
     
     bool isUndoable() const override {
@@ -599,6 +630,7 @@ bool MolCoord::copyAtoms(MolCoordPtr pmol2, SelectionPtr psel2)
 
   // copy
   std::set<MolResidue*> resset;
+  std::set<int> newids;
   {
     std::set<int>::const_iterator it2 = atmset.begin();
     std::set<int>::const_iterator end = atmset.end();
@@ -613,6 +645,8 @@ bool MolCoord::copyAtoms(MolCoordPtr pmol2, SelectionPtr psel2)
       // This should not fail.
       int res = appendAtom(pNewAtom);
       MB_ASSERT(res>=0);
+      if (res>=0)
+        newids.insert(res);
 
       MolResiduePtr pRes2 = pAtom->getParentResidue();
       resset.insert(pRes2.get());
@@ -677,8 +711,7 @@ bool MolCoord::copyAtoms(MolCoordPtr pmol2, SelectionPtr psel2)
     if (pUM->isOK()) {
       // record property changed undo/redo info
       pPEI = MB_NEW MolMergeEditInfo();
-      //pPEI->createCopy(this, pmol2, psel2);
-      pPEI->createCopy(this, pmol2, psel2, atmset);
+      pPEI->createCopy(this, newids);
       pUM->addEditInfo(pPEI);
     }
   }
@@ -692,6 +725,16 @@ bool MolCoord::deleteAtoms(SelectionPtr psel)
 {
   MolCoordPtr pmol(this);
 
+  // Collect atom IDs to remove
+  //  (We cannot remove atom safely, with using its iterator!)
+  // Alternate conformations go with an atom without a conformation ID, so
+  // they are part of what is removed (and of what undo puts back).
+  AtomIterator iter(pmol, psel);
+  std::set<int> selset;
+  for (iter.first(); iter.hasMore(); iter.next())
+    selset.insert(iter.getID());
+  const std::set<int> atmset = getRemovalSet(selset);
+
   // Setup undo/redo info
   MolMergeEditInfo *pPEI = NULL;
   UndoManager *pUM = NULL;
@@ -699,29 +742,14 @@ bool MolCoord::deleteAtoms(SelectionPtr psel)
   if (!pSc.isnull()) {
     pUM = pSc->getUndoMgr();
     if (pUM->isOK()) {
-      // record property changed undo/redo info
+      // record the atoms before they go
       pPEI = MB_NEW MolMergeEditInfo();
-      pPEI->createDelete(this, psel);
+      pPEI->createDelete(this, atmset);
     }
   }
 
-  // Collect atom IDs to remove
-  //  (We cannot remove atom safely, with using its iterator!)
-  AtomIterator iter(pmol, psel);
-  std::set<int> atmset;
-  for (iter.first(); iter.hasMore(); iter.next())
-    atmset.insert(iter.getID());
-
   // remove the selected atoms
-  std::set<int>::const_iterator it2 = atmset.begin();
-  std::set<int>::const_iterator end = atmset.end();
-  for (; it2!=end; it2++) {
-    int atomid = *it2;
-    // MolAtomPtr pAtom = getAtom(atomid);
-    // MB_ASSERT(!pAtom.isnull());
-    removeAtom(atomid);
-    //delete pAtom;
-  }
+  removeAtoms(std::vector<int>(atmset.begin(), atmset.end()));
 
   // rebuild bond data
   applyTopology();

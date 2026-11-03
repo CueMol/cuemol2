@@ -141,6 +141,10 @@ architecture, it belongs here.
   scriptable API のみで組み立てる `loadTrajectory` service、renderer cancel = 全 transaction
   キャンセルに合わせた 2 段 deferred-load フロー、`DIALOG_PICK_PATH` の複数選択拡張、
   `OpenMdTrajDialog` の構成とスコープ (gro のみ / 再生 UI 別タスク)。migration ではない。
+- [原子の削除と merge の undo / redo (libcuemol2)](mol-atom-edit-undo.md) (日本語) --
+  `deleteAtoms` / `copyAtoms` の undo / redo が記録するもの (数値 ID・原子の複製・残基の property)、
+  selection を評価し直さないこと、座標の undo などが ID で原子を指すため元の ID に戻すこと
+  (`AtomPool::putAt`)、altloc の連動削除の扱い、既知の制約。
 - [MD Trajectory の遅延フレーム読み込み (libcuemol2)](md-trajectory-lazy-loading.md) (日本語) --
   DCD / XTC / TRR を、開いた時点で全展開せず表示されたフレームだけ読む設計。
   `InStream` の 64bit seek が入って前提が変わった経緯、`canLazyLoad` の適用条件
