@@ -21,6 +21,18 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
+# Builds that nothing needs are skipped step by step, not by job.
+# build_scripts/ci_needs_build.sh decides (output `build`: "false" only when a
+# feature branch changed nothing but docs-like files; develop, tags and
+# manual runs always build). The required status checks are these jobs'
+# names, and a skipped matrix job reports an unexpanded name, so every job
+# still runs and each step after checkout carries
+#   if: needs.setup_matrix.outputs.build != 'false'
+# A NEW STEP MUST CARRY IT TOO: one left without it runs on a skipped build
+# and fails when it needs what the build makes (ctest, packaging, upload),
+# which turns the required check red for a docs-only PR. Gate on != 'false'
+# (never == 'true'), so a missing or misspelt output builds.
+
 env:
   mozbuild-cache-version: v1
 
@@ -39,11 +51,31 @@ jobs:
   # cadence (develop / tag / manual dispatch), so feature-branch pushes do not
   # rebuild the embed-python variant every time. A dynamic matrix is used
   # because a job-level if cannot reference the matrix context.
+  #
+  # It also decides whether this run builds at all (`build`, see the top).
   setup_matrix:
     runs-on: ubuntu-latest
     outputs:
       posix-matrix: ${{ steps.gen.outputs.matrix }}
+      build: ${{ steps.changes.outputs.build }}
     steps:
+      # History only (no file contents): enough for the merge-base and the
+      # list of changed paths.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          lfs: false
+
+      - name: Decide whether to build
+        id: changes
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+        run: echo "build=$(bash build_scripts/ci_needs_build.sh)" >> "$GITHUB_OUTPUT"
+
       - name: Compute build_posix matrix
         id: gen
         shell: bash
@@ -91,7 +123,13 @@ jobs:
         # fixtures whose tests self-skip when the data is absent (conftest.py).
         lfs: false
 
+    - name: Build skipped (only docs-like files changed)
+      if: needs.setup_matrix.outputs.build == 'false'
+      shell: bash
+      run: echo "Nothing in this branch needs a build (build_scripts/ci_needs_build.sh); the build steps are skipped."
+
     - name: Get version
+      if: needs.setup_matrix.outputs.build != 'false'
       id: version
       shell: bash
       run: |
@@ -103,20 +141,24 @@ jobs:
         echo "artifact-base=$TARGET" >> "$GITHUB_OUTPUT"
 
     - name: Run sccache-cache
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: mozilla-actions/sccache-action@v0.0.9
       with:
         version: "v0.12.0"
 
     - name: Setup Node.js
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: actions/setup-node@v6
       with:
         node-version: '24'
 
     - name: Enable pnpm via corepack
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: bash
       run: corepack enable
 
     - name: Show build env versions
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: bash
       run: |
         echo "RUNNER_TYPE=${{ matrix.os }}" >> $GITHUB_ENV
@@ -127,6 +169,7 @@ jobs:
         ninja --version
 
     - name: Download deplibs
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/download_deplibs
       with:
         basedir: ${{ github.workspace }}/target
@@ -135,12 +178,14 @@ jobs:
     # TBB / OIDN come prebuilt in the deplibs bundle. libcuemol2 then links it
     # via find_package(umbreon), resolving those deps to the same bundled copies.
     - name: Read umbreon git ref
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: bash
       run: |
         . build_scripts/deplibs.env
         echo "UMBREON_GIT_REF=$UMBREON_GIT_REF" >> $GITHUB_ENV
 
     - name: Build+install umbreon
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/build_umbreon_posix
       with:
         basedir: ${{ github.workspace }}/target
@@ -150,18 +195,21 @@ jobs:
     # dependency, oneTBB, comes prebuilt in the deplibs bundle. libcuemol2 then
     # links it via find_package(MeshMS), resolving TBB to the same bundled copy.
     - name: Read meshms git ref
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: bash
       run: |
         . build_scripts/deplibs.env
         echo "MESHMS_GIT_REF=$MESHMS_GIT_REF" >> $GITHUB_ENV
 
     - name: Build+install MeshMS
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/build_meshms_posix
       with:
         basedir: ${{ github.workspace }}/target
         ref: ${{ env.MESHMS_GIT_REF }}
 
     - name: Build libcuemol2
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/build_libcuemol2_posix
       with:
         basedir: ${{ github.workspace }}/target
@@ -172,17 +220,20 @@ jobs:
     # just the ctest invocation. Deliberately not gated on BUILD_MODE: catching a
     # regression is the point, so it runs on feature-branch pushes too.
     - name: Run gtest
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: bash
       run: |
         set -eux
         ctest --test-dir ${{ github.workspace }}/target/build_libcuemol2 --output-on-failure
 
     - name: Build and check cuetty
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/build_cuetty_posix
       with:
         basedir: ${{ github.workspace }}/target
 
     - name: Check cuetty run
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: bash
       run: |
         set -eux
@@ -191,16 +242,19 @@ jobs:
         env LD_LIBRARY_PATH=$BASEDIR/cuemol2/lib $BASEDIR/cuemol2/bin/cuetty
         
     - name: Build and test python module
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/build_pymod_posix
       with:
         basedir: ${{ github.workspace }}/target
 
     - name: Build tritium/core addon
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/build_tritium_core_posix
       with:
         basedir: ${{ github.workspace }}/target
 
     - name: Test tritium/core addon
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/test_tritium_core_posix
       with:
         basedir: ${{ github.workspace }}/target
@@ -208,14 +262,14 @@ jobs:
     # Source-only checks (typecheck / eslint / vitest) -- platform independent,
     # so run them on a single matrix leg rather than on every one.
     - name: Check tritium/react-gui
-      if: matrix.os == 'macos-15' && matrix.embed-python == ''
+      if: needs.setup_matrix.outputs.build != 'false' && (matrix.os == 'macos-15' && matrix.embed-python == '')
       uses: ./build_scripts/check_tritium_react_gui
 
     # Fetch the external bundle apps (POV-Ray / apbs-pdb2pqr / ffmpeg) before
     # packaging so collect-cuemol2-runtime.sh can stage them into the DMG (via
     # BUNDLE_APPS below). The same download also feeds the UXP GUI build later.
     - name: Download external packages
-      if: env.BUILD_MODE == 'full'
+      if: needs.setup_matrix.outputs.build != 'false' && (env.BUILD_MODE == 'full')
       uses: ./build_scripts/download_extpkgs
       with:
         basedir: ${{ github.workspace }}/target
@@ -224,7 +278,7 @@ jobs:
     # Runs only on the arm64 non-embed-Python leg, in full mode (develop /
     # workflow_dispatch / tags) -- not on every feature-branch push.
     - name: Package tritium (macOS arm64 DMG)
-      if: matrix.os == 'macos-15' && matrix.embed-python == '' && env.BUILD_MODE == 'full'
+      if: needs.setup_matrix.outputs.build != 'false' && (matrix.os == 'macos-15' && matrix.embed-python == '' && env.BUILD_MODE == 'full')
       shell: bash
       run: |
         set -eux
@@ -234,7 +288,7 @@ jobs:
         pnpm run package:mac
 
     - name: Upload tritium DMG
-      if: matrix.os == 'macos-15' && matrix.embed-python == '' && env.BUILD_MODE == 'full'
+      if: needs.setup_matrix.outputs.build != 'false' && (matrix.os == 'macos-15' && matrix.embed-python == '' && env.BUILD_MODE == 'full')
       uses: actions/upload-artifact@v4
       with:
         name: CueMol3_${{ steps.version.outputs.version }}_mac_arm64
@@ -242,7 +296,7 @@ jobs:
         if-no-files-found: error
 
     - name: Build UXP GUI
-      if: env.BUILD_MODE == 'full'
+      if: needs.setup_matrix.outputs.build != 'false' && (env.BUILD_MODE == 'full')
       id: build-artifact
       uses: ./build_scripts/build_uxpgui_posix
       with:
@@ -250,7 +304,7 @@ jobs:
         artifact-name: ${{ steps.version.outputs.artifact-base }}
 
     - name: Upload artifact
-      if: env.BUILD_MODE == 'full'
+      if: needs.setup_matrix.outputs.build != 'false' && (env.BUILD_MODE == 'full')
       uses: actions/upload-artifact@v4
       with:
         name: ${{ steps.version.outputs.artifact-base }}
@@ -260,6 +314,7 @@ jobs:
 
   build_win_x64:
     name: "Windows intel clang-cl"
+    needs: setup_matrix
     runs-on: windows-2022
     env:
       # libcuemol2 / umbreon / MeshMS / tritium core / cuetty build with clang-cl
@@ -278,7 +333,13 @@ jobs:
         # fixtures whose tests self-skip when the data is absent (conftest.py).
         lfs: false
 
+    - name: Build skipped (only docs-like files changed)
+      if: needs.setup_matrix.outputs.build == 'false'
+      shell: bash
+      run: echo "Nothing in this branch needs a build (build_scripts/ci_needs_build.sh); the build steps are skipped."
+
     - uses: ilammy/msvc-dev-cmd@v1
+      if: needs.setup_matrix.outputs.build != 'false'
       with:
         arch: x64
 
@@ -287,18 +348,21 @@ jobs:
     # The vcvars env above stays required: clang-cl uses its MSVC STL/CRT/SDK,
     # and cl.exe is still the wrapper-generator / GLSL preprocessor.
     - name: Install LLVM (clang-cl)
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: pwsh
       run: |
         choco install llvm --version=22.1.8 -y --allow-downgrade --no-progress
         echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
 
     - name: Show clang-cl version
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: bash
       run: |
         which clang-cl lld-link cl
         clang-cl --version
 
     - name: Setup build envvars
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: bash
       run: |
         MSYS_TOP_DIR=$(cygpath -u '${{ github.workspace }}')
@@ -310,6 +374,7 @@ jobs:
         echo NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS
 
     - name: Get version
+      if: needs.setup_matrix.outputs.build != 'false'
       id: version
       shell: bash
       run: |
@@ -321,6 +386,7 @@ jobs:
         echo "artifact-base=$TARGET" >> "$GITHUB_OUTPUT"
 
     - uses: actions/cache@v4
+      if: needs.setup_matrix.outputs.build != 'false'
       with:
         path: C:\mozilla-build\
         key: mozbuild-${{ env.mozbuild-cache-version }}
@@ -328,24 +394,29 @@ jobs:
           mozbuild-
 
     - name: Run sccache-cache
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Setup Node.js
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: actions/setup-node@v6
       with:
         node-version: '24'
 
     - name: Enable pnpm via corepack
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: pwsh
       run: corepack enable
 
     - name: Enable GitHub Actions Cache backend
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: pwsh
       run: |
         echo "SCCACHE_GHA_ENABLED=true" >> $env:GITHUB_ENV
         echo "SCCACHE_GHA_VERSION=${{ runner.os }}_${{ runner.arch }}" >> $env:GITHUB_ENV
 
     - name: Find and set sccache path
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: cmd
       run: |
         for /f "tokens=*" %%i in ('where sccache') do set SCCACHE_PATH=%%i & goto :done
@@ -354,6 +425,7 @@ jobs:
         echo SCCACHE_PATH=%SCCACHE_PATH%>> %GITHUB_ENV%
 
     - name: Download deplibs
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/download_deplibs
       with:
         basedir: ${{ github.workspace }}\target
@@ -361,12 +433,14 @@ jobs:
     # See the build_posix job. build_umbreon_posix/run.sh cygpath-normalizes its
     # arguments, so the same action serves the Windows leg.
     - name: Read umbreon git ref
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: bash
       run: |
         . build_scripts/deplibs.env
         echo "UMBREON_GIT_REF=$UMBREON_GIT_REF" >> $GITHUB_ENV
 
     - name: Build+install umbreon
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/build_umbreon_posix
       with:
         basedir: ${{ github.workspace }}\target
@@ -375,18 +449,21 @@ jobs:
     # See the build_posix job. build_meshms_posix/run.sh cygpath-normalizes its
     # arguments, so the same action serves the Windows leg.
     - name: Read meshms git ref
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: bash
       run: |
         . build_scripts/deplibs.env
         echo "MESHMS_GIT_REF=$MESHMS_GIT_REF" >> $GITHUB_ENV
 
     - name: Build+install MeshMS
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/build_meshms_posix
       with:
         basedir: ${{ github.workspace }}\target
         ref: ${{ env.MESHMS_GIT_REF }}
 
     - name: Build libcuemol2
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/build_libcuemol2_posix
       with:
         basedir: ${{ github.workspace }}\target
@@ -402,6 +479,7 @@ jobs:
     # that contains a DLL under target/ on PATH; otherwise the loader fails with
     # 0xc0000135 (DLL not found).
     - name: Run gtest (Windows)
+      if: needs.setup_matrix.outputs.build != 'false'
       shell: bash
       run: |
         set -eux
@@ -413,11 +491,13 @@ jobs:
         ctest --test-dir "$BUILD_DIR" --output-on-failure
 
     - name: Build tritium/core addon
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/build_tritium_core_posix
       with:
         basedir: ${{ github.workspace }}\target
 
     - name: Test tritium/core addon
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/test_tritium_core_posix
       with:
         basedir: ${{ github.workspace }}\target
@@ -426,7 +506,7 @@ jobs:
     # packaging so collect-cuemol2-runtime.sh can stage them into the installer
     # (via BUNDLE_APPS below). The same download also feeds the UXP GUI build later.
     - name: Download external packages
-      if: env.BUILD_MODE == 'full'
+      if: needs.setup_matrix.outputs.build != 'false' && (env.BUILD_MODE == 'full')
       uses: ./build_scripts/download_extpkgs
       with:
         basedir: ${{ github.workspace }}/target
@@ -434,7 +514,7 @@ jobs:
     # Package the tritium Electron app (Windows x64 NSIS installer, unsigned).
     # Full mode only (develop / workflow_dispatch / tags).
     - name: Package tritium (Windows x64 NSIS)
-      if: env.BUILD_MODE == 'full'
+      if: needs.setup_matrix.outputs.build != 'false' && (env.BUILD_MODE == 'full')
       shell: bash
       run: |
         set -eux
@@ -444,7 +524,7 @@ jobs:
         bash tritium/packaging/package.sh --win --x64
 
     - name: Upload tritium Windows installer
-      if: env.BUILD_MODE == 'full'
+      if: needs.setup_matrix.outputs.build != 'false' && (env.BUILD_MODE == 'full')
       uses: actions/upload-artifact@v4
       with:
         name: CueMol3_${{ steps.version.outputs.version }}_win_x64
@@ -452,23 +532,24 @@ jobs:
         if-no-files-found: error
 
     - name: Build and check cuetty
+      if: needs.setup_matrix.outputs.build != 'false'
       uses: ./build_scripts/build_cuetty_posix
       with:
         basedir: ${{ github.workspace }}\target
 
     - name: Make mozconfig
-      if: env.BUILD_MODE == 'full'
+      if: needs.setup_matrix.outputs.build != 'false' && (env.BUILD_MODE == 'full')
       shell: bash
       run: bash ${MSYS_TOP_DIR}/build_scripts/build_uxpgui_win/make_mozconfig.sh
 
     - name: Run mozilla build and build UXP
-      if: env.BUILD_MODE == 'full'
+      if: needs.setup_matrix.outputs.build != 'false' && (env.BUILD_MODE == 'full')
       shell: cmd
       run: |
         cmd /c C:\mozilla-build\start-shell.bat %MSYS_TOP_DIR%/build_scripts/build_uxpgui_win/run.sh ${MSYS_TOP_DIR}/target
 
     - name: Check and copy artifacts
-      if: env.BUILD_MODE == 'full'
+      if: needs.setup_matrix.outputs.build != 'false' && (env.BUILD_MODE == 'full')
       id: build-artifact
       shell: bash
       env:
@@ -484,7 +565,7 @@ jobs:
         echo "artifact-path=${GITHUB_WORKSPACE}/${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
 
     - name: Upload artifact
-      if: env.BUILD_MODE == 'full'
+      if: needs.setup_matrix.outputs.build != 'false' && (env.BUILD_MODE == 'full')
       uses: actions/upload-artifact@v4
       with:
         name: ${{ steps.version.outputs.artifact-base }}
@@ -493,7 +574,10 @@ jobs:
 ###############################################
 
   release_build:
-    needs: [build_posix, build_win_x64]
+    needs: [setup_matrix, build_posix, build_win_x64]
+    # No build, no artifacts to collect. Not a required check, so a job-level
+    # skip is fine here.
+    if: needs.setup_matrix.outputs.build != 'false'
     runs-on: ubuntu-latest
     # Only scope needed here: download-artifact uses the run's own runtime
     # token, and the release step writes to contents. Stated explicitly so the
