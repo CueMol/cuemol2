@@ -3,9 +3,11 @@
  * @description The files on the command line, as the runs to send.
  *
  * A file is a script to run, a scene to open, or data to load:
- *   - `.qax` (actions, read by the app: each action its own undo step),
- *     `.pml` (PyMOL syntax), `.txt` (console commands), `-` (stdin): a script,
- *     sent alone.
+ *   - a script of one of the app's dialects (by extension, as `/console/info`
+ *     lists them: `.qax`, `.pml`, ...), `.txt` (console commands in the
+ *     session's dialect) or `-` (stdin): sent alone. A dialect's script is
+ *     sent as its text, or by its path when the dialect reads the file
+ *     itself (qax: each action its own undo step).
  *   - `.qsc`: a scene. Opening one cannot share a run with anything else (the
  *     app opens it after the run, into a tab, outside any transaction), so
  *     each scene is a run of its own, in the order given.
@@ -20,20 +22,20 @@
 import * as path from 'node:path'
 import type { ConsoleDialectId } from '@cuemol/console-kit'
 import { UsageError } from './args'
+import { NATIVE_DIALECT, scriptDialect } from './dialects'
+import type { AppDialects } from './dialects'
 
-/** One run to send (`/console/run`). */
-export interface Submission {
-  text: string
-  dialect: ConsoleDialectId
-}
+/** One run to send (`/console/run`): commands, or a script file by its path. */
+export type Submission =
+  | { text: string; dialect: ConsoleDialectId; scriptPath?: undefined }
+  | { scriptPath: string; dialect: ConsoleDialectId; text?: undefined }
 
-export type InputKind = 'qax' | 'pml' | 'text' | 'stdin' | 'scene' | 'data'
+export type InputKind = 'script' | 'text' | 'stdin' | 'scene' | 'data'
 
-export function classifyInput(file: string): InputKind {
+export function classifyInput(file: string, dialects: AppDialects): InputKind {
   if (file === '-') return 'stdin'
+  if (scriptDialect(dialects, file)) return 'script'
   const ext = path.extname(file).toLowerCase()
-  if (ext === '.qax') return 'qax'
-  if (ext === '.pml') return 'pml'
   if (ext === '.txt') return 'text'
   if (ext === '.qsc') return 'scene'
   return 'data'
@@ -60,6 +62,7 @@ export function quotePath(p: string): string | Error {
  * The runs for `files` and `command`, in order.
  *
  * @param dialect - the dialect `-c` and a `.txt` script are written in
+ * @param dialects - what the app speaks, and which script files are whose
  * @returns the runs (empty when there is nothing to send), a UsageError for a
  *   combination that makes no sense (exit 2), or an Error for a file that
  *   cannot be read (exit 1)
@@ -70,8 +73,9 @@ export function buildSubmissions(
   dialect: ConsoleDialectId,
   cwd: string,
   fsys: InputFs,
+  dialects: AppDialects,
 ): Submission[] | Error {
-  const kinds = files.map((f) => ({ file: f, kind: classifyInput(f) }))
+  const kinds = files.map((f) => ({ file: f, kind: classifyInput(f, dialects) }))
   const scripts = kinds.filter((k) => k.kind !== 'scene' && k.kind !== 'data')
   const scenes = kinds.filter((k) => k.kind === 'scene')
   const data = kinds.filter((k) => k.kind === 'data')
@@ -80,16 +84,18 @@ export function buildSubmissions(
     if (files.length > 1 || command !== null) return new UsageError('a script is run alone: no other FILE or -c with it')
     const { file, kind } = scripts[0]
     const abs = kind === 'stdin' ? '-' : path.resolve(cwd, file)
-    if (kind === 'qax') {
+    const owner = kind === 'script' ? scriptDialect(dialects, file) : null
+    if (owner && owner.submit === 'path') {
       if (!fsys.isFile(abs)) return new Error(`cannot read ${file}`)
+      if (dialects.sendsPath) return [{ scriptPath: abs, dialect: owner.dialect.id }]
+      // An app from before scriptPath: its native `run` takes a qax file.
       const q = quotePath(abs)
       if (q instanceof Error) return q
-      // `run` of a .qax is native; PyMOL's run takes .pml only.
-      return [{ text: `run ${q}`, dialect: 'native' }]
+      return [{ text: `run ${q}`, dialect: owner.dialect.id }]
     }
     const text = fsys.readText(abs)
     if (text === null) return new Error(`cannot read ${file}`)
-    return [{ text, dialect: kind === 'pml' ? 'pymol' : dialect }]
+    return [{ text, dialect: owner ? owner.dialect.id : dialect }]
   }
 
   if (scenes.length > 1 && (data.length > 0 || command !== null)) {
@@ -112,14 +118,15 @@ export function buildSubmissions(
   const dataLoads = loads(data)
   if (dataLoads instanceof Error) return dataLoads
 
-  const subs: Submission[] = sceneLoads.map((text) => ({ text, dialect: 'native' }))
+  // `load` is the native dialect's: files are opened in it whatever the session speaks.
+  const subs: Submission[] = sceneLoads.map((text) => ({ text, dialect: NATIVE_DIALECT }))
   // One line per command: a path's brackets cannot run into the next command.
-  if (dialect === 'native' || command === null) {
+  if (dialect === NATIVE_DIALECT || command === null) {
     const lines = command === null ? dataLoads : [...dataLoads, command]
-    if (lines.length > 0) subs.push({ text: lines.join('\n'), dialect: 'native' })
+    if (lines.length > 0) subs.push({ text: lines.join('\n'), dialect: NATIVE_DIALECT })
   } else {
-    // `load` here is the native one; PyMOL commands go as a run of their own.
-    if (dataLoads.length > 0) subs.push({ text: dataLoads.join('\n'), dialect: 'native' })
+    // Another dialect's commands go as a run of their own.
+    if (dataLoads.length > 0) subs.push({ text: dataLoads.join('\n'), dialect: NATIVE_DIALECT })
     subs.push({ text: command, dialect })
   }
   return subs

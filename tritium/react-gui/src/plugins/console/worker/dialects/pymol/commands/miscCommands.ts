@@ -148,9 +148,10 @@ export function writePng(ctx: WorkerContext, cc: CmdContext, req: PngRequest): C
  * here; the runner intercepts them by name and runs them outside the
  * transaction it opened.
  */
-function undoStackCommand(name: string): PymCommand {
+function undoStackCommand(name: 'undo' | 'redo'): PymCommand {
   return {
     name,
+    undoStack: name,
     params: [],
     mode: 'strict',
     mutates: false,
@@ -164,6 +165,7 @@ function undoStackCommand(name: string): PymCommand {
 
 const logOpen: PymCommand = {
   name: 'log_open',
+  unlogged: true,
   params: [{ name: 'filename', default: 'log.pml' }, { name: 'mode', default: 'w' }],
   mode: 'strict',
   mutates: false,
@@ -190,6 +192,7 @@ const logOpen: PymCommand = {
 
 const logClose: PymCommand = {
   name: 'log_close',
+  unlogged: true,
   params: [],
   mode: 'strict',
   mutates: false,
@@ -204,6 +207,7 @@ const logClose: PymCommand = {
 
 const logLine: PymCommand = {
   name: 'log',
+  unlogged: true,
   params: [{ name: 'text', default: '' }, { name: 'alt_text', default: '' }],
   mode: 'strict',
   mutates: false,

@@ -691,6 +691,7 @@ const ls: PymCommand = {
 const run: PymCommand = {
   name: 'run',
   params: [{ name: 'filename' }, { name: 'namespace', default: 'global' }],
+  scriptParam: 'filename',
   mode: 'strict',
   mutates: false,
   summary: 'Run the commands in a .pml script (the same as @file).',

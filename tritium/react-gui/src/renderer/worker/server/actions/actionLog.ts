@@ -30,8 +30,13 @@
 
 import type { Scene } from '@cuemol/core/src/wrappers/Scene'
 
-/** Who asked for a transaction. */
-export type ActionSource = 'gui' | 'cmd' | 'pym' | 'mcp' | 'ai' | 'qax'
+/**
+ * Who asked for a transaction: the GUI, MCP, the agent, a replayed qax file,
+ * or a console dialect. A console dialect names its own source (its
+ * `actionSource` in the console plugin's dialect list: `cmd`, `pym`, ...),
+ * which core does not list, so any string is accepted.
+ */
+export type ActionSource = 'gui' | 'mcp' | 'ai' | 'qax' | 'cmd' | 'pym' | (string & {})
 
 /** One op that ran, with what it was given. */
 export interface OpEntry {

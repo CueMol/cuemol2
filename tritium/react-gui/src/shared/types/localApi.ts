@@ -22,6 +22,7 @@ export type {
   ConsoleCompleteRequest,
   ConsoleCompleteResponse,
   ConsoleDialectId,
+  ConsoleDialectInfo,
   ConsoleInfoResponse,
   ConsoleLockRequest,
   ConsoleRunRequest,

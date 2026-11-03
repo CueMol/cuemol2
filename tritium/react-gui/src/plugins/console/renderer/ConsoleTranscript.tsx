@@ -41,7 +41,7 @@ export const ConsoleTranscript: React.FC<ConsoleTranscriptProps> = ({ lines }) =
         <div className="console-empty">
           <AppIcon name="panel.console" size={32} aria-hidden />
           <div className="console-empty-text">
-            A CueMol command line, with a PyMOL dialect. Type <code>help</code> to see what it knows.
+            A CueMol command line, with PyMOL and ChimeraX dialects. Type <code>help</code> to see what it knows.
           </div>
         </div>
       ) : (

@@ -1,5 +1,5 @@
 /**
- * @file plugins/console/worker/completion/complete.test.ts
+ * @file plugins/console/worker/parser/commaComplete.test.ts
  * @description The rules Tab follows, where PyMOL's answer is not the obvious
  * one.
  *
@@ -53,7 +53,14 @@ const { COMMANDS, candidates } = vi.hoisted(() => {
 // What a load opens, without a stream manager behind the worker.
 vi.mock('@renderer/worker/server/catalog/fileLoad', () => ({ openableExtensions: () => ['pdb'] }))
 
-import { completeLine } from './complete'
+import { completeLine as completeComma } from './commaComplete'
+import type { CompletionContext } from '../completion/engine'
+
+/** Tab in the comma grammar, with the choices the stub dialect carries (`argRule`, `fileFallback`). */
+function completeLine(c: WorkerContext, line: string, cc: CompletionContext) {
+  const d = cc.dialect as unknown as { argRule: 'pymol' | 'python'; fileFallback: boolean }
+  return completeComma(c, line, cc, { rule: d.argRule, fileFallback: d.fileFallback })
+}
 
 const ctx = {} as WorkerContext
 /** PyMOL's habits: its argument rule, and files wherever a source declines. */

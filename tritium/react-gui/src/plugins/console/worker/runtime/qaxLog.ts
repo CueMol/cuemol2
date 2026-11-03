@@ -23,9 +23,14 @@ import { rowToQax } from '@renderer/worker/server/actions/export'
 import { parseQax, writeQax } from '@renderer/worker/server/actions/qax/codec'
 import type { QaxAction } from '@renderer/worker/server/actions/qax/model'
 import { QAX_VERSION } from '@renderer/worker/server/actions/qax/model'
+import { DIALECT_METAS } from '../../shared/dialectMeta'
 
-/** The rows a console log records: the console's own submissions. */
-const CONSOLE_SOURCES: ReadonlySet<ActionSource> = new Set(['cmd', 'pym', 'qax'])
+/**
+ * The rows a console log records: the console's own submissions, in any
+ * dialect, and the qax files it replayed. `qax` is the source of a replay
+ * (each action its own transaction), which no dialect names as its own.
+ */
+const CONSOLE_SOURCES: ReadonlySet<ActionSource> = new Set([...DIALECT_METAS.map((m) => m.actionSource), 'qax'])
 
 interface OpenLog {
   path: string

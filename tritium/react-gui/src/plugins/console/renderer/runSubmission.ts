@@ -35,6 +35,8 @@ export interface SubmissionArgs {
   quiet?: boolean
   /** Whether Stop was pressed; checked between the parts of a split submission. */
   stopped: () => boolean
+  /** A script file to run by its path, in place of `text` (`RunCommandArgs.scriptPath`). */
+  scriptPath?: string
 }
 
 export interface SubmissionResult {
@@ -57,7 +59,15 @@ export async function runSubmission(deps: SubmissionDeps, args: SubmissionArgs):
     consoleServices.invoke(
       deps.cm,
       'runCommand',
-      { dialect: args.dialect, sceneId: target.scene_uid, viewId: target.view_id, text, runId: args.runId, cwd },
+      {
+        dialect: args.dialect,
+        sceneId: target.scene_uid,
+        viewId: target.view_id,
+        text,
+        runId: args.runId,
+        cwd,
+        ...(args.scriptPath !== undefined ? { scriptPath: args.scriptPath } : {}),
+      },
       args.quiet ? { quiet: true } : undefined,
     )
 

@@ -16,14 +16,14 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CompleteArgs, CompleteResult } from '../../shared/consoleTypes'
 import { dialectOf } from '../dialects'
 import { currentDir } from '../runtime/runCommand'
-import { completeLine } from './complete'
 
 export function complete(ctx: WorkerContext, args: CompleteArgs): CompleteResult {
-  const outcome = completeLine(ctx, args.line, {
+  const dialect = dialectOf(args.dialect)
+  const outcome = dialect.syntax.complete(ctx, args.line, {
     sceneId: args.sceneId,
     viewId: args.viewId,
     cwd: args.cwd ?? currentDir(),
-    dialect: dialectOf(args.dialect),
+    dialect,
   })
   return ok(outcome)
 }

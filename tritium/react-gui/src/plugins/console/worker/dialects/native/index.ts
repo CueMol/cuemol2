@@ -27,8 +27,9 @@ import { commandHelp, table } from '../../help/helpMarkdown'
 import { OP_GROUPS } from '@renderer/worker/server/catalog/op'
 import type { OpGroup } from '@renderer/worker/server/catalog/op'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { DIALECT_PROMPTS } from '../../../shared/consoleTypes'
+import { metaOf } from '../../../shared/dialectMeta'
 import { usageLine } from '../../parser/bindArgs'
+import { commaSyntax } from '../../parser/commaSyntax'
 import { lookupCommand } from '../../parser/commandLookup'
 import type { CompletionItem, ConsoleCommand, ConsoleDialect, SourceContext } from '../../runtime/types'
 import { NATIVE_BUILTINS, NATIVE_SCRIPT_EXT } from './builtins'
@@ -419,21 +420,17 @@ function expand(id: string, ctx: WorkerContext, sc: SourceContext): string[] | n
 }
 
 export const NATIVE_DIALECT: ConsoleDialect = {
-  id: 'native',
-  prompt: DIALECT_PROMPTS.native,
-  // Its own language: arguments match as in a Python call.
-  argRule: 'python',
-  // Path parameters list files themselves; nothing else does.
-  fileFallback: false,
-  txnPrefix: 'cmd: ',
+  meta: metaOf('native'),
+  // The comma grammar, with arguments matched as in a Python call; path
+  // parameters list files themselves, so Tab does not fall back to them.
+  syntax: commaSyntax({
+    rule: 'python',
+    fileFallback: false,
+    pythonRefusal: 'Error: a line starting with "/" is Python, which this console does not run',
+  }),
   commands: () => NATIVE_COMMANDS,
   expand,
-  refuseLine: (cmd) =>
-    cmd.python ? 'Error: a line starting with "/" is Python, which this console does not run' : null,
   refuseScript: (filePath) => {
-    if (/\.pml$/i.test(filePath)) {
-      return `Error: ${filePath} is a PyMOL script; switch the console to the PyMOL dialect to run it`
-    }
     if (/\.(py|pym)$/i.test(filePath)) return `Error: ${filePath} is a Python script, which this console does not run`
     return null
   },

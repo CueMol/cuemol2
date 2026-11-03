@@ -33,13 +33,9 @@ import type { BottomTabComponent } from '@renderer/plugin-host/api'
 import { IDLE, recallDown, recallUp } from '@renderer/utils/commandRecall'
 import type { RecallState } from '@renderer/utils/commandRecall'
 import { consoleServices } from '../calls'
-import {
-  CONSOLE_PLUGIN_ID,
-  DEFAULT_DIALECT,
-  DIALECT_PREF,
-  DIALECT_PROMPTS,
-} from '../shared/consoleTypes'
+import { CONSOLE_PLUGIN_ID, DIALECT_PREF } from '../shared/consoleTypes'
 import type { ConsoleEntry, DialectId } from '../shared/consoleTypes'
+import { DIALECT_METAS, isDialectId, knownDialect, metaOf } from '../shared/dialectMeta'
 import { ConsoleTranscript } from './ConsoleTranscript'
 import { consoleSession, useConsoleSession } from './consoleSessionStore'
 import { historyOf } from './commandHistory'
@@ -49,10 +45,7 @@ void React
 const NEWLINE = '\n'
 
 /** The switch's segments, in the order shown. */
-const DIALECT_OPTIONS: { label: string; value: DialectId }[] = [
-  { label: 'CueMol', value: 'native' },
-  { label: 'PyMOL', value: 'pymol' },
-]
+const DIALECT_OPTIONS: { label: string; value: DialectId }[] = DIALECT_METAS.map((m) => ({ label: m.label, value: m.id }))
 
 /**
  * The completed text before the caret, without a separator the text after
@@ -90,7 +83,13 @@ function cellsAcross(el: HTMLElement): number {
 /** What the user types to switch: the dialect's id, alone on the line. */
 function dialectNamedBy(text: string): DialectId | null {
   const word = text.trim().toLowerCase()
-  return word === 'native' || word === 'pymol' ? word : null
+  return isDialectId(word) ? word : null
+}
+
+/** The prompt's placeholder: `help`, and the words that switch to the other dialects. */
+function placeholderFor(dialect: DialectId): string {
+  const others = DIALECT_METAS.filter((m) => m.id !== dialect).map((m) => `"${m.id}"`)
+  return `help  (or ${others.join(' / ')} to switch)`
 }
 
 export const ConsolePanel: BottomTabComponent = ({
@@ -108,10 +107,7 @@ export const ConsolePanel: BottomTabComponent = ({
   // The strip's width in characters, for the grid.
   const [cells, setCells] = useState(80)
   const { prefs, setPref } = usePluginPrefs(CONSOLE_PLUGIN_ID)
-  const dialect: DialectId =
-    prefs[DIALECT_PREF] === 'pymol' || prefs[DIALECT_PREF] === 'native'
-      ? prefs[DIALECT_PREF]
-      : DEFAULT_DIALECT
+  const dialect: DialectId = knownDialect(prefs[DIALECT_PREF])
   const history = historyOf(dialect)
 
   const switchDialect = useCallback(
@@ -119,7 +115,7 @@ export const ConsolePanel: BottomTabComponent = ({
       if (next === dialect) return
       setPref(DIALECT_PREF, next)
       setRecall(IDLE)
-      consoleSession.notice(`Now speaking ${next === 'native' ? 'CueMol' : 'PyMOL'} commands.`)
+      consoleSession.notice(`Now speaking ${metaOf(next).label} commands.`)
     },
     [dialect, setPref],
   )
@@ -474,7 +470,7 @@ export const ConsolePanel: BottomTabComponent = ({
 
       <div className="console-prompt">
         <span className="console-prompt-symbol type-console" aria-hidden>
-          {DIALECT_PROMPTS[dialect]}
+          {metaOf(dialect).prompt}
         </span>
         <TextAreaField
           ref={inputRef}
@@ -494,8 +490,8 @@ export const ConsolePanel: BottomTabComponent = ({
           // throwing it away. A disabled prompt would additionally swallow
           // `autoFocus`, which fires once on mount and cannot retry.
           autoFocus
-          placeholder={dialect === 'native' ? 'help  (or "pymol" to switch)' : 'help  (or "native" to switch)'}
-          ariaLabel={`${DIALECT_PROMPTS[dialect]} command`}
+          placeholder={placeholderFor(dialect)}
+          ariaLabel={`${metaOf(dialect).prompt} command`}
         />
       </div>
     </div>

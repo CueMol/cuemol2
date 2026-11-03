@@ -1,4 +1,4 @@
-# Op catalog と console (native / PyMOL dialect)
+# Op catalog と console (native / PyMOL / ChimeraX dialect)
 
 CueMol を名前で操作する呼び出し元 (AI agent の tool、console のコマンド、MCP server) が
 共有する「操作の定義」の仕様。まだ実装していない項目は
@@ -19,10 +19,11 @@ core   renderer/worker/server/catalog/
 plugin agent/worker/tools/      op -> AI SDK tool、enable_toolsets
 plugin console/worker/
          runtime/         dialect 非依存の実行系 (1 submit = 1 txn、Stop、script、log)
-         parser/          PyMOL 由来の引数パーサ (両 dialect 共用)
-         completion/      Tab 補完 (候補源は dialect が持つ)
+         parser/          カンマ文法 (PyMOL 由来の引数パーサ。native と PyMOL が DialectSyntax として使う)
+         completion/      Tab 補完の dialect 非依存の部分 (engine.ts)
          dialects/native/ op catalog から生成するコマンド + console 自前の builtin
          dialects/pymol/  PyMOL 語彙のコマンド、selection 翻訳 (sel/)
+         dialects/chimerax/ ChimeraX 語彙のコマンド (op を invokeOp で呼ぶ)、atom spec 翻訳 (spec/)
 ```
 
 op 本体は新しい層を作らず、既存の worker service 関数を呼ぶ。GUI と同じ service を通るので、
@@ -31,7 +32,10 @@ ServiceMap から tool を自動生成はしない (service の形は UI の都�
 `CmdId` (renderer の UI handler) とも層が違うので共通化しない。
 
 依存の向き (ESLint で強制): `worker/server` は plugin を import しない。console の runtime と
-native dialect は `dialects/pymol` を import しない (例外は dialect 表 `dialects/index.ts`)。
+native dialect は `dialects/pymol` と `dialects/chimerax` を import しない (例外は dialect 表 `dialects/index.ts`)。
+手書きの dialect どうし (PyMOL と ChimeraX) も互いを import しない。ChimeraX dialect は native dialect も import せず、
+worker service は許可した読み取り専用の補助だけを import する
+([console-chimerax-dialect.md](console-chimerax-dialect.md) §1)。
 
 ## 2. param DSL
 
@@ -157,6 +161,22 @@ defineOp({
 
 ## 5. Console
 
+**dialect の一覧**: console plugin の `shared/dialectMeta.ts` (`DIALECT_METAS`) が唯一の一覧で、dialect ごとに
+id・表示名 (`label`)・prompt・undo label の接頭辞 (`txnPrefix`)・action log の source (`actionSource`)・
+履歴の localStorage key (`historyKey`)・script ファイル (`scripts: { ext, submit }[]`)・`tritium_cli` での色を宣言する。
+panel (切り替え・prompt・履歴)、worker (undo label・action source・script の持ち主)、main と `tritium_cli`
+(`/console/info` の `dialects`) はこの宣言だけを読み、dialect の id を直書きしない。dialect を足す / 外すのは、
+この配列の 1 行と `worker/dialects/index.ts` の実装の 1 行。保存された pref に無い dialect の id は既定 (native) に落とす。
+
+**dialect の文法** (`runtime/types.ts` の `DialectSyntax`。どの dialect も必ず持つ): `split` (submit を行に分ける。
+script を走らせる行 (`@file`)、断る行 (PyMOL の `/python`)、echo と log に出す表記、scene コマンドの後の残りを
+送り直すための原文を持つ `DialectLine` を返す)、`resolve` (コマンド名)、`bind` (引数を param に。usage の要求と
+エラーもここ)、`complete` (Tab。書き戻しの文法も dialect)。runtime と completion service はこれを呼ぶだけで、
+どの dialect の文法も既定にしない。runtime がコマンドについて知るのは `ConsoleCommand` の flag だけ:
+`undoStack` (lone の undo / redo を txn の外で)、`unlogged` (log に書かない)、`scriptParam` (`run file` の
+引数。lone の qax なら action ごとに 1 txn で再生)。別の dialect の script (拡張子で `scriptOwner`) は、
+`<file> is a <label> script; switch the console to the <label> dialect to run it` と共通の文言で断る。
+
 **runtime**: 1 submit = 1 txn (label は dialect の接頭辞 `cmd:` / `pym:`)、失敗で以降を中止、
 lone `undo` / `redo` と `outsideTxn` のコマンドは txn の外、script は最大 8 段のネスト、Stop で
 ダウンロードも中断。
@@ -170,7 +190,8 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   既定 (`defaults`)・並べ替え (`order`) できる。ユーザー定義のコマンド列とは別物。
 - 引数は PyMOL と同じくカンマ区切り (`zoom 1crn, chain A and resid 10:20`)。selection が空白を
   含むため、空白区切りは採らない。括弧と引用符の中のカンマは区切りにしない (`parser/parseArgs.ts`)。
-- 引数の割り当て規則は dialect ごと (`ConsoleDialect.argRule`、`parser/bindArgs.ts` の `assignArgs`):
+- 行の読み方は dialect ごと (`ConsoleDialect.syntax`、下記)。native と PyMOL はカンマ文法 (`parser/commaSyntax.ts`)
+  を、引数の割り当て規則だけ変えて使う (`rule`、`parser/bindArgs.ts` の `assignArgs`):
   - native は **Python の呼び出しと同じ**: 位置引数は先頭から順に埋まり、名前付き (`name=value`) の後には書けない。
     同じ引数を 2 回書くとエラー。
   - PyMOL dialect は PyMOL のまま: 位置引数は名前付きも数えた全体の番号の引数に入り、重複は後勝ち、LEGACY 展開あり。
@@ -222,7 +243,7 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   - 空白を含む名前は引用符か `\ ` で書く (以前は引用符なしで書けた)。
   - `.qsc` は txn の外で開くので、パスを 1 つだけ書いたときにしか開かない。パターンや列の中の
     `.qsc` は warning を出して飛ばす (`outsideTxn` には列を「パスなし」として渡す)。
-- **Tab 補完** (`completion/complete.ts`。候補の返し方と client 側のメニューは [console-completion.md](console-completion.md)):
+- **Tab 補完** (dialect の `syntax.complete`。カンマ文法は `parser/commaComplete.ts`、文法を持たない共通部分は `completion/engine.ts`。候補の返し方と client 側のメニューは [console-completion.md](console-completion.md)):
   - 入力途中の行を実行時と同じ規則で読む (`scanArgs` の partial、`assignArgs`)。書きかけの括弧の中は 1 つの引数。
   - その位置に書けるものを全部出す: 次の位置の引数の値と、まだ書いていない引数の `name=` を、見出しを分けて一覧する。
     `name=` を書いた後はその引数の値。native で名前付きの後は `name=` だけ。
@@ -232,7 +253,7 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   - 候補は文字列か `CompletionItem { text, then }`。確定後に付ける区切りは候補ごと: `name=`・`obj.`・ディレクトリは
     何も付けず、値は引数が残っていれば `, `。何も入力していないときに候補が `name=` 1 つだけなら、書かずに一覧する。
   - 照合は引数全体を先に、それで始まる候補が無ければ最後の単語 (空白・カンマ・括弧の後)。
-  - 候補が無いときのファイル名 fall back は PyMOL dialect だけ (`ConsoleDialect.fileFallback`)。native は path 型の引数だけがファイルを出す。
+  - 候補が無いときのファイル名 fall back は PyMOL dialect だけ (`commaSyntax` の `fileFallback`)。native は path 型の引数だけがファイルを出す。
 
 **PyMOL dialect** (prompt `PyM>`): 従来の pymconsole のコマンド。PyMOL の名前・引数・選択式
 (CueMol 式へ翻訳) と `pym:<rep>` 規約はこの dialect の中に閉じる (詳細は

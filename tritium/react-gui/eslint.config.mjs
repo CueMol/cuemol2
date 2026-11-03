@@ -149,6 +149,18 @@ const NO_DEEP_RELATIVE = {
  * service at runtime, and the worker bundle pulling in a `components/`
  * module. A warning would not have stopped either.
  */
+/** Only the PyMOL dialect itself (and the dialect table) may import it. */
+const NO_PYMOL_DIALECT = {
+  group: ['**/dialects/pymol', '**/dialects/pymol/**'],
+  message: 'Only the PyMOL dialect itself (and the dialect table) may import from dialects/pymol.',
+}
+
+/** Only the ChX dialect itself (and the dialect table) may import it. */
+const NO_CHIMERAX_DIALECT = {
+  group: ['**/dialects/chimerax', '**/dialects/chimerax/**'],
+  message: 'Only the ChX dialect itself (and the dialect table) may import from dialects/chimerax.',
+}
+
 const restrict = (...patterns) => ({
   '@typescript-eslint/no-restricted-imports': [
     'error',
@@ -322,11 +334,42 @@ export default tseslint.config(
   // table may name it.
   {
     files: ['src/plugins/console/worker/**/*.ts'],
-    ignores: ['src/plugins/console/worker/dialects/pymol/**', 'src/plugins/console/worker/dialects/index.ts'],
-    rules: restrict(...PLUGIN_WORKER_PATTERNS, {
-      group: ['**/dialects/pymol', '**/dialects/pymol/**'],
-      message: 'Only the PyMOL dialect itself (and the dialect table) may import from dialects/pymol.',
-    }),
+    ignores: [
+      'src/plugins/console/worker/dialects/pymol/**',
+      'src/plugins/console/worker/dialects/chimerax/**',
+      'src/plugins/console/worker/dialects/index.ts',
+    ],
+    rules: restrict(...PLUGIN_WORKER_PATTERNS, NO_PYMOL_DIALECT, NO_CHIMERAX_DIALECT),
+  },
+
+  // --- The dialects do not lean on each other ---
+  // Each hand-written dialect is self-contained, so one can be removed (or
+  // moved into a plugin of its own) without touching another.
+  {
+    files: ['src/plugins/console/worker/dialects/pymol/**/*.ts'],
+    rules: restrict(...PLUGIN_WORKER_PATTERNS, NO_CHIMERAX_DIALECT),
+  },
+
+  // --- The ChX (ChimeraX) dialect goes through the op catalog ---
+  // Its commands run catalog ops (invokeOp), as MCP, the agent and the
+  // native console do; a worker service is imported only for a read the
+  // catalog does not make an op of (op-catalog.md 3.1), listed here.
+  {
+    files: ['src/plugins/console/worker/dialects/chimerax/**/*.ts'],
+    rules: restrict(
+      ...PLUGIN_WORKER_PATTERNS,
+      NO_PYMOL_DIALECT,
+      {
+        group: ['**/dialects/native', '**/dialects/native/**'],
+        message: 'The ChX dialect does not import the native dialect.',
+      },
+      {
+        regex:
+          '^@renderer/worker/server/services/(?!(props/read|coloring/panelList|file/getCompatibleRendererNames|helpers/sceneResolver|helpers/makeSel|scene/listSceneObjects)$)',
+        message:
+          'The ChX dialect runs op catalog ops (invokeOp), not worker services; only the read-only helpers listed in eslint.config.mjs may be imported.',
+      },
+    ),
   },
 
   // --- Layer: a plugin's renderer half is renderer code ---

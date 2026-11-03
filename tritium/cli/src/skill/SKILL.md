@@ -42,7 +42,7 @@ tritium_cli -c "help create_renderer"   # one command: usage, arguments
 tritium_cli 1crn.pdb                          # open, then exit
 tritium_cli model.cif map.ccp4 -c "list_scenes"
 tritium_cli scene.qsc                         # a saved scene opens in a new tab
-tritium_cli script.qax                        # run a script (.qax, .pml, .txt)
+tritium_cli script.qax                        # run a script (.qax, .pml, .cxc, .txt)
 ```
 
 The reader is picked the way File > Open picks it (by extension, or by the
@@ -52,10 +52,12 @@ in the active tab; a `.qsc` scene opens first and the rest goes into it.
 ## Dialects
 
 The default (native) dialect is generated from CueMol's operation catalogue.
-A partial PyMOL dialect is available too:
+Partial PyMOL and ChimeraX dialects are available too (a `.pml` / `.cxc` file
+runs in its own dialect):
 
 ```sh
 tritium_cli --dialect pymol -c "fetch 1ubq; hide everything; show sticks, resn LYS"
+tritium_cli --dialect chimerax -c "open 1ubq; col byh; show :LYS atoms; view"
 ```
 
 ## Scenes (tabs)

@@ -46,7 +46,27 @@ export function cliFlagEndpoints(arg: string): LocalApiEndpoint[] {
 
 // --- The console endpoint's wire format ---
 
-export type ConsoleDialectId = 'native' | 'pymol'
+/**
+ * A dialect's id. Which ones exist is the app's to say (`/console/info`):
+ * a client keeps no list of its own.
+ */
+export type ConsoleDialectId = string
+
+/** One dialect, as `/console/info` describes it. */
+export interface ConsoleDialectInfo {
+  id: ConsoleDialectId
+  /** Its name in messages ("Switched to the PyMOL dialect"). */
+  label: string
+  /** The app's prompt for it (`PyM>`). */
+  prompt: string
+  /**
+   * Its script files, by extension (`.pml`). `text`: send what the file says
+   * as `text`; `path`: send the path alone as `scriptPath` (the app reads it).
+   */
+  scripts: { ext: string; submit: 'text' | 'path' }[]
+  /** The colour of its name in the client's prompt (an ANSI colour name). */
+  cliColor: string
+}
 
 /** One transcript line, as the panel shows it. */
 export interface ConsoleWireEntry {
@@ -59,8 +79,13 @@ export interface ConsoleWireEntry {
 /** `POST /console/run`. */
 export interface ConsoleRunRequest {
   dialect: ConsoleDialectId
-  /** One command, several joined by `;`, or a script's lines. */
-  text: string
+  /** One command, several joined by `;`, or a script's lines. Absent with `scriptPath`. */
+  text?: string
+  /**
+   * A script file to run, absolute, in place of `text`: one the dialect
+   * declares `submit: 'path'`. Since protocol 3.
+   */
+  scriptPath?: string
   /** The client's working directory, absolute. */
   cwd: string
   /**
@@ -101,7 +126,7 @@ export interface ConsoleCompleteResponse {
  * npm, apart from the app, so the two can be from different releases; raise
  * this when a change to the bodies above breaks an older client or app.
  */
-export const CONSOLE_PROTOCOL = 2
+export const CONSOLE_PROTOCOL = 3
 
 /**
  * `POST /console/lock`: hold the edit lock across several runs, so that no
@@ -124,6 +149,8 @@ export interface ConsoleInfoResponse {
   build: string
   /** CONSOLE_PROTOCOL of the app; absent from apps that predate it. */
   protocol?: number
+  /** The dialects the app speaks, in its order. Since protocol 3. */
+  dialects?: ConsoleDialectInfo[]
 }
 
 /** `POST /app/quit`: quit the app, as its Quit menu item does. */

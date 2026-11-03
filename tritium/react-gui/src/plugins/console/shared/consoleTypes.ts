@@ -9,12 +9,14 @@
 
 import type { Result } from '@renderer/worker/shared/result'
 import type { CompletionCandidate } from '@cuemol/console-kit'
+import type { DialectId } from './dialectMeta'
 
 /**
- * The command languages the console speaks: `native`, generated from the
- * core op catalogue, and `pymol`, the part of PyMOL's language it understands.
+ * The command language a call is written in. Which ones exist, and what
+ * each says about itself, is `dialectMeta.ts`.
  */
-export type DialectId = 'native' | 'pymol'
+export type { DialectId } from './dialectMeta'
+export { DEFAULT_DIALECT } from './dialectMeta'
 
 /** The plugin id, which is also its preferences key. */
 export const CONSOLE_PLUGIN_ID = 'console'
@@ -27,15 +29,6 @@ export const REMOTE_ACCESS_PREF = 'remoteAccess'
 
 /** The Settings row (custom, nothing stored) that shows where tritium_cli is. */
 export const CLI_PATH_ROW = 'cliPath'
-
-/** The dialect a fresh panel speaks. */
-export const DEFAULT_DIALECT: DialectId = 'native'
-
-/** What each dialect's prompt reads, in the panel and in the transcript's echo. */
-export const DIALECT_PROMPTS: Readonly<Record<DialectId, string>> = {
-  native: 'CueMol>',
-  pymol: 'PyM>',
-}
 
 /** One line of the transcript, and how it should read. */
 export type ConsoleEntryKind = 'echo' | 'output' | 'warning' | 'error'
@@ -61,6 +54,12 @@ export interface RunCommandArgs {
    * client). Absent, the panel's directory is used and `cd` moves it.
    */
   cwd?: string
+  /**
+   * A script file to run in place of `text`: one whose dialect declares it
+   * `submit: 'path'` (`dialectMeta.ts`), which the app reads itself. The
+   * file must be a script of `dialect`.
+   */
+  scriptPath?: string
 }
 
 export interface CancelRunArgs {

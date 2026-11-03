@@ -16,7 +16,11 @@ export class UsageError extends Error {}
 /** The console: interactive, `-c`, files, or what is piped in. */
 export interface RunCommand {
   kind: 'run'
-  dialect: ConsoleDialectId
+  /**
+   * `--dialect`, unchecked: which dialects exist is the app's to say, so it
+   * is checked once connected. Null when not given (native).
+   */
+  dialect: ConsoleDialectId | null
   echo: boolean
   launch: boolean
   /** `-c`: commands to run after the files. */
@@ -64,13 +68,13 @@ Commands:
 Options:
   -c, --command CMDS     run CMDS (after any FILE)
   -i, --interactive      after FILE / -c, go on to the interactive prompt
-  --dialect native|pymol speak PyMOL instead of native
+  --dialect ID           speak another of the app's dialects (pymol, ...) instead of native
   --echo                 print each command before its output
   --no-launch            fail instead of starting CueMol
   -V, --version          print the versions
   -h, --help             show this help
 
-In the prompt, "native" / "pymol" switch dialect, "exit" or Ctrl-D leaves, and
+In the prompt, a dialect's id ("native", "pymol", ...) switches to it, "exit" or Ctrl-D leaves, and
 "quit" quits CueMol itself (it asks to save; "quit --force" does not).
 
 Exit status: 0 success, 1 a command failed, 2 usage error, 130 interrupted.`
@@ -152,7 +156,7 @@ function parseSubcommand(name: SubcommandName, rest: readonly string[], launch: 
 export function parseArgv(argv: readonly string[]): CliCommand | UsageError {
   const run: RunCommand = {
     kind: 'run',
-    dialect: 'native',
+    dialect: null,
     echo: false,
     launch: true,
     command: null,
@@ -173,7 +177,7 @@ export function parseArgv(argv: readonly string[]): CliCommand | UsageError {
     } else if (a === '--dialect' || a.startsWith('--dialect=')) {
       const v = optionValue(argv, i, '--dialect')
       if (v instanceof UsageError) return v
-      if (v.value !== 'native' && v.value !== 'pymol') return new UsageError('--dialect must be native or pymol')
+      if (v.value === '') return new UsageError('--dialect needs a dialect id')
       run.dialect = v.value
       i = v.next
     } else if (a.startsWith('-') && a !== '-') return new UsageError(`unknown option ${a}`)
