@@ -44,12 +44,19 @@ function readConsoleRequest(
   if (!body || typeof body !== 'object') return 'The body must be a JSON object.'
   if (path === CONSOLE_INFO_PATH) return {}
   const b = body as Record<string, unknown>
-  if (b.dialect !== 'native' && b.dialect !== 'pymol') return 'dialect must be "native" or "pymol".'
+  // Which dialects exist is the window's to say; it turns an unknown one away.
+  if (typeof b.dialect !== 'string' || b.dialect === '') return 'dialect must be a non-empty string.'
   if (typeof b.cwd !== 'string' || !nodePath.isAbsolute(b.cwd)) return 'cwd must be an absolute path.'
   if (path === CONSOLE_RUN_PATH) {
-    if (typeof b.text !== 'string') return 'text must be a string.'
     if (b.lock !== undefined && (typeof b.lock !== 'string' || b.lock === '')) return 'lock must be a non-empty string.'
-    return { dialect: b.dialect, text: b.text, cwd: b.cwd, ...(b.lock !== undefined ? { lock: b.lock } : {}) }
+    const lock = b.lock !== undefined ? { lock: b.lock } : {}
+    if (b.scriptPath !== undefined) {
+      if (typeof b.scriptPath !== 'string' || !nodePath.isAbsolute(b.scriptPath)) return 'scriptPath must be an absolute path.'
+      if (b.text !== undefined) return 'give text or scriptPath, not both.'
+      return { dialect: b.dialect, scriptPath: b.scriptPath, cwd: b.cwd, ...lock }
+    }
+    if (typeof b.text !== 'string') return 'text must be a string.'
+    return { dialect: b.dialect, text: b.text, cwd: b.cwd, ...lock }
   }
   if (typeof b.line !== 'string') return 'line must be a string.'
   return { dialect: b.dialect, line: b.line, cwd: b.cwd }

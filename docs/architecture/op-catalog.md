@@ -157,6 +157,13 @@ defineOp({
 
 ## 5. Console
 
+**dialect の一覧**: console plugin の `shared/dialectMeta.ts` (`DIALECT_METAS`) が唯一の一覧で、dialect ごとに
+id・表示名 (`label`)・prompt・undo label の接頭辞 (`txnPrefix`)・action log の source (`actionSource`)・
+履歴の localStorage key (`historyKey`)・script ファイル (`scripts: { ext, submit }[]`)・`tritium_cli` での色を宣言する。
+panel (切り替え・prompt・履歴)、worker (undo label・action source・script の持ち主)、main と `tritium_cli`
+(`/console/info` の `dialects`) はこの宣言だけを読み、dialect の id を直書きしない。dialect を足す / 外すのは、
+この配列の 1 行と `worker/dialects/index.ts` の実装の 1 行。保存された pref に無い dialect の id は既定 (native) に落とす。
+
 **runtime**: 1 submit = 1 txn (label は dialect の接頭辞 `cmd:` / `pym:`)、失敗で以降を中止、
 lone `undo` / `redo` と `outsideTxn` のコマンドは txn の外、script は最大 8 段のネスト、Stop で
 ダウンロードも中断。

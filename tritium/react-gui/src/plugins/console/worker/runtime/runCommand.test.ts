@@ -113,9 +113,16 @@ const dialect = vi.hoisted(() => ({ id: 'pymol' }))
 
 vi.mock('../dialects', () => ({
   dialectOf: () => ({
-    id: dialect.id,
-    prompt: 'PyM>',
-    txnPrefix: 'pym: ',
+    meta: {
+      id: dialect.id,
+      label: dialect.id,
+      prompt: 'PyM>',
+      txnPrefix: 'pym: ',
+      actionSource: dialect.id === 'pymol' ? 'pym' : 'cmd',
+      historyKey: '',
+      scripts: [],
+      cliColor: 'cyan',
+    },
     commands: () => STUBS,
     refuseLine: () => null,
     refuseScript: () => null,

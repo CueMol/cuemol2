@@ -10,19 +10,17 @@
  */
 
 import type { ConsoleDialect } from '@plugins/console/worker/runtime/types'
-import { DIALECT_PROMPTS } from '@plugins/console/shared/consoleTypes'
+import { metaOf } from '@plugins/console/shared/dialectMeta'
 import { commandNames, PYM_COMMANDS } from './commands/registry'
 import { candidatesFor } from './sources'
 import type { CompletionSourceId } from './sources'
 
 export const PYMOL_DIALECT: ConsoleDialect = {
-  id: 'pymol',
-  prompt: DIALECT_PROMPTS.pymol,
+  meta: metaOf('pymol'),
   // PyMOL's own matching, which its scripts rely on.
   argRule: 'pymol',
   // PyMOL lists files wherever it has nothing better.
   fileFallback: true,
-  txnPrefix: 'pym: ',
   commands: () => PYM_COMMANDS,
   refuseLine: (cmd) =>
     cmd.python ? 'Error: Python expressions are not available in this console' : null,

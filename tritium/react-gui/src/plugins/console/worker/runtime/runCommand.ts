@@ -41,6 +41,7 @@ import * as fs from 'fs'
 import { joinCommands, splitCommands } from '../parser/splitCommands'
 import type { SplitCommand } from '../parser/splitCommands'
 import { dialectOf } from '../dialects'
+import { scriptOwner } from '../../shared/dialectMeta'
 import { resolvePath } from './paths'
 import { beginRun, endRun, isStopped, noteRunStream } from './runControl'
 import { writeLog } from './commandLog'
@@ -204,7 +205,9 @@ function qaxRunner(sub: Submission, depth: number): QaxRunner {
 
 /** Why a qax file cannot run in this dialect, or null. */
 function qaxRefusal(dialect: ConsoleDialect, filePath: string): string | null {
-  return dialect.id === 'native' ? null : `Error: ${filePath} is a qax file; switch the console to the native dialect to run it`
+  const owner = scriptOwner(filePath)?.meta
+  if (!owner || owner.id === dialect.meta.id) return null
+  return `Error: ${filePath} is a qax file; switch the console to the ${owner.id} dialect to run it`
 }
 
 /**
@@ -272,7 +275,7 @@ async function runLines(sub: Submission, commands: SplitCommand[], depth: number
       return false
     }
     sink.reset()
-    if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.prompt} ${cmd.script ? '@' : ''}${cmd.text}` })
+    if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.meta.prompt} ${cmd.script ? '@' : ''}${cmd.text}` })
 
     const refusal = dialect.refuseLine(cmd)
     if (refusal !== null) {
@@ -385,7 +388,7 @@ async function runStandalone(
   const entries: ConsoleEntry[] = []
   const dir = workDirFor(args)
   const cwdOut = args.cwd !== undefined ? { cwd: dir.get() } : {}
-  const echo = (): void => { if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.prompt} ${cmd.text}` }) }
+  const echo = (): void => { if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.meta.prompt} ${cmd.text}` }) }
 
   if (spec.name === 'undo' || spec.name === 'redo') {
     echo()
@@ -470,7 +473,7 @@ async function runQaxStandalone(
   const sub: Submission = {
     dialect, ctx, args, entries, sink: new EntrySink(entries), mutated: false, interrupted: false, dir: workDirFor(args),
   }
-  if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.prompt} ${cmd.script ? '@' : ''}${cmd.text}` })
+  if (!cmd.quiet) entries.push({ kind: 'echo', text: `${dialect.meta.prompt} ${cmd.script ? '@' : ''}${cmd.text}` })
   const cwdOut = (): { cwd?: string } => (args.cwd !== undefined ? { cwd: sub.dir.get() } : {})
   const stop = (text: string): RunCommandResult => {
     sub.sink.push('error', text)
@@ -555,6 +558,31 @@ async function runWithoutScene(
 }
 
 /**
+ * Run a script file sent by its path (`RunCommandArgs.scriptPath`): one whose
+ * dialect reads the file itself (`submit: 'path'` in `dialectMeta.ts`).
+ *
+ * The file must be a script of the dialect the call names; a qax file runs
+ * as `@file.qax` alone on the line would, one undo step per action.
+ */
+async function runScriptPath(
+  dialect: ConsoleDialect,
+  ctx: WorkerContext,
+  args: RunCommandArgs,
+  scriptPath: string,
+): Promise<RunCommandResult> {
+  const owner = scriptOwner(scriptPath)?.meta
+  if (!owner || owner.id !== dialect.meta.id) {
+    return fail(`${scriptPath} is not a script of the ${dialect.meta.label} console`, 'invalid-args')
+  }
+  const scene = getSceneOrNull(ctx, args.sceneId)
+  if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found')
+  if (txnBusy()) return fail(TXN_BUSY_MESSAGE, 'unsupported')
+  if (!isQaxPath(scriptPath)) return fail(`${scriptPath}: this script cannot be run by its path`, 'unsupported')
+  const cmd: SplitCommand = { text: scriptPath, quiet: false, python: false, script: true }
+  return runQaxStandalone(dialect, ctx, args, scene, cmd, scriptPath)
+}
+
+/**
  * Run a submission.
  *
  * Async because `fetch` downloads and a script reads its file; everything
@@ -565,6 +593,7 @@ export async function runCommand(
   args: RunCommandArgs,
 ): Promise<RunCommandResult> {
   const dialect = dialectOf(args.dialect)
+  if (args.scriptPath !== undefined) return runScriptPath(dialect, ctx, args, args.scriptPath)
   const commands = splitCommands(args.text)
   const scene = getSceneOrNull(ctx, args.sceneId)
   if (!scene) {
@@ -597,10 +626,10 @@ export async function runCommand(
   try {
     completed = await runInTxn(
       scene,
-      txnLabel(dialect.txnPrefix, args.text),
+      txnLabel(dialect.meta.txnPrefix, args.text),
       () => sub.mutated,
       () => runLines(sub, commands, 0),
-      dialect.id === 'pymol' ? 'pym' : 'cmd',
+      dialect.meta.actionSource,
     )
   } catch (e) {
     return failFrom(e)

@@ -31,6 +31,7 @@
 | [261027-palette-set-switch-plan.md](261027-palette-set-switch-plan.md) | 分子の既定の色分けのテーマ (`default_paint`) を GUI から選ぶ | **未実装 / 今後の課題**。テーマの定義と style での手動切り替えは実装済み (`../architecture/default-paint-palette.md`) |
 | [261028-get-pdb-emdb-followups-plan.md](261028-get-pdb-emdb-followups-plan.md) | Get PDB の EMDB 対応で後回しにした項目 (subsample、検証値の表示、EMDB 単独 entry の検索、Volume Server) | **未実装 (候補の一覧)**。EMDB 対応とキーワード検索は実装済み (`../architecture/get-pdb-emdb.md`、`../architecture/get-pdb-keyword-search.md`) |
 | [261103-tritium-cli-autoupdate-plan.md](261103-tritium-cli-autoupdate-plan.md) | `tritium_cli autoupdate`: app の updater を `/app/update` で駆動 (owner 付き lease、GUI の自動 restart 抑止、開始 phase ごとの引き継ぎ) | **未着手 / 後日**。subcommand 拡充 (実装済み、`../architecture/local-api-server.md` §5) から分離 |
+| [261103-chimerax-console-plan.md](261103-chimerax-console-plan.md) | console に ChimeraX dialect (ChX console, `ChX>`) を足す: native / PyMOL を含めて runtime を dialect 中立にする refactoring (PR 0b)、ChX の文法・atom spec・model 番号・表示モデルの骨格と基本コマンド (PR 1。コマンドは op catalog の op を invokeOp で呼ぶ)、後続のコマンド拡充の候補 | **未着手** |
 | [261017-tube-raycast-memo-plan.md](261017-tube-raycast-memo-plan.md) | tube / cartoon の GPU raycast (impostor) の設計メモ: dev201608 の rctube の経緯、掃引パラメータの 1D 求根 + 断面 SDF 案、文献調査 | **検討メモ**。着手前に CPU で試作して安定性を確かめる |
 
 ## 実装済み (旧ルールで残っているもの)

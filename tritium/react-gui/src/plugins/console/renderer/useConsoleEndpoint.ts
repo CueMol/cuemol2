@@ -33,6 +33,7 @@ import type {
 import { CONSOLE_PROTOCOL } from '@shared/types/localApi'
 import { consoleServices } from '../calls'
 import { CONSOLE_PLUGIN_ID, REMOTE_ACCESS_PREF } from '../shared/consoleTypes'
+import { DIALECT_METAS, isDialectId } from '../shared/dialectMeta'
 import { beginCliRun } from './cliActivity'
 import { consoleSession } from './consoleSessionStore'
 import { runSubmission } from './runSubmission'
@@ -58,9 +59,23 @@ export function useConsoleEndpoint(): void {
       if (!cm) throw new Error('CueMol is not ready yet.')
       if (kind === 'info') {
         const { version, build } = await cm.getAppInfo()
-        const answer: ConsoleInfoResponse = { version, build, protocol: CONSOLE_PROTOCOL }
+        const answer: ConsoleInfoResponse = {
+          version,
+          build,
+          protocol: CONSOLE_PROTOCOL,
+          dialects: DIALECT_METAS.map((m) => ({
+            id: m.id,
+            label: m.label,
+            prompt: m.prompt,
+            scripts: m.scripts.map((sc) => ({ ext: sc.ext, submit: sc.submit })),
+            cliColor: m.cliColor,
+          })),
+        }
         return answer
       }
+      // main checks only that a dialect is named; which ones exist is known here.
+      const named = (payload as { dialect?: unknown } | null)?.dialect
+      if (!isDialectId(named)) return { error: `no such dialect: ${String(named)}` }
       if (kind === 'complete') {
         const p = payload as ConsoleCompleteRequest
         const res = await consoleServices.invoke(cm, 'complete', {
@@ -87,7 +102,15 @@ export function useConsoleEndpoint(): void {
         const res = await runSubmission(
           { cm, ensureActiveScene, tabs, openScene },
           // A script can run for minutes; the busy indicator is not the place.
-          { dialect: p.dialect, text: p.text, runId, cwd: p.cwd, quiet: true, stopped: () => calls.stopped(reqId) },
+          {
+            dialect: p.dialect,
+            text: p.text ?? '',
+            runId,
+            cwd: p.cwd,
+            quiet: true,
+            stopped: () => calls.stopped(reqId),
+            ...(p.scriptPath !== undefined ? { scriptPath: p.scriptPath } : {}),
+          },
         )
         consoleSession.append(
           res.entries.map((e) => (e.kind === 'echo' ? { ...e, text: `${CLI_ECHO_PREFIX}${e.text}` } : e)),

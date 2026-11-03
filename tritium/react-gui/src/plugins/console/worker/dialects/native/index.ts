@@ -27,7 +27,7 @@ import { commandHelp, table } from '../../help/helpMarkdown'
 import { OP_GROUPS } from '@renderer/worker/server/catalog/op'
 import type { OpGroup } from '@renderer/worker/server/catalog/op'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { DIALECT_PROMPTS } from '../../../shared/consoleTypes'
+import { metaOf } from '../../../shared/dialectMeta'
 import { usageLine } from '../../parser/bindArgs'
 import { lookupCommand } from '../../parser/commandLookup'
 import type { CompletionItem, ConsoleCommand, ConsoleDialect, SourceContext } from '../../runtime/types'
@@ -419,13 +419,11 @@ function expand(id: string, ctx: WorkerContext, sc: SourceContext): string[] | n
 }
 
 export const NATIVE_DIALECT: ConsoleDialect = {
-  id: 'native',
-  prompt: DIALECT_PROMPTS.native,
+  meta: metaOf('native'),
   // Its own language: arguments match as in a Python call.
   argRule: 'python',
   // Path parameters list files themselves; nothing else does.
   fileFallback: false,
-  txnPrefix: 'cmd: ',
   commands: () => NATIVE_COMMANDS,
   expand,
   refuseLine: (cmd) =>

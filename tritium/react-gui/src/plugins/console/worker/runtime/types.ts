@@ -19,7 +19,8 @@ import type { OpGroup } from '@renderer/worker/server/catalog/op'
 import type { ArgMode } from '../parser/parseArgs'
 import type { ArgRule, ParamSpec } from '../parser/bindArgs'
 import type { SplitCommand } from '../parser/splitCommands'
-import type { DialectId, SceneRequest } from '../../shared/consoleTypes'
+import type { SceneRequest } from '../../shared/consoleTypes'
+import type { DialectMeta } from '../../shared/dialectMeta'
 
 export type { ParamSpec } from '../parser/bindArgs'
 export type { ArgMode } from '../parser/parseArgs'
@@ -186,11 +187,11 @@ export interface SourceContext {
 
 /** One command language the console can speak. */
 export interface ConsoleDialect {
-  id: DialectId
-  /** What the transcript echoes a command after, without the space. */
-  prompt: string
-  /** The undo entry's label prefix, so the history says where an edit came from. */
-  txnPrefix: string
+  /**
+   * What it says about itself: its id, prompt (what the transcript echoes a
+   * command after), undo label prefix, action-log source and script files.
+   */
+  meta: DialectMeta
   /** How typed arguments are matched to parameters (`parser/bindArgs.ts`). */
   argRule: ArgRule
   /** Every command, sorted by name. */

@@ -13,15 +13,7 @@
 import { createLruStringHistory } from '@renderer/utils/createLruStringHistory'
 import type { LruStringHistory } from '@renderer/utils/createLruStringHistory'
 import type { DialectId } from '../shared/consoleTypes'
-
-/**
- * Where each dialect's command lines live. The PyMOL one keeps the key it had
- * before the console spoke more than one language, so its history survived.
- */
-export const STORAGE_KEYS: Readonly<Record<DialectId, string>> = {
-  native: 'cuemol.console.history.native',
-  pymol: 'cuemol.pymconsole.history',
-}
+import { metaOf } from '../shared/dialectMeta'
 
 /**
  * How many to keep.
@@ -32,15 +24,19 @@ export const STORAGE_KEYS: Readonly<Record<DialectId, string>> = {
  */
 export const MAX_ENTRIES = 100
 
-const stores = {
-  native: createLruStringHistory({ key: STORAGE_KEYS.native, max: MAX_ENTRIES }),
-  pymol: createLruStringHistory({ key: STORAGE_KEYS.pymol, max: MAX_ENTRIES }),
-}
+const stores = new Map<string, LruStringHistory>()
 
 /**
- * One dialect's history. Kept apart because a line in one language is
- * rarely valid in the other, and recalling it would only produce an error.
+ * One dialect's history, under the key the dialect declares (`historyKey`).
+ * Kept apart because a line in one language is rarely valid in another, and
+ * recalling it would only produce an error.
  */
 export function historyOf(dialect: DialectId): LruStringHistory {
-  return stores[dialect]
+  const key = metaOf(dialect).historyKey
+  let store = stores.get(key)
+  if (!store) {
+    store = createLruStringHistory({ key, max: MAX_ENTRIES })
+    stores.set(key, store)
+  }
+  return store
 }

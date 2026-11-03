@@ -56,6 +56,8 @@ import type { LocalApiEndpoint } from '@cuemol/console-kit'
 import { parseArgv, SUBCOMMAND_USAGE, USAGE, UsageError } from './args'
 import type { RunCommand } from './args'
 import { alive, ensureApp, MCP_NOT_RUNNING, post, quitApp, readInfo, readInfoFile } from './connection'
+import { appDialects, findDialect, NATIVE_DIALECT } from './dialects'
+import type { AppDialects } from './dialects'
 import { buildSubmissions } from './inputs'
 import type { Submission } from './inputs'
 import { createMcpBridge } from './mcpBridge'
@@ -80,8 +82,11 @@ const sgr = (code: string, text: string, stream: NodeJS.WriteStream = process.st
 // No dim or gray: both read poorly on a dark terminal. Secondary text is the
 // default colour; keys and values are picked out with `accent` (light violet).
 const STYLE = { bold: '1', red: '31', green: '32', yellow: '33', magenta: '35', cyan: '36', accent: '38;5;147', dir: '1;34' }
-const DIALECT_STYLE: Record<ConsoleDialectId, string> = { native: STYLE.cyan, pymol: STYLE.magenta }
-const DIALECT_NAME: Record<ConsoleDialectId, string> = { native: 'CueMol', pymol: 'pymol' }
+/** The SGR code of a dialect's `cliColor`; an unknown name is drawn in the default colour. */
+const COLOUR_CODE: Record<string, string> = { cyan: '36', magenta: '35', green: '32', yellow: '33', blue: '34' }
+
+/** What the app speaks, from its `/console/info`; set once connected. */
+let dialects: AppDialects = appDialects(null)
 
 // Kept as escapes so the source stays ASCII.
 const GLYPH = {
@@ -346,7 +351,8 @@ function shortDir(dir: string): string {
 
 /** The prompt: dialect, working directory, arrow. */
 function promptText(): string {
-  const name = sgr(DIALECT_STYLE[session.dialect], DIALECT_NAME[session.dialect])
+  const d = findDialect(dialects, session.dialect)
+  const name = d ? sgr(COLOUR_CODE[d.cliColor] ?? '0', d.label) : session.dialect
   return `${name} ${shortDir(session.cwd)} ${sgr(STYLE.bold, GLYPH.prompt)} `
 }
 
@@ -402,7 +408,7 @@ function printBanner(info: LocalApiInfoFile, appInfo: ConsoleInfoResponse | null
   const connection = ['tritium_cli', key(`127.0.0.1:${info.port}`), `pid ${info.pid}`].join(dot)
   const hints = [
     [`${key('Tab')} completes`, `${key('Ctrl-C')} stops a run`, `${key('help')} lists commands`].join(dot),
-    [`${key('pymol')} / ${key('native')} switch`, `${key('exit')} leaves`, `${key('quit')} quits CueMol`].join(dot),
+    [`${dialects.list.map((d) => key(d.id)).join(' / ')} switch`, `${key('exit')} leaves`, `${key('quit')} quits CueMol`].join(dot),
   ]
 
   // The icon beside the details in a box, like Claude Code's; where it would
@@ -439,27 +445,23 @@ function printBanner(info: LocalApiInfoFile, appInfo: ConsoleInfoResponse | null
 
 /** Session state: what the next request carries. */
 const session: { dialect: ConsoleDialectId; cwd: string; echo: boolean } = {
-  dialect: 'native',
+  dialect: NATIVE_DIALECT,
   cwd: process.cwd(),
   echo: false,
 }
 
 /**
- * Run `text` as one submission; resolves to whether it all ran.
+ * Run one submission (commands, or a script file by its path); resolves to
+ * whether it all ran.
  *
- * @param dialect - what `text` is written in; the session's by default
  * @param lock - the edit lock it runs under (`withEditLock`); none takes one for this run alone
  */
-async function run(
-  text: string,
-  signal: AbortSignal,
-  dialect: ConsoleDialectId = session.dialect,
-  lock?: string,
-): Promise<boolean> {
-  const stop = startSpinner(spinnerLabel(text))
+async function run(sub: Submission, signal: AbortSignal, lock?: string): Promise<boolean> {
+  const stop = startSpinner(spinnerLabel(sub.text ?? path.basename(sub.scriptPath ?? '')))
   let res: ConsoleRunResponse
   try {
-    const body: ConsoleRunRequest = { dialect, text, cwd: session.cwd, ...(lock ? { lock } : {}) }
+    const what = sub.scriptPath !== undefined ? { scriptPath: sub.scriptPath } : { text: sub.text }
+    const body: ConsoleRunRequest = { dialect: sub.dialect, ...what, cwd: session.cwd, ...(lock ? { lock } : {}) }
     res = await post<ConsoleRunResponse>('/console/run', body, signal)
   } finally {
     stop()
@@ -479,10 +481,10 @@ async function run(
 async function runOnce(subs: readonly Submission[]): Promise<number> {
   const ac = new AbortController()
   process.on('SIGINT', () => ac.abort())
-  const quit = subs.length === 1 ? quitLine(subs[0].text) : null
+  const quit = subs.length === 1 && subs[0].text !== undefined ? quitLine(subs[0].text) : null
   if (quit) return (await requestQuit(quit.force, ac.signal)) ? 0 : 1
   try {
-    return (await sendRuns(subs, (s, lock) => run(s.text, ac.signal, s.dialect, lock), lockApi)) ? 0 : 1
+    return (await sendRuns(subs, (s, lock) => run(s, ac.signal, lock), lockApi)) ? 0 : 1
   } catch (e) {
     if (ac.signal.aborted) return 130
     process.stderr.write(`${sgr(STYLE.red, (e as Error).message, process.stderr)}\n`)
@@ -549,10 +551,9 @@ function appendHistory(line: string): void {
 }
 
 /** Interactive: a banner, then a prompt until exit / Ctrl-D. */
-async function interactive(): Promise<number> {
+async function interactive(appInfo: ConsoleInfoResponse | null): Promise<number> {
   const info = readInfo()
   if (info instanceof Error) throw info
-  const appInfo = await post<ConsoleInfoResponse>('/console/info', {}).catch(() => null)
   printBanner(info, appInfo)
 
   /** The request in flight, for Ctrl-C. */
@@ -605,16 +606,17 @@ async function interactive(): Promise<number> {
       }
       return done ? rl.close() : prompt()
     }
-    if (line === 'native' || line === 'pymol') {
-      session.dialect = line
-      process.stdout.write(`${`Switched to the ${line === 'pymol' ? 'PyMOL' : 'native'} dialect.`}\n`)
+    const named = findDialect(dialects, line)
+    if (named) {
+      session.dialect = named.id
+      process.stdout.write(`Switched to the ${named.label} dialect.\n`)
       return prompt()
     }
     inflight = new AbortController()
     const t0 = Date.now()
     let ok = false
     try {
-      ok = await run(line, inflight.signal)
+      ok = await run({ text: line, dialect: session.dialect }, inflight.signal)
     } catch (e) {
       if (inflight.signal.aborted) process.stderr.write(`${sgr(STYLE.yellow, 'Interrupted.', process.stderr)}\n`)
       else process.stderr.write(`${sgr(STYLE.red, (e as Error).message, process.stderr)}\n`)
@@ -697,10 +699,19 @@ async function connect(launch: boolean, endpoint: LocalApiEndpoint = 'console'):
 
 /** The console's own command line: files, -c, piped text, or the prompt. */
 async function runMain(opts: RunCommand): Promise<number> {
-  session.dialect = opts.dialect
   session.echo = opts.echo
   const stdinText = opts.files.includes('-') ? await readStdin() : null
-  const subs = buildSubmissions(opts.files, opts.command, opts.dialect, session.cwd, {
+  // Which dialects exist, and which files are their scripts, is the app's to
+  // say: connect before reading the command line's files.
+  if (!(await connect(opts.launch))) return 1
+  const appInfo = await post<ConsoleInfoResponse>('/console/info', {}).catch(() => null)
+  dialects = appDialects(appInfo)
+  if (opts.dialect !== null && !findDialect(dialects, opts.dialect)) {
+    process.stderr.write(`tritium_cli: no such dialect: ${opts.dialect} (CueMol speaks ${dialects.list.map((d) => d.id).join(', ')})\n`)
+    return 2
+  }
+  session.dialect = opts.dialect ?? NATIVE_DIALECT
+  const subs = buildSubmissions(opts.files, opts.command, session.dialect, session.cwd, {
     isFile,
     readText: (p) => {
       if (p === '-') return stdinText
@@ -710,7 +721,7 @@ async function runMain(opts: RunCommand): Promise<number> {
         return null
       }
     },
-  })
+  }, dialects)
   if (subs instanceof UsageError) {
     process.stderr.write(`tritium_cli: ${subs.message}\n${USAGE}\n`)
     return 2
@@ -719,15 +730,14 @@ async function runMain(opts: RunCommand): Promise<number> {
     fail(`tritium_cli: ${subs.message}`)
     return 1
   }
-  if (!(await connect(opts.launch))) return 1
 
   if (subs.length > 0) {
     const code = await runOnce(subs)
     if (code !== 0 || !opts.interactive || !process.stdin.isTTY) return code
-    return interactive()
+    return interactive(appInfo)
   }
-  if (!process.stdin.isTTY) return runOnce([{ text: await readStdin(), dialect: opts.dialect }])
-  return interactive()
+  if (!process.stdin.isTTY) return runOnce([{ text: await readStdin(), dialect: session.dialect }])
+  return interactive(appInfo)
 }
 
 /** `tritium_cli mcp`: the stdio transport over the app's /mcp. */

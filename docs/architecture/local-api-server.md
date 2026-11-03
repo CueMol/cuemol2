@@ -142,17 +142,27 @@ scene は `discardChanges: true` が無いと閉じない (説明文で「捨て
   (`renderer/useConsoleEndpoint.ts`)。開くのは、Settings の「Command line access」(`remoteAccess`、
   既定 off) が on のとき、または `--tritium-cli` (か `--tritium-cli=mcp`) 付きで起動された app の起動中 (下記)。
 - **wire 形式** (`shared/types/localApi.ts`):
-  - `POST /console/run` `{ dialect, text, cwd, lock? }` -> `{ entries, aborted, interrupted, cwd }`
-    (`lock` は §7。main が取り除いてから window に渡す)
+  - `POST /console/run` `{ dialect, text, cwd, lock? }` か `{ dialect, scriptPath, cwd, lock? }`
+    -> `{ entries, aborted, interrupted, cwd }`
+    (`lock` は §7。main が取り除いてから window に渡す)。`scriptPath` (絶対パス) は、dialect が
+    `submit: 'path'` と宣言した script を app 自身に読ませるとき (今は native の `.qax`。1 action = 1 undo で再生)。
+    `text` と同時には渡せない。
   - `POST /console/lock` `{ action: 'acquire' | 'release', owner }` -> `{}` (main が答える、§7)
   - `POST /console/complete` `{ dialect, line, cwd }` -> `{ replacement, messages, candidates? }`
     ([console-completion.md](console-completion.md))
-  - `POST /console/info` `{}` -> `{ version, build, protocol }` (libcuemol2 の version と source
-    revision。client の banner 用)。`protocol` は console-kit の `CONSOLE_PROTOCOL` (wire の改訂番号)。
+  - `POST /console/info` `{}` -> `{ version, build, protocol, dialects }` (libcuemol2 の version と source
+    revision。client の banner 用)。`dialects` は app が話す dialect の一覧 (`id`、`label`、`prompt`、
+    `scripts: { ext, submit: 'text' | 'path' }[]`、`cliColor`)。console plugin の
+    `shared/dialectMeta.ts` (`DIALECT_METAS`) をそのまま返す。client は dialect の表を持たず、これで
+    `--dialect` の検証・prompt の色・切り替えの語・script ファイルの送り方を決める。`protocol` は console-kit の `CONSOLE_PROTOCOL` (wire の改訂番号)。
     npm 版 (§5.5) の client は app と別に更新されるので、対話開始時に自分の値と比べ、違えば
     古い側を更新するよう警告する (警告だけで続行。`protocol` の無い古い app も同じ扱い)。
-    旧 client を壊す wire 変更をしたら値を上げる。現在 2 (`/console/lock` と `lock` を足したとき)。
-  - body の形は main で検査し (`cwd` は絶対パス)、だめなら 400。worker の失敗 (busy 等) は 409 `{ error }`。
+    旧 client を壊す wire 変更をしたら値を上げる。現在 3 (`dialects` と `scriptPath` を足したとき。2 は
+    `/console/lock` と `lock`)。`dialects` の無い app (protocol 2 以前) には、client は native / PyMOL の
+    2 つを話すものとして扱い、`.qax` を native `run "<abs>"` で送る (`cli/src/dialects.ts`)。
+  - body の形は main で検査し (`cwd` は絶対パス)、だめなら 400。main は `dialect` が空でない文字列で
+    あることだけを見る。どの dialect があるかは window が知っているので、知らない dialect は window が
+    `{ error }` で断る (409)。worker の失敗 (busy 等) も 409 `{ error }`。
 - **実行**: panel と同じ worker service (`runCommand` / `complete`) を、アクティブなタブに対して
   呼ぶ。1 submission = 1 undo txn、排他 (`txnBusy()`) も panel と同じ。`load x.qsc` は panel と同じく
   File > Open の経路で開く。client の切断 (Ctrl-C) は `cancelRun` (= Stop)。panel と共通の
@@ -208,7 +218,8 @@ ES module `dist/tritium_cli.mjs` に bundle する (`task build_tritium` に含�
   `CUEMOL3_APP` の案内) を出して exit 1。`--no-launch` では起動せず、案内を出して終わる。
   spawn の失敗 (実行ファイルが無い等) は `error` event で即座に失敗にする (90 秒待たない)。
 - 対話: 起動時に banner (version、port、pid、操作の案内) を出す。prompt は `CueMol <dir> ❯` /
-  `pymol <dir> ❯` (dialect 名は色分け)、`native` / `pymol` で dialect 切り替え、Tab 補完
+  `PyMOL <dir> ❯` (dialect の `label`。色は `cliColor`)、dialect の id (`native` / `pymol` ...) だけの行で
+  dialect 切り替え、Tab 補完
   (zsh 式の一覧とメニュー。[console-completion.md](console-completion.md))、履歴 `~/.tritium_cli_history`、
   待機中は spinner と経過秒、1 秒以上かかったコマンドは `✓` / `✗` と所要時間を出す。
   実行中の Ctrl-C は中断、待機中は入力行の消去 / 終了。`exit` か Ctrl-D で抜ける (app は残る)。
@@ -228,15 +239,18 @@ ES module `dist/tritium_cli.mjs` に bundle する (`task build_tritium` に含�
     `bundled with CueMol3` と出す (`src/version.ts`)。
   - `status`: 情報ファイルを読み、稼働の有無・pid・port・開いている endpoint・版を出す。起動しない。
     exit 0 = 稼働、1 = 非稼働 (`src/status.ts`)。
-- **ファイル引数** (`src/inputs.ts`): 拡張子で分ける。
-  - `.qax` -> native `run "<abs>"`、`.pml` -> 中身を PyMOL dialect で、`.txt` / `-` (stdin) -> 中身を
-    現在の dialect で。script は単独 (他のファイルや `-c` と併用すると exit 2)。
+- **ファイル引数** (`src/inputs.ts`): 拡張子で分ける。どの拡張子がどの dialect の script かは
+  `/console/info` の `dialects` で決まるので、CLI は app につないでからファイルを分ける
+  (組み合わせの usage エラーも接続後に出る)。
+  - dialect の script -> その dialect で。`submit: 'text'` (`.pml`) は中身を、`submit: 'path'` (`.qax`) は
+    `scriptPath` を送る。`.txt` / `-` (stdin) -> 中身を現在の dialect で。script は単独 (他のファイルや `-c`
+    と併用すると exit 2)。
   - `.qsc` -> scene。`load` の `.qsc` は txn の外で、長い行の中では拒否され、scene を開くのは
     submission の後 (`runSubmission.ts`) なので、**1 個ずつ単独の submission** にして指定順に送る。
     `/console/run` は scene を開き終えてから返るので、返った時点でそのタブがアクティブ。
   - それ以外 -> data。native `load "<abs>"` (= `load_file`。reader は File > Open と同じく拡張子か中身で
     選ぶ)。data と `-c` は 1 submission (= 1 undo) にまとめ、最後に開いた scene (アクティブタブ) に送る。
-    1 コマンド 1 行で送る (パスの括弧が次のコマンドを飲み込まないよう)。dialect が PyMOL なら `-c` は
+    1 コマンド 1 行で送る (パスの括弧が次のコマンドを飲み込まないよう)。dialect が native 以外なら `-c` は
     別の submission になる。
   - scene が 2 個以上あり data か `-c` もあるときは、どの scene に入れるか曖昧なので exit 2。
   - 存在しないファイルは送る前に exit 1。パスは `"..."` で囲む (console に escape は無いので、`"` を含む
