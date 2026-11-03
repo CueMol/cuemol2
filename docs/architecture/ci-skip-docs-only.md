@@ -66,3 +66,5 @@ docs だけの PR の必須チェックが赤くなる。両 workflow の冒頭�
 
 - 省略時もビルドジョブの runner は起動する (macOS / Windows でも数十秒)。
 - `develop` は docs だけの PR のマージでもフルビルドする (マージ後なので作業は止めない)。
+
+<!-- CI skip test: remove -->
