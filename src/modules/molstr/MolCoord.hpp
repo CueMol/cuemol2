@@ -10,6 +10,7 @@
 #include "molstr.hpp"
 
 #include <algorithm>
+#include <set>
 #include <vector>
 
 #include <qlib/IndexedTable.hpp>
@@ -80,6 +81,17 @@ namespace molstr {
 	m_index.push_back(&iter->second);
 	m_nNextIndex++;
 	return key;
+      }
+
+      /// Put an atom back under a key handed out before and freed since
+      /// (undo / redo putting a removed atom back). False when the key was
+      /// never handed out or is still taken.
+      bool putAt(int id, MolAtomPtr p) {
+	if (id < 0 || id >= m_nNextIndex || m_index[id] != nullptr)
+	  return false;
+	super_t::iterator iter = super_t::emplace(id, p).first;
+	m_index[id] = &iter->second;
+	return true;
       }
 
       void remove(int id) {
@@ -170,6 +182,14 @@ namespace molstr {
     ///
     int appendAtom(MolAtomPtr pAtom);
 
+    ///
+    /// Append an atom under an atom ID it held before, instead of a new one.
+    /// For undo / redo putting a removed atom back: edit records (coordinate
+    /// undo, aid selections) name atoms by ID, so the atom must come back
+    /// under the same one. Returns -1 when the ID is not free.
+    ///
+    int appendAtomWithID(MolAtomPtr pAtom, int atomid);
+
     bool checkAppendAtom(MolAtomPtr pAtom) const;
 
     int appendAtomScrHelper(MolAtomPtr pAtom, const LString &ch,
@@ -186,6 +206,11 @@ namespace molstr {
     /// them; removeNonpersBonds() drops those orphaned. Returns the number of
     /// atoms removed.
     int removeAtoms(const std::vector<int> &atomids);
+
+    /// The atoms removeAtom() / removeAtoms() take out for these IDs: the
+    /// atoms themselves and, for an atom without a conformation ID, its
+    /// alternate conformations, which go with it.
+    std::set<int> getRemovalSet(const std::set<int> &atomids) const;
   
     /// Bond two atoms.
     /// In the inter-residue bond case,
@@ -205,6 +230,13 @@ namespace molstr {
     /// of its residue. Returns that residue, possibly now empty, or null when
     /// the atom could not be removed.
     MolResiduePtr removeAtomFromResidue(int atomid);
+
+    /// IDs of the alternate conformations ("name:X") of the atom in pRes,
+    /// which leave with it when the atom has no conformation ID itself.
+    void getDraggedAltConfs(const MolResiduePtr &pRes, const MolAtomPtr &pAtom,
+                            std::vector<int> &ids) const;
+
+    int appendAtomImpl(MolAtomPtr pAtom, int atomid);
 
   public:
     

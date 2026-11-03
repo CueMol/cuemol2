@@ -234,6 +234,19 @@ bool MolCoord::checkAppendAtom(MolAtomPtr pAtom) const
 
 int MolCoord::appendAtom(MolAtomPtr pAtom)
 {
+  return appendAtomImpl(pAtom, -1);
+}
+
+int MolCoord::appendAtomWithID(MolAtomPtr pAtom, int atomid)
+{
+  if (atomid<0 || m_atomPool.lookup(atomid)!=nullptr)
+    return -1;
+  return appendAtomImpl(pAtom, atomid);
+}
+
+/// Append pAtom under atomid, or under a new ID when atomid is negative.
+int MolCoord::appendAtomImpl(MolAtomPtr pAtom, int atomid)
+{
   pAtom->setParentUID(getUID());
 
   const LString &cname = pAtom->getChainName();
@@ -287,10 +300,15 @@ int MolCoord::appendAtom(MolAtomPtr pAtom)
   // Append to the atompool --> assign the atom ID
   //
 
-  int atomid = m_atomPool.put(pAtom);
   if (atomid<0) {
-    // This isn't fail in normal situation.
-    MB_THROW(qlib::RuntimeException, "append to the atompool failed");
+    atomid = m_atomPool.put(pAtom);
+    if (atomid<0) {
+      // This isn't fail in normal situation.
+      MB_THROW(qlib::RuntimeException, "append to the atompool failed");
+      return -1;
+    }
+  }
+  else if (!m_atomPool.putAt(atomid, pAtom)) {
     return -1;
   }
 
@@ -382,12 +400,8 @@ MolResiduePtr MolCoord::removeAtomFromResidue(int atomid)
   // alternate conformations ("name:X") from the residue map; take those
   // atoms out of the pool as well, or they stay allocated and unreachable
   if (cConfID=='\0') {
-    const LString prefix = aname + ":";
     std::vector<int> altids;
-    for (MolResidue::AtomCursor ai = pRes->atomBegin(); ai != pRes->atomEnd(); ++ai) {
-      if (ai->second != atomid && ai->first.str().startsWith(prefix))
-        altids.push_back(ai->second);
-    }
+    getDraggedAltConfs(pRes, pAtom, altids);
     for (int altid : altids) {
       MolAtomPtr pAlt = getAtom(altid);
       m_atomPool.remove(altid);
@@ -400,6 +414,38 @@ MolResiduePtr MolCoord::removeAtomFromResidue(int atomid)
   if (!pRes->removeAtom(aname, cConfID))
     return MolResiduePtr();
   return pRes;
+}
+
+void MolCoord::getDraggedAltConfs(const MolResiduePtr &pRes, const MolAtomPtr &pAtom,
+                                  std::vector<int> &ids) const
+{
+  if (pAtom->getConfID()!='\0')
+    return;
+  const LString prefix = pAtom->getName() + ":";
+  const int atomid = pAtom->getID();
+  for (MolResidue::AtomCursor ai = pRes->atomBegin(); ai != pRes->atomEnd(); ++ai) {
+    if (ai->second != atomid && ai->first.str().startsWith(prefix))
+      ids.push_back(ai->second);
+  }
+}
+
+std::set<int> MolCoord::getRemovalSet(const std::set<int> &atomids) const
+{
+  std::set<int> out;
+  std::vector<int> altids;
+  for (int aid : atomids) {
+    MolAtomPtr pAtom = getAtom(aid);
+    if (pAtom.isnull())
+      continue;
+    out.insert(aid);
+    MolResiduePtr pRes = getResidue(pAtom->getChainName(), pAtom->getResIndex());
+    if (pRes.isnull())
+      continue;
+    altids.clear();
+    getDraggedAltConfs(pRes, pAtom, altids);
+    out.insert(altids.begin(), altids.end());
+  }
+  return out;
 }
 
 bool MolCoord::removeAtom(int atomid)
