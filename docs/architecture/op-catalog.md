@@ -1,4 +1,4 @@
-# Op catalog と console (native / PyMOL dialect)
+# Op catalog と console (native / PyMOL / ChimeraX dialect)
 
 CueMol を名前で操作する呼び出し元 (AI agent の tool、console のコマンド、MCP server) が
 共有する「操作の定義」の仕様。まだ実装していない項目は
@@ -19,10 +19,11 @@ core   renderer/worker/server/catalog/
 plugin agent/worker/tools/      op -> AI SDK tool、enable_toolsets
 plugin console/worker/
          runtime/         dialect 非依存の実行系 (1 submit = 1 txn、Stop、script、log)
-         parser/          PyMOL 由来の引数パーサ (両 dialect 共用)
-         completion/      Tab 補完 (候補源は dialect が持つ)
+         parser/          カンマ文法 (PyMOL 由来の引数パーサ。native と PyMOL が DialectSyntax として使う)
+         completion/      Tab 補完の dialect 非依存の部分 (engine.ts)
          dialects/native/ op catalog から生成するコマンド + console 自前の builtin
          dialects/pymol/  PyMOL 語彙のコマンド、selection 翻訳 (sel/)
+         dialects/chimerax/ ChimeraX 語彙のコマンド (op を invokeOp で呼ぶ)、atom spec 翻訳 (spec/)
 ```
 
 op 本体は新しい層を作らず、既存の worker service 関数を呼ぶ。GUI と同じ service を通るので、
@@ -31,7 +32,10 @@ ServiceMap から tool を自動生成はしない (service の形は UI の都�
 `CmdId` (renderer の UI handler) とも層が違うので共通化しない。
 
 依存の向き (ESLint で強制): `worker/server` は plugin を import しない。console の runtime と
-native dialect は `dialects/pymol` を import しない (例外は dialect 表 `dialects/index.ts`)。
+native dialect は `dialects/pymol` と `dialects/chimerax` を import しない (例外は dialect 表 `dialects/index.ts`)。
+手書きの dialect どうし (PyMOL と ChimeraX) も互いを import しない。ChimeraX dialect は native dialect も import せず、
+worker service は許可した読み取り専用の補助だけを import する
+([console-chimerax-dialect.md](console-chimerax-dialect.md) §1)。
 
 ## 2. param DSL
 

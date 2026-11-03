@@ -8,6 +8,7 @@ import type { DialectId } from '../../shared/dialectMeta'
 import type { ConsoleDialect } from '../runtime/types'
 import { NATIVE_DIALECT } from './native'
 import { PYMOL_DIALECT } from './pymol'
+import { CHIMERAX_DIALECT } from './chimerax'
 
 /**
  * Every dialect's implementation, by id. Each has its row in
@@ -16,6 +17,7 @@ import { PYMOL_DIALECT } from './pymol'
 const DIALECTS: Readonly<Record<DialectId, ConsoleDialect>> = {
   native: NATIVE_DIALECT,
   pymol: PYMOL_DIALECT,
+  chimerax: CHIMERAX_DIALECT,
 }
 
 /** The dialect with this id, or the default one for an id no dialect has. */

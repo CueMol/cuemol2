@@ -59,16 +59,20 @@ architecture, it belongs here.
   `HitData` を GPU 経路の正式なデータ経路に昇格させた判断、頂点整数属性 / pick shader / CPU fallback 規則、
   uxp_gui を従来経路のまま保つ gating、hover UI (`naviHover` / throttle / busy 非計上)、採らなかった案
   (色に ID を埋め込む方式)。
-- [Op catalog と console (native / PyMOL dialect)](op-catalog.md) (日本語) --
+- [Op catalog と console (native / PyMOL / ChimeraX dialect)](op-catalog.md) (日本語) --
   AI agent の tool と console のコマンドを生成する core の op catalog。`.qif` 型に合わせた param DSL と
   意味型 (node 名・property path・selection)、`invokeOp` / `runInTxn`、agent の toolset と
-  `enable_toolsets`、console runtime と native / PyMOL dialect、補完と結果整形。
+  `enable_toolsets`、console の dialect の一覧と `DialectSyntax`、runtime と native / PyMOL / ChimeraX dialect、補完と結果整形。
 - [Action log と qax (CueMol actions XML)](action-log.md) (日本語) -- undo 履歴の 1 項目ごとに、実際に
   実行した native の op を記録する仕組み (GUI・console・PyMOL・MCP・agent 共通)。txn helper への hook と
   C++ undo stack との reconcile、service ごとの op 対応表、`replay` op。記録を書き出して再生する XML 形式
   qax v1 のスキーマと値の書き方、`run x.qax` の 1 action = 1 txn、`open_log`、`list_actions` /
   `export_actions`。GUI の Actions view と History pane (選択・Go to step・qax 保存・コピー)、
   Inspector の step 表示、op から作る undo の表示文 (`describe`)、`actions-changed` push。
+- [Console の ChimeraX dialect (ChX console)](console-chimerax-dialect.md) (日本語) -- ChimeraX のコマンド言語に
+  部分互換の基本コマンド。cli.py に倣った読み方 (登録順の前方一致、空白区切りの引数と keyword)、atom specification の
+  object ごとの CueMol 式への翻訳、model 番号、`chx:` renderer の selection と paint を表示の状態とする作り、
+  op catalog の op を `invokeOp` で呼ぶ規則、他の dialect との分離、制約。
 - [Console の PyMOL dialect](console-pymol-dialect.md) (日本語) -- PyMOL のコマンド言語に部分互換の
   63 コマンド (TS、Python embedding なし)。PyMOL 選択式の CueMol 式への翻訳 (優先順位、`-` / `+` の 2 つの
   意味、object 名の分子ごとの展開、断る語の一覧)、object x 表現ごとの `pym:<rep>` renderer 規約、

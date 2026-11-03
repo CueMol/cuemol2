@@ -170,8 +170,8 @@ contribute in a manifest. Currently `getpdb` and `sequence` (both `alwaysEnabled
 this way to keep the feature in one directory, not to make it removable), `catalog` (the
 component gallery), `agent` (the AI chat panel, OpenAI, Anthropic or Google Gemini through the Vercel AI
 SDK), `mdtools` (the MD trajectory GUI: the open flow plus the Trajectory bottom tab),
-`console` (a command line with two dialects: native, generated from the core op catalog in
-`renderer/worker/server/catalog/`, and a partial PyMOL dialect; see
+`console` (a command line with three dialects: native, generated from the core op catalog in
+`renderer/worker/server/catalog/`, and partial PyMOL and ChimeraX dialects; see
 [`docs/architecture/op-catalog.md`](../docs/architecture/op-catalog.md)) and `mcp` (the op
 catalog served to MCP clients through main's local API server, with a status bar item; see
 [`docs/architecture/local-api-server.md`](../docs/architecture/local-api-server.md)) -- the last five

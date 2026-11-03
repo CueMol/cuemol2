@@ -69,6 +69,16 @@ export const DIALECT_METAS: readonly DialectMeta[] = [
     scripts: [{ ext: '.pml', submit: 'text' }],
     cliColor: 'magenta',
   },
+  {
+    id: 'chimerax',
+    label: 'ChimeraX',
+    prompt: 'ChX>',
+    txnPrefix: 'chx: ',
+    actionSource: 'chx',
+    historyKey: 'cuemol.console.history.chimerax',
+    scripts: [{ ext: '.cxc', submit: 'text' }],
+    cliColor: 'green',
+  },
 ]
 
 /** A dialect's id. Any string: whether it names a dialect is `isDialectId`. */
