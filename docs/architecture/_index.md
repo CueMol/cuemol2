@@ -192,6 +192,11 @@ architecture, it belongs here.
   OIDN / FFTW / xz を clang-cl でビルドし、Boost 等と uxp_gui は MSVC のまま (MSVC ABI
   互換なので混在できる)。cmake-js の Ninja 化、clang で表に出た未定義動作 (`WglView`
   の範囲外ループ) の修正、検証済みの組み合わせ、umbreon で約 6〜8% 速くなった計測結果。
+- [CI: ビルド不要な変更だけの push では重いビルドを飛ばす](ci-skip-docs-only.md) (日本語) --
+  feature ブランチの変更が docs などだけなら、必須チェックの名前を保つためジョブは動かしたまま各ステップを
+  `if:` で飛ばす。`build_scripts/ci_needs_build.sh` がブランチ全体 (merge-base) の差分で判定し、`develop` /
+  タグは常にビルド、省略は output が明示的に `'false'` のときだけ。
+
 - [tritium packaging / release-build renovation](tritium-packaging-renovation.md)
   (日本語) -- tritium を配布可能な形にするまでの設計記録。electron-builder による
   3 OS パッケージング、libcuemol2 ランタイムの staging、release-cadence gating、

@@ -12,11 +12,46 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
+# Builds that nothing needs are skipped step by step, not by job.
+# build_scripts/ci_needs_build.sh decides (output `build`: "false" only when a
+# feature branch changed nothing but docs-like files; develop, tags and
+# manual runs always build). The required status checks are these jobs'
+# names, and a skipped matrix job reports an unexpanded name, so every job
+# still runs and each step after checkout carries
+#   if: needs.changes.outputs.build != 'false'
+# A NEW STEP MUST CARRY IT TOO: one left without it runs on a skipped build
+# and fails when it needs what the build makes (ctest, packaging, upload),
+# which turns the required check red for a docs-only PR. Gate on != 'false'
+# (never == 'true'), so a missing or misspelt output builds.
+
 ###############################################
 
 jobs:
+  # Whether this run builds (see the top). build2.yml decides the same in
+  # setup_matrix; a job of another workflow cannot be a need.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.changes.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          lfs: false
+
+      - name: Decide whether to build
+        id: changes
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+        run: echo "build=$(bash build_scripts/ci_needs_build.sh)" >> "$GITHUB_OUTPUT"
+
   build_posix:
     name: '${{ matrix.name }}'
+    needs: changes
     runs-on: ${{ matrix.os }}
     # Package tritium only on the release cadence (develop / tags / manual
     # dispatch), not on every feature-branch push. Core build + tests run always.
@@ -45,24 +80,34 @@ jobs:
         # fixtures whose tests self-skip when the data is absent (conftest.py).
         lfs: false
 
+    - name: Build skipped (only docs-like files changed)
+      if: needs.changes.outputs.build == 'false'
+      shell: bash
+      run: echo "Nothing in this branch needs a build (build_scripts/ci_needs_build.sh); the build steps are skipped."
+
     - name: Run sccache-cache
+      if: needs.changes.outputs.build != 'false'
       uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Setup Python
+      if: needs.changes.outputs.build != 'false'
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
 
     - name: Setup Node.js
+      if: needs.changes.outputs.build != 'false'
       uses: actions/setup-node@v6
       with:
         node-version: '24'
 
     - name: Enable pnpm via corepack
+      if: needs.changes.outputs.build != 'false'
       shell: bash
       run: corepack enable
 
     - name: Show build env versions
+      if: needs.changes.outputs.build != 'false'
       shell: bash
       run: |
         set -eux
@@ -74,6 +119,7 @@ jobs:
         ninja --version
 
     - name: Download deplibs
+      if: needs.changes.outputs.build != 'false'
       uses: ./build_scripts/download_deplibs
       with:
         basedir: ${{ github.workspace }}/target
@@ -82,12 +128,14 @@ jobs:
     # TBB / OIDN come prebuilt in the deplibs bundle. libcuemol2 then links it
     # via find_package(umbreon), resolving those deps to the same bundled copies.
     - name: Read umbreon git ref
+      if: needs.changes.outputs.build != 'false'
       shell: bash
       run: |
         . build_scripts/deplibs.env
         echo "UMBREON_GIT_REF=$UMBREON_GIT_REF" >> $GITHUB_ENV
 
     - name: Build+install umbreon
+      if: needs.changes.outputs.build != 'false'
       uses: ./build_scripts/build_umbreon_posix
       with:
         basedir: ${{ github.workspace }}/target
@@ -97,23 +145,27 @@ jobs:
     # dependency, oneTBB, comes prebuilt in the deplibs bundle. libcuemol2 then
     # links it via find_package(MeshMS), resolving TBB to the same bundled copy.
     - name: Read meshms git ref
+      if: needs.changes.outputs.build != 'false'
       shell: bash
       run: |
         . build_scripts/deplibs.env
         echo "MESHMS_GIT_REF=$MESHMS_GIT_REF" >> $GITHUB_ENV
 
     - name: Build+install MeshMS
+      if: needs.changes.outputs.build != 'false'
       uses: ./build_scripts/build_meshms_posix
       with:
         basedir: ${{ github.workspace }}/target
         ref: ${{ env.MESHMS_GIT_REF }}
 
     - name: Build libcuemol2
+      if: needs.changes.outputs.build != 'false'
       uses: ./build_scripts/build_libcuemol2_posix
       with:
         basedir: ${{ github.workspace }}/target
         
     - name: Run gtest
+      if: needs.changes.outputs.build != 'false'
       shell: bash
       run: |
         set -eux
@@ -124,6 +176,7 @@ jobs:
     # backend-independent surface contract against it (one env var, ~1 s) to
     # keep the fallback from rotting.
     - name: Run gtest (BALL SES backend)
+      if: needs.changes.outputs.build != 'false'
       shell: bash
       env:
         CUEMOL_SES_BACKEND: ball
@@ -133,29 +186,35 @@ jobs:
               --output-on-failure -L test_surface
 
     - name: Build python module
+      if: needs.changes.outputs.build != 'false'
       uses: ./build_scripts/build_pymod_posix
       with:
         basedir: ${{ github.workspace }}/target
 
     - name: Build tritium/core addon
+      if: needs.changes.outputs.build != 'false'
       uses: ./build_scripts/build_tritium_core_posix
       with:
         basedir: ${{ github.workspace }}/target
 
     - name: Test tritium/core addon
+      if: needs.changes.outputs.build != 'false'
       uses: ./build_scripts/test_tritium_core_posix
       with:
         basedir: ${{ github.workspace }}/target
 
     - name: Check tritium/react-gui
+      if: needs.changes.outputs.build != 'false'
       uses: ./build_scripts/check_tritium_react_gui
 
     - name: Build cuetty
+      if: needs.changes.outputs.build != 'false'
       uses: ./build_scripts/build_cuetty_posix
       with:
         basedir: ${{ github.workspace }}/target
 
     - name: Check cuetty run
+      if: needs.changes.outputs.build != 'false'
       shell: bash
       run: |
         set -eux
@@ -166,7 +225,7 @@ jobs:
 
     - name: Get version
       id: version
-      if: env.DO_PACKAGE == 'true'
+      if: needs.changes.outputs.build != 'false' && (env.DO_PACKAGE == 'true')
       shell: bash
       run: |
         VERSION=$(grep '#define QM_VERSION' src/_version.h | sed 's/.*"\(.*\)".*/\1/')
@@ -175,12 +234,12 @@ jobs:
     # Package the tritium Electron app (Linux x64 AppImage + deb, unsigned).
     # Release cadence only (develop / workflow_dispatch / tags); see DO_PACKAGE.
     - name: Install AppImage build deps
-      if: env.DO_PACKAGE == 'true'
+      if: needs.changes.outputs.build != 'false' && (env.DO_PACKAGE == 'true')
       shell: bash
       run: sudo apt-get update && sudo apt-get install -y libfuse2
 
     - name: Package tritium (Linux x64 AppImage + deb)
-      if: env.DO_PACKAGE == 'true'
+      if: needs.changes.outputs.build != 'false' && (env.DO_PACKAGE == 'true')
       shell: bash
       run: |
         set -eux
@@ -188,7 +247,7 @@ jobs:
         bash tritium/packaging/package.sh --linux --x64
 
     - name: Upload tritium Linux artifacts
-      if: env.DO_PACKAGE == 'true'
+      if: needs.changes.outputs.build != 'false' && (env.DO_PACKAGE == 'true')
       uses: actions/upload-artifact@v4
       with:
         name: CueMol3_${{ steps.version.outputs.version }}_linux_x64
@@ -205,7 +264,7 @@ jobs:
     # for keys the caller leaves unset, so this step can never overwrite the
     # notes build2.yml generates, whichever workflow gets there first.
     - name: Attach Linux artifacts to release
-      if: startsWith(github.ref, 'refs/tags/')
+      if: needs.changes.outputs.build != 'false' && (startsWith(github.ref, 'refs/tags/'))
       uses: softprops/action-gh-release@v2
       with:
         files: |
