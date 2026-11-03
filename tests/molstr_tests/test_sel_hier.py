@@ -47,8 +47,8 @@ VALID_CASES = [
     ("A.10A.CA", "A.10A.CA"),
     ("A.10A,10B.CA", "A.10A:10B.CA"),
     # Special cases
-    ("null.1.CA", "(empty).1.CA"),  # null chain
-    ("*.1.null", "*.1.(empty)"),  # null as atom name
+    ("null.1.CA", "null.1.CA"),  # null chain
+    ("*.1.null", "*.1.null"),  # null as atom name
     ("A.1.123", "A.1.123"),  # integer as atom name
     ("123.1.CA", "123.1.CA"),  # integer as chain name
     ("A:.1.CA", "A:.1.CA"),  # colon in names

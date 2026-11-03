@@ -5,7 +5,7 @@ import type { MolAtom } from '@cuemol/core/src/wrappers/MolAtom';
 import type { SymmRenderer } from '@cuemol/core/src/wrappers/SymmRenderer';
 import type { Vector } from '@cuemol/core/src/wrappers/Vector';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
-import { invertSelStr, rewriteAround, toggleSidechainStr } from '@renderer/worker/server/services/helpers/selStrTransforms';
+import { aroundSel, invertSel, simplifySel, toggleSidechainSel } from '@renderer/worker/server/services/helpers/simplifySel';
 import { getViewSceneOrNull, getViewSceneObjOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { withUndoTxn } from '../withUndoTxn';
 import { quoteSelName } from '@renderer/worker/server/services/helpers/selName';
@@ -119,7 +119,9 @@ export function naviCtxAddSelect(ctx: WorkerContext, args: NaviCtxSelectArgs): N
     const newSelStr = buildSelStr(vsm.obj, args.atomId, args.mode);
     if (!newSelStr) return { ok: false };
     const prevSelStr = vsm.obj.sel.toString();
-    const selStr = prevSelStr ? `(${prevSelStr}) or (${newSelStr})` : newSelStr;
+    const selStr = prevSelStr
+        ? simplifySel(ctx, `(${prevSelStr}) or (${newSelStr})`, vsm.scene.uid)
+        : newSelStr;
     withUndoTxn(vsm.scene, 'Add select atom(s)', () => {
         applyMolSel(ctx, vsm.obj, selStr, vsm.scene.uid);
     });
@@ -140,7 +142,7 @@ export function naviCtxUnselect(ctx: WorkerContext, args: NaviCtxObjArgs): { ok:
 export function naviCtxInvertSel(ctx: WorkerContext, args: NaviCtxObjArgs): NaviCtxSelResult {
     const vsm = getViewSceneObjOrNull<MolCoord>(ctx, args.viewId, args.objId);
     if (!vsm) return { ok: false };
-    const selStr = invertSelStr(vsm.obj.sel.toString());
+    const selStr = invertSel(ctx, vsm.obj.sel.toString(), vsm.scene.uid);
     withUndoTxn(vsm.scene, 'Invert mol selection', () => {
         applyMolSel(ctx, vsm.obj, selStr, vsm.scene.uid);
     });
@@ -152,7 +154,7 @@ export function naviCtxToggleSidechain(ctx: WorkerContext, args: NaviCtxObjArgs)
     if (!vsm) return { ok: false };
     const prevSelStr = vsm.obj.sel.toString();
     if (!prevSelStr) return { ok: false };
-    const selStr = toggleSidechainStr(prevSelStr);
+    const selStr = toggleSidechainSel(ctx, prevSelStr, vsm.scene.uid);
     withUndoTxn(vsm.scene, 'Toggle bysidech', () => {
         applyMolSel(ctx, vsm.obj, selStr, vsm.scene.uid);
     });
@@ -166,7 +168,7 @@ export function naviCtxAround(ctx: WorkerContext, args: NaviCtxAroundArgs): Navi
     if (!vsm) return { ok: false };
     const prevSelStr = vsm.obj.sel.toString();
     if (!prevSelStr) return { ok: false };
-    const selStr = rewriteAround(prevSelStr, args.distance, args.byres);
+    const selStr = aroundSel(ctx, prevSelStr, vsm.scene.uid, args.distance, args.byres);
     withUndoTxn(vsm.scene, 'Around mol selection', () => {
         applyMolSel(ctx, vsm.obj, selStr, vsm.scene.uid);
     });

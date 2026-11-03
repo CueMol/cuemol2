@@ -43,19 +43,19 @@ VALID_CASES = [
     ("rprop type=C1'", "rprop type=C1'"),
     ("rprop prop*name=value", "rprop prop*name=value"),
     # --- Quoted strings ---
-    ('rprop propname = "value name"', "rprop propname=value name"),
+    ('rprop propname = "value name"', 'rprop propname="value name"'),
     ("rprop Prop='Value'", "rprop Prop=Value"),
     # --- Regular expressions ---
-    ("rprop secondary=/^hel/", "rprop secondary=^hel"),
+    ("rprop secondary=/^hel/", 'rprop secondary="^hel"'),
     # --- null value ---
     ("rprop prop=null", "rprop prop=null"),
     # --- Integer values ---
     ("rprop count=123", "rprop count=123"),
     ("rprop index=-5", "rprop index=-5"),
     # --- Float values ---
-    ("rprop count=1.23", "rprop count=1.230000"),
-    ("rprop index=-5.6", "rprop index=-5.600000"),
-    ("rprop count=-3.45e10", "rprop count=-34500000000.000000"),
+    ("rprop count=1.23", 'rprop count="1.230000"'),
+    ("rprop index=-5.6", 'rprop index="-5.600000"'),
+    ("rprop count=-3.45e10", 'rprop count="-34500000000.000000"'),
 ]
 
 # Invalid cases: (input_expression, expected_error_substring)

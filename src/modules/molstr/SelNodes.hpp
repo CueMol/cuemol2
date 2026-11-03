@@ -247,10 +247,12 @@ namespace molstr {
   */
   class SelNamesNode : public SelSuperNode
   {
-  private:
+  public:
+    /// (name, SNN_* mode)
     typedef std::pair<LString,int> elem_type;
     typedef std::list<elem_type> list_t;
 
+  private:
     list_t m_list;
 
     // LString m_regex;
@@ -287,7 +289,7 @@ namespace molstr {
       return ret;
     }
 
-    // const std::list<LString> &getList() const { return m_list; }
+    const list_t &getList() const { return m_list; }
 
     int size() const { return m_list.size(); }
 

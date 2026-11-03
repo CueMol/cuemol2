@@ -84,6 +84,13 @@ export interface SelectionBuilderProps {
      */
     onQuickApply?: (expr: string) => void;
     /**
+     * Shortens an expression the builder composed from `current` (an
+     * add / intersect / subtract or a modifier), resolving to an equivalent
+     * one. Without it the composed expression is applied as built. A
+     * replacement (`set`) is applied as built either way.
+     */
+    simplify?: (expr: string) => Promise<string>;
+    /**
      * Target molecule's applied selection, listed under "Selected" in the
      * Named tab (independent of `current`, which MolSelList sets to the field
      * value).
@@ -151,6 +158,7 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
     dispatch,
     onApply,
     onQuickApply,
+    simplify,
     namedCurrentSel,
     history = [],
     sceneDefs = [],
@@ -209,11 +217,25 @@ export const SelectionBuilder: React.FC<SelectionBuilderProps> = ({
     const setField = (name: string, v: string): void =>
         dispatch({ type: 'SET_FIELD', name, value: v });
 
+    // A composed expression wraps `current`, so it grows with every step;
+    // apply its simplified form when the container offers one.
+    const applyComposed = (expr: string): void => {
+        if (!simplify) {
+            onApply(expr);
+            return;
+        }
+        simplify(expr)
+            .then((short) => onApply(short || expr))
+            .catch(() => onApply(expr));
+    };
     const onBinary = (op: BinaryOp): void => {
-        if (term !== null && canApplyBinary(current, op)) onApply(applyBinary(current, term, op));
+        if (term === null || !canApplyBinary(current, op)) return;
+        const expr = applyBinary(current, term, op);
+        if (op === 'set') onApply(expr);
+        else applyComposed(expr);
     };
     const onUnary = (op: UnaryOp): void => {
-        if (canApplyUnary(draft, op, current)) onApply(applyUnary(current, op, draft.distance));
+        if (canApplyUnary(draft, op, current)) applyComposed(applyUnary(current, op, draft.distance));
     };
 
     /* -- Value input, keyword-dependent -- */

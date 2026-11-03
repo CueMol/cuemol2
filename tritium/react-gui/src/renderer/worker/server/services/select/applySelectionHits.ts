@@ -17,6 +17,7 @@ import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { makeSel } from '../helpers/makeSel';
+import { simplifySel } from '../helpers/simplifySel';
 import { withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
 import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 
@@ -97,7 +98,7 @@ export function applySelectionHits(
             if (addMode) {
                 // OR the new hits with the molecule's current selection.
                 const prevSelStr = mol.sel.toString();
-                if (prevSelStr) selStr = `(${prevSelStr}) or (${newSelStr})`;
+                if (prevSelStr) selStr = simplifySel(ctx, `(${prevSelStr}) or (${newSelStr})`, scene.uid);
             }
             if (assignMolSel(ctx, mol, selStr, scene.uid)) {
                 recordOp(ctx, scene.uid, 'set_mol_selection', { objId, selection: selStr }, ['objId']);

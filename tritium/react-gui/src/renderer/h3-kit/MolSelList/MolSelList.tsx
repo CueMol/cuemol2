@@ -39,7 +39,7 @@ import {
     useSelectionValues,
 } from '@renderer/h3-kit/selection';
 import { getHistory } from './selHistory';
-import { useHitCountResolver } from './useSelHitCount';
+import { useHitCountResolver, useSelSimplifier } from './useSelHitCount';
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard';
 
 const VALIDATE_DEBOUNCE_MS = 500;
@@ -180,6 +180,7 @@ export const MolSelList: React.FC<MolSelListProps> = ({
     const [draft, dispatch] = useReducer(builderReducer, undefined, initBuilderState);
     const resolveValues = useSelectionValues({ cm, sceneID, molID });
     const getHitCount = useHitCountResolver(cm, sceneID, molID);
+    const simplify = useSelSimplifier(cm, sceneID);
 
     // ---- Fetch named selection defs (scene + global) ----
     useEffect(() => {
@@ -287,6 +288,7 @@ export const MolSelList: React.FC<MolSelListProps> = ({
                 dispatch={dispatch}
                 onApply={onSelectedSelChange}
                 onQuickApply={handleQuickApply}
+                simplify={simplify}
                 namedCurrentSel={molCurrentSel}
                 history={historyItems}
                 sceneDefs={sceneDefs}

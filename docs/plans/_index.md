@@ -32,7 +32,6 @@
 | [261028-get-pdb-emdb-followups-plan.md](261028-get-pdb-emdb-followups-plan.md) | Get PDB の EMDB 対応で後回しにした項目 (subsample、検証値の表示、EMDB 単独 entry の検索、Volume Server) | **未実装 (候補の一覧)**。EMDB 対応とキーワード検索は実装済み (`../architecture/get-pdb-emdb.md`、`../architecture/get-pdb-keyword-search.md`) |
 | [261103-tritium-cli-autoupdate-plan.md](261103-tritium-cli-autoupdate-plan.md) | `tritium_cli autoupdate`: app の updater を `/app/update` で駆動 (owner 付き lease、GUI の自動 restart 抑止、開始 phase ごとの引き継ぎ) | **未着手 / 後日**。subcommand 拡充 (実装済み、`../architecture/local-api-server.md` §5) から分離 |
 | [261103-chimerax-console-plan.md](261103-chimerax-console-plan.md) | ChX console (console の ChimeraX dialect) の残り: 後続のコマンド (`view matrix`、`zoom pixelSize`、`save`、`graphics silhouettes`、`rainbow`、`turn` など) と、先に CueMol 側の機能が要るもの (`lighting`、`windowsize`、`clip`) | **未着手 / 後日**。基盤と基本コマンドは実装済み (`../architecture/console-chimerax-dialect.md`) |
-| [261103-selection-simplify-plan.md](261103-selection-simplify-plan.md) | selection 式の構文木に同値変換 (平坦化・定数畳み込み・重複除去・補元・吸収・同種の葉の併合) を繰り返して簡単にする。console の ChX / PyMOL dialect が renderer の selection を合成するたびに式が伸びるのを抑える | **未着手 / 後日** |
 | [261017-tube-raycast-memo-plan.md](261017-tube-raycast-memo-plan.md) | tube / cartoon の GPU raycast (impostor) の設計メモ: dev201608 の rctube の経緯、掃引パラメータの 1D 求根 + 断面 SDF 案、文献調査 | **検討メモ**。着手前に CPU で試作して安定性を確かめる |
 
 ## 実装済み (旧ルールで残っているもの)

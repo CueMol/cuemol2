@@ -31,67 +31,67 @@ import pytest
 # Valid cases: (input_expression, expected_dump)
 VALID_CASES = [
     # --- Basic integer distance ---
-    ("name CA around 3", "(name CA) around 3.000000"),
-    ("name CA around 5", "(name CA) around 5.000000"),
-    ("name N around 10", "(name N) around 10.000000"),
+    ("name CA around 3", "(name CA) around 3.0"),
+    ("name CA around 5", "(name CA) around 5.0"),
+    ("name N around 10", "(name N) around 10.0"),
     # --- Floating-point distance ---
-    ("name CA around 3.5", "(name CA) around 3.500000"),
-    ("name CA around 2.0", "(name CA) around 2.000000"),
-    ("name CA around 0.5", "(name CA) around 0.500000"),
-    ("name CA around 1.23", "(name CA) around 1.230000"),
+    ("name CA around 3.5", "(name CA) around 3.5"),
+    ("name CA around 2.0", "(name CA) around 2.0"),
+    ("name CA around 0.5", "(name CA) around 0.5"),
+    ("name CA around 1.23", "(name CA) around 1.23"),
     # --- Scientific notation ---
-    ("name CA around 1.0e1", "(name CA) around 10.000000"),
-    ("name CA around 1.5e1", "(name CA) around 15.000000"),
-    ("name CA around 2.5e-1", "(name CA) around 0.250000"),
+    ("name CA around 1.0e1", "(name CA) around 10.0"),
+    ("name CA around 1.5e1", "(name CA) around 15.0"),
+    ("name CA around 2.5e-1", "(name CA) around 0.25"),
     # --- Whitespace variations ---
-    ("name CA around  3", "(name CA) around 3.000000"),
-    ("name CA  around 3", "(name CA) around 3.000000"),
-    ("name CA around 3 ", "(name CA) around 3.000000"),
-    ("name CA around  3.5", "(name CA) around 3.500000"),
+    ("name CA around  3", "(name CA) around 3.0"),
+    ("name CA  around 3", "(name CA) around 3.0"),
+    ("name CA around 3 ", "(name CA) around 3.0"),
+    ("name CA around  3.5", "(name CA) around 3.5"),
     # --- Shorthand 'a;' ---
-    ("name CA a; 3", "(name CA) around 3.000000"),
-    ("name CA a;3", "(name CA) around 3.000000"),
-    ("name CA a; 3.5", "(name CA) around 3.500000"),
-    ("name CA a;3.5", "(name CA) around 3.500000"),
+    ("name CA a; 3", "(name CA) around 3.0"),
+    ("name CA a;3", "(name CA) around 3.0"),
+    ("name CA a; 3.5", "(name CA) around 3.5"),
+    ("name CA a;3.5", "(name CA) around 3.5"),
     # --- Complex selection expressions ---
-    ("chain A around 5", "(chain A) around 5.000000"),
-    ("resi 10:20 around 3.5", "(resi 10:20) around 3.500000"),
-    ("name CA,N,O around 4", "(name O,N,CA) around 4.000000"),
-    ("chain A & name CA around 3", "((chain A) and (name CA)) around 3.000000"),
+    ("chain A around 5", "(chain A) around 5.0"),
+    ("resi 10:20 around 3.5", "(resi 10:20) around 3.5"),
+    ("name CA,N,O around 4", "(name O,N,CA) around 4.0"),
+    ("chain A & name CA around 3", "((chain A) and (name CA)) around 3.0"),
     # --- Parenthesized expressions ---
-    ("(name CA) around 3", "(name CA) around 3.000000"),
-    ("(chain A) around 5.5", "(chain A) around 5.500000"),
+    ("(name CA) around 3", "(name CA) around 3.0"),
+    ("(chain A) around 5.5", "(chain A) around 5.5"),
     # --- Combined with other operators ---
-    ("name CA around 3 & chain A", "((name CA) around 3.000000) and (chain A)"),
-    ("name CA around 3 | chain B", "((name CA) around 3.000000) or (chain B)"),
-    ("byres name CA around 3", "byres ((name CA) around 3.000000)"),
+    ("name CA around 3 & chain A", "((name CA) around 3.0) and (chain A)"),
+    ("name CA around 3 | chain B", "((name CA) around 3.0) or (chain B)"),
+    ("byres name CA around 3", "byres ((name CA) around 3.0)"),
     # --- Negative distances (parsed but behavior undefined) ---
-    ("name CA around -3", "(name CA) around -3.000000"),
-    ("name CA around -3.5", "(name CA) around -3.500000"),
+    ("name CA around -3", "(name CA) around -3.0"),
+    ("name CA around -3.5", "(name CA) around -3.5"),
     # --- Zero distance ---
-    ("name CA around 0", "(name CA) around 0.000000"),
-    ("name CA around 0.0", "(name CA) around 0.000000"),
+    ("name CA around 0", "(name CA) around 0.0"),
+    ("name CA around 0.0", "(name CA) around 0.0"),
 ]
 
 # Cross-molecule selection cases
 CROSS_MOLECULE_CASES = [
     # --- Bare string molecule name ---
-    ("name CA around 3 [mol1]", '(name CA) around 3.000000 ["mol1"]'),
-    # ('name CA around 5 [my.pdb]', '(name CA) around 5.000000 ["my.pdb"]'),
+    ("name CA around 3 [mol1]", '(name CA) around 3.0 ["mol1"]'),
+    # ('name CA around 5 [my.pdb]', '(name CA) around 5.0 ["my.pdb"]'),
     # --- Single-quoted molecule name ---
-    ("name CA around 3 ['mol1']", '(name CA) around 3.000000 ["mol1"]'),
-    ("name CA around 3.5 ['my pdb']", '(name CA) around 3.500000 ["my pdb"]'),
+    ("name CA around 3 ['mol1']", '(name CA) around 3.0 ["mol1"]'),
+    ("name CA around 3.5 ['my pdb']", '(name CA) around 3.5 ["my pdb"]'),
     # --- Double-quoted molecule name ---
-    ('name CA around 3 ["mol1"]', '(name CA) around 3.000000 ["mol1"]'),
-    ('name CA around 3.5 [" my pdb "]', '(name CA) around 3.500000 [" my pdb "]'),
-    ('name CA around 3 ["1CRN@pdb"]', '(name CA) around 3.000000 ["1CRN@pdb"]'),
+    ('name CA around 3 ["mol1"]', '(name CA) around 3.0 ["mol1"]'),
+    ('name CA around 3.5 [" my pdb "]', '(name CA) around 3.5 [" my pdb "]'),
+    ('name CA around 3 ["1CRN@pdb"]', '(name CA) around 3.0 ["1CRN@pdb"]'),
     # --- Whitespace variations ---
-    ("name CA around  3 [mol1]", '(name CA) around 3.000000 ["mol1"]'),
-    ("name CA around 3  [mol1]", '(name CA) around 3.000000 ["mol1"]'),
-    ("name CA around 3 [ mol1 ]", '(name CA) around 3.000000 ["mol1"]'),
+    ("name CA around  3 [mol1]", '(name CA) around 3.0 ["mol1"]'),
+    ("name CA around 3  [mol1]", '(name CA) around 3.0 ["mol1"]'),
+    ("name CA around 3 [ mol1 ]", '(name CA) around 3.0 ["mol1"]'),
     # --- With shorthand ---
-    ("name CA a; 3 [mol1]", '(name CA) around 3.000000 ["mol1"]'),
-    ("name CA a;3 [mol1]", '(name CA) around 3.000000 ["mol1"]'),
+    ("name CA a; 3 [mol1]", '(name CA) around 3.0 ["mol1"]'),
+    ("name CA a;3 [mol1]", '(name CA) around 3.0 ["mol1"]'),
 ]
 
 # Invalid cases: (input_expression, expected_error_substring)
@@ -131,16 +131,16 @@ INVALID_CASES = [
 # Operator precedence and associativity cases
 PRECEDENCE_CASES = [
     # around has higher precedence than AND/OR
-    ("name CA around 3 & chain A", "((name CA) around 3.000000) and (chain A)"),
-    ("name CA around 3 | chain B", "((name CA) around 3.000000) or (chain B)"),
+    ("name CA around 3 & chain A", "((name CA) around 3.0) and (chain A)"),
+    ("name CA around 3 | chain B", "((name CA) around 3.0) or (chain B)"),
     # around has lower precedence than BYRES operators
-    ("byres name CA around 3", "byres ((name CA) around 3.000000)"),
-    ("bysidech name CA around 3", "bysidech ((name CA) around 3.000000)"),
+    ("byres name CA around 3", "byres ((name CA) around 3.0)"),
+    ("bysidech name CA around 3", "bysidech ((name CA) around 3.0)"),
     # Multiple around operators (right-to-left associativity)
-    ("name CA around 3 around 2", "((name CA) around 3.000000) around 2.000000"),
+    ("name CA around 3 around 2", "((name CA) around 3.0) around 2.0"),
     (
         "name CA around 3 [mol1] around 2 [mol2]",
-        '((name CA) around 3.000000 ["mol1"]) around 2.000000 ["mol2"]',
+        '((name CA) around 3.0 ["mol1"]) around 2.0 ["mol2"]',
     ),
 ]
 
@@ -248,6 +248,6 @@ class TestSelectDistanceOperatorCombinations:
         assert selobj.error_msg == ""
         dumpstr = selobj.dumpNodes()
         print(f"dump: {dumpstr}")
-        assert dumpstr == f"{unary_op} ((name CA) {distance_op} 3.000000)"
+        assert dumpstr == f"{unary_op} ((name CA) {distance_op} 3.0)"
         assert unary_op in dumpstr
         assert distance_op in dumpstr

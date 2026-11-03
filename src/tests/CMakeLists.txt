@@ -144,6 +144,7 @@ gtest_discover_tests(test_qsys PROPERTIES LABELS "test_qsys")
 add_executable(test_molstr
   modules/molstr/test_molcoord_altconf_remove.cpp
   modules/molstr/test_mol_delete_undo.cpp
+  modules/molstr/test_sel_simplify.cpp
   modules/molstr/test_main.cpp
   modules/molstr/test_molatom.cpp
   modules/molstr/test_molresidue.cpp

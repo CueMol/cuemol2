@@ -8,6 +8,7 @@
 
 #include <qlib/LRegExpr.hpp>
 #include "SelNodes.hpp"
+#include "SelSimplifier.hpp"
 #include "MolAtom.hpp"
 #include "MolResidue.hpp"
 
@@ -65,18 +66,19 @@ LString SelOpNode::toString() const
   }
   else if (m_nmode==OP_AROUND) {
     if (m_artarg.isEmpty())
-      return LString::format("(%s) around %f", rval.c_str(), m_dvalue);
+      return "(" + rval + ") around " + SelSimplifier::formatNumber(m_dvalue);
     else
-      return LString::format("(%s) around %f [\"%s\"]", rval.c_str(), m_dvalue, m_artarg.c_str());
+      return "(" + rval + ") around " + SelSimplifier::formatNumber(m_dvalue) + " [" +
+             SelSimplifier::quoteName(m_artarg) + "]";
   }
   else if (m_nmode==OP_EXTEND) {
-      return LString::format("(%s) extend %f", rval.c_str(), m_dvalue);
+      return "(" + rval + ") extend " + SelSimplifier::formatNumber(m_dvalue);
   }
   else if (m_nmode==OP_EXPAND) {
-      return LString::format("(%s) expand %f", rval.c_str(), m_dvalue);
+      return "(" + rval + ") expand " + SelSimplifier::formatNumber(m_dvalue);
   }
   else if (m_nmode==OP_NEIGHBOR) {
-      return LString::format("(%s) neighbor %f", rval.c_str(), m_dvalue);
+      return "(" + rval + ") neighbor " + SelSimplifier::formatNumber(m_dvalue);
   }
   else if (m_nmode==OP_BYRES) {
     return LString::format("byres (%s)", rval.c_str());
@@ -221,7 +223,7 @@ LString SelAllNode::toString() const
   if (m_fall)
     return LString("*");
   else
-    return LString("!*");
+    return LString("none");
 }
 
 bool SelAllNode::isSelected(MolAtomPtr pAtom)
@@ -243,7 +245,8 @@ SelSuperNode *SelRefNode::clone() const
 
 LString SelRefNode::toString() const
 {
-  return "Ref("+m_name+")";
+  // the name as written, so that the text compiles back to this node
+  return m_name;
 }
 
 SelRefNode::SelRefNode(const char *name)
@@ -517,7 +520,7 @@ LString SelNamesNode::toString() const
     }
     else {
       if (str.isEmpty())
-	rval += "(empty)";
+	rval += "null";
       else
 	rval += str;
     }
@@ -982,7 +985,7 @@ LString SelCompNode::toString() const
   else /*if (m_ncompop==COMP_GT)*/
     oper = "<";
 
-  return LString::format("%s %s %f", mode.c_str(), oper.c_str(), m_dvalue);
+  return mode + " " + oper + " " + SelSimplifier::formatNumber(m_dvalue);
 }
 
 bool SelCompNode::isSelected(MolAtomPtr pAtom)
@@ -1051,7 +1054,8 @@ LString SelPropNode::toString() const
   else
     mode = "aprop";
 
-  return LString::format("%s %s=%s", mode.c_str(), m_propname.c_str(), m_propvalue.c_str());
+  // quoted, or a value with a space would not compile back
+  return mode + " " + m_propname + "=" + SelSimplifier::quoteValue(m_propvalue);
 }
 
 bool SelPropNode::isSelected(MolAtomPtr pAtom)

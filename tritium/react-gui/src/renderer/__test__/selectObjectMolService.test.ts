@@ -1,10 +1,23 @@
 import { describe, it, expect, vi } from 'vitest'
 
-vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
-    makeSel: vi.fn((_ctx: unknown, selStr: string) =>
-        selStr === null || selStr === undefined ? null : { __sel: selStr },
-    ),
-}))
+// The rewriting itself is C++ SelCommand's (pinned by the gtest
+// test_sel_simplify.cpp); here each method only reports how it was called.
+// Methods live on the prototype, so `toHaveBeenCalledWith({ __sel })` still
+// compares the compiled string alone.
+vi.mock('@renderer/worker/server/services/helpers/makeSel', () => {
+    class FakeSel {
+        constructor(public __sel: string) {}
+        invertSimplified(): string { return `invert(${this.__sel})` }
+        toggleSidechain(): string { return `side(${this.__sel})` }
+        rewriteAround(dist: number, byres: boolean): string { return `around(${this.__sel},${dist},${byres})` }
+        simplify(): string { return this.__sel }
+    }
+    return {
+        makeSel: vi.fn((_ctx: unknown, selStr: string) =>
+            selStr === null || selStr === undefined ? null : new FakeSel(selStr),
+        ),
+    }
+})
 
 import { services } from '@renderer/worker/server/services/select/select.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
@@ -74,34 +87,22 @@ describe('selectObjectMol service', () => {
         expect(setSel).toHaveBeenCalledWith({ __sel: '' })
     })
 
-    it('invert wraps non-negated input in !(...)', () => {
-        const { ctx, setSel } = makeMolCtx({ prevSelStr: 'protein' })
-        services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'invert' })
-        expect(setSel).toHaveBeenCalledWith({ __sel: '!(protein)' })
-    })
-
-    it('invert unwraps !(...) input', () => {
-        const { ctx, setSel } = makeMolCtx({ prevSelStr: '!(protein)' })
-        services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'invert' })
-        expect(setSel).toHaveBeenCalledWith({ __sel: 'protein' })
+    it('invert, sidechain and around go to the C++ edits on the current selection', () => {
+        const run = (kind: 'invert' | 'sidechain' | 'around5' | 'aroundByres7') => {
+            const { ctx, setSel } = makeMolCtx({ prevSelStr: 'aid 1' })
+            services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind })
+            return setSel.mock.calls[0][0]
+        }
+        expect(run('invert')).toEqual({ __sel: 'invert(aid 1)' })
+        expect(run('sidechain')).toEqual({ __sel: 'side(aid 1)' })
+        expect(run('around5')).toEqual({ __sel: 'around(aid 1,5,false)' })
+        expect(run('aroundByres7')).toEqual({ __sel: 'around(aid 1,7,true)' })
     })
 
     it('invert from empty selection selects all', () => {
         const { ctx, setSel } = makeMolCtx({ prevSelStr: '' })
         services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'invert' })
         expect(setSel).toHaveBeenCalledWith({ __sel: '*' })
-    })
-
-    it('sidechain toggle prepends bysidech when absent', () => {
-        const { ctx, setSel } = makeMolCtx({ prevSelStr: 'aid 1' })
-        services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'sidechain' })
-        expect(setSel).toHaveBeenCalledWith({ __sel: 'bysidech aid 1' })
-    })
-
-    it('sidechain toggle strips bysidech when present', () => {
-        const { ctx, setSel } = makeMolCtx({ prevSelStr: 'bysidech aid 1' })
-        services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'sidechain' })
-        expect(setSel).toHaveBeenCalledWith({ __sel: 'aid 1' })
     })
 
     it('sidechain toggle is a no-op when selection is empty', () => {
@@ -112,46 +113,6 @@ describe('selectObjectMol service', () => {
         expect(res.ok).toBe(false)
         expect(startUndoTxn).not.toHaveBeenCalled()
         expect(setSel).not.toHaveBeenCalled()
-    })
-
-    // Around-selection kinds (UXP `ws.aroundMolSel` / `molSelAround`).
-    // The same selstr-rewrite logic is exercised in detail by the navi
-    // viewport context-menu tests; this block pins the SelectMolKind
-    // dispatch + empty-prev no-op behaviour for the scene-tree object
-    // ctxmenu path.
-    it.each([
-        ['around3', 'aid 1', 'aid 1 around 3'],
-        ['around5', 'aid 1', 'aid 1 around 5'],
-        ['around7', 'aid 1', 'aid 1 around 7'],
-        ['around10', 'aid 1', 'aid 1 around 10'],
-        ['aroundByres3', 'aid 1', 'byres aid 1 around 3'],
-        ['aroundByres5', 'protein', 'byres protein around 5'],
-        ['aroundByres7', 'aid 1', 'byres aid 1 around 7'],
-    ] as const)(
-        'around kind %s wraps prev=%s into %s with "Around mol selection" txn',
-        (kind, prev, expected) => {
-            const { ctx, setSel, startUndoTxn } = makeMolCtx({ prevSelStr: prev })
-            const res = services.selectObjectMol(ctx, {
-                sceneId: 1, objId: 10, kind,
-            })
-            expect(res.ok).toBe(true)
-            expect(startUndoTxn).toHaveBeenCalledWith('Around mol selection')
-            expect(setSel).toHaveBeenCalledWith({ __sel: expected })
-        },
-    )
-
-    it('around5 strips an existing "X around N" wrapper and replaces dist', () => {
-        const { ctx, setSel } = makeMolCtx({ prevSelStr: 'aid 1 around 3' })
-        services.selectObjectMol(ctx, { sceneId: 1, objId: 10, kind: 'around5' })
-        expect(setSel).toHaveBeenCalledWith({ __sel: 'aid 1 around 5' })
-    })
-
-    it('aroundByres3 lifts inner sel from "byres (X around N)" form', () => {
-        const { ctx, setSel } = makeMolCtx({ prevSelStr: 'byres ( aid 1 around 5 )' })
-        services.selectObjectMol(ctx, {
-            sceneId: 1, objId: 10, kind: 'aroundByres3',
-        })
-        expect(setSel).toHaveBeenCalledWith({ __sel: 'byres aid 1 around 3' })
     })
 
     it.each([

@@ -15,6 +15,7 @@
 #include "AtomIterator.hpp"
 #include "SelCompiler.hpp"
 #include "SelNodes.hpp"
+#include "SelSimplifier.hpp"
 
 #include <qsys/style/AutoStyleCtxt.hpp>
 
@@ -134,6 +135,79 @@ bool SelCommand::isEmpty() const
 {
   if (m_pSelRoot==NULL) return true;
   return false;
+}
+
+namespace {
+  /// Scene a named reference in the tree was compiled in (the scope to
+  /// compile a rewritten text in), or invalid_uid when there is none.
+  qlib::uid_t refScope(SelSuperNode *p)
+  {
+    if (p == NULL)
+      return qlib::invalid_uid;
+    switch (p->getType()) {
+    case SelSuperNode::SELNODE_REF:
+      return static_cast<SelRefNode *>(p)->getTargSceneID();
+    case SelSuperNode::SELNODE_UOP:
+      return refScope(static_cast<SelOpNode *>(p)->getNode());
+    case SelSuperNode::SELNODE_BINOP: {
+      SelBinNode *pn = static_cast<SelBinNode *>(p);
+      qlib::uid_t n = refScope(pn->getNode1());
+      return n != qlib::invalid_uid ? n : refScope(pn->getNode2());
+    }
+    default:
+      return qlib::invalid_uid;
+    }
+  }
+}
+
+LString SelCommand::rewriteChecked(int nEdit, double dist, bool bByres,
+                                   const LString &fallback) const
+{
+  if (m_pSelRoot == NULL)
+    return fallback;
+
+  LString text;
+  try {
+    text = SelSimplifier::rewrite(m_pSelRoot, nEdit, dist, bByres);
+  }
+  catch (...) {
+    LOG_DPRINTLN("SelCommand> simplify failed: %s", toString().c_str());
+    return fallback;
+  }
+
+  // Use the text only if it compiles: a node written back wrongly must not
+  // turn a valid selection into a broken one.
+  SelCommand check;
+  if (text.isEmpty() || !check.compile(text, refScope(m_pSelRoot))) {
+    LOG_DPRINTLN("SelCommand> simplified text does not compile: %s", text.c_str());
+    return fallback;
+  }
+  return text;
+}
+
+LString SelCommand::simplify() const
+{
+  return rewriteChecked(SelSimplifier::EDIT_NONE, 0.0, false, toString());
+}
+
+LString SelCommand::invertSimplified() const
+{
+  if (m_pSelRoot == NULL)
+    return LString("*");
+  return rewriteChecked(SelSimplifier::EDIT_INVERT, 0.0, false, "not (" + toString() + ")");
+}
+
+LString SelCommand::toggleSidechain() const
+{
+  return rewriteChecked(SelSimplifier::EDIT_TOGGLE_SIDECH, 0.0, false,
+                        "bysidech (" + toString() + ")");
+}
+
+LString SelCommand::rewriteAround(double dist, bool bByres) const
+{
+  LString around = "(" + toString() + ") around " + SelSimplifier::formatNumber(dist);
+  return rewriteChecked(SelSimplifier::EDIT_AROUND, dist, bByres,
+                        bByres ? "byres (" + around + ")" : around);
 }
 
 LString SelCommand::dumpNodes() const

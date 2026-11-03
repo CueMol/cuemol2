@@ -45,12 +45,12 @@ SELECT_ALL_INVALID_CASES = [
 ]
 
 # Test cases for empty selection: (input_expression, expected_dump)
-# Note: 'none' is internally evaluated as '!*' (not all)
+# Note: 'none' is written back as 'none'
 SELECT_NONE_VALID_CASES = [
-    ("none", "!*"),
-    ("none ", "!*"),
-    (" none", "!*"),
-    ("  none  ", "!*"),
+    ("none", "none"),
+    ("none ", "none"),
+    (" none", "none"),
+    ("  none  ", "none"),
 ]
 
 # Test cases for invalid empty selection: (input_expression, expected_error_substring)

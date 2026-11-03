@@ -31,7 +31,7 @@ import { ObjectSelect, objectFilters } from '@renderer/h3-kit/ObjectSelect';
 import { fireService } from '@renderer/utils/fireService';
 import { isImeKey, FieldSection, FormButton, TextField } from '@renderer/h3-kit/form';
 import { useTheme } from '@renderer/contexts/ThemeContext';
-import { getHistory, pushHistory, useSelHitCount, useHitCountResolver, CountTag } from '@renderer/h3-kit/MolSelList';
+import { getHistory, pushHistory, useSelHitCount, useHitCountResolver, useSelSimplifier, CountTag } from '@renderer/h3-kit/MolSelList';
 import {
     SelectionBuilder,
     useSelectionValues,
@@ -185,6 +185,7 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({ collapsed, onToggl
     const resolveValues = useSelectionValues({ cm, sceneID: activeSceneId, molID: selectedMolId });
 
     const getHitCount = useHitCountResolver(cm, activeSceneId, selectedMolId);
+    const simplify = useSelSimplifier(cm, activeSceneId);
 
     // Hit count of the expression currently in the text field.
     const currentCount = useSelHitCount(getHitCount, textDraft);
@@ -395,6 +396,7 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({ collapsed, onToggl
                         draft={draft}
                         dispatch={dispatch}
                         onApply={onBuilderApply}
+                        simplify={simplify}
                         history={historyItems}
                         sceneDefs={sceneDefs}
                         globalDefs={globalDefs}
