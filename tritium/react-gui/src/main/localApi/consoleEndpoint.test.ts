@@ -18,6 +18,7 @@ import * as path from 'path'
 import { createLocalApiServer } from './server'
 import type { LocalApiServer } from './server'
 import { consoleEndpoint } from './consoleEndpoint'
+import { EditLock } from './editLock'
 import { appEndpoint } from './appEndpoint'
 import type { LocalApiRelay } from './relay'
 import { post, quitApp } from '@cuemol/tritium-cli/src/connection'
@@ -54,7 +55,7 @@ describe('tritium_cli and the console endpoint', () => {
       failAll: () => undefined,
     }
     server = createLocalApiServer({
-      handlers: [consoleEndpoint(relay)],
+      handlers: [consoleEndpoint(relay, new EditLock())],
       token: () => 'tok',
       port: await freePort(),
       infoFile,

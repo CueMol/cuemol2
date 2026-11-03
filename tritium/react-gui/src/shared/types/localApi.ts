@@ -23,13 +23,20 @@ export type {
   ConsoleCompleteResponse,
   ConsoleDialectId,
   ConsoleInfoResponse,
+  ConsoleLockRequest,
   ConsoleRunRequest,
   ConsoleRunResponse,
   ConsoleWireEntry,
   LocalApiEndpoint,
   LocalApiInfoFile,
 } from '@cuemol/console-kit'
-export { CONSOLE_PROTOCOL, TRITIUM_CLI_FLAG } from '@cuemol/console-kit'
+export {
+  CONSOLE_PROTOCOL,
+  EDIT_LOCK_BUSY_MESSAGE,
+  TRITIUM_CLI_FLAG,
+  TRITIUM_CLI_MCP_FLAG,
+  cliFlagEndpoints,
+} from '@cuemol/console-kit'
 
 /** One request for the renderer to answer (main -> main window). */
 export interface LocalApiRequestPayload {

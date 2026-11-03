@@ -33,6 +33,15 @@ describe('tritium_cli starting the app', () => {
     await ensureApp({ ...quiet, env: { HOME: '/h' }, launch, locate })
     expect(launch).toHaveBeenCalledWith(locate(), ['--tritium-cli'], { HOME: '/h' }, undefined)
 
+    // tritium_cli mcp: asks for the MCP server too, and waits until it is listed.
+    // The app above lists only the console, so it is launched again.
+    launch.mockClear()
+    launch.mockImplementationOnce(() =>
+      fs.writeFileSync(file, JSON.stringify({ port: 1, token: 't', pid: process.pid, endpoints: ['console', 'mcp'] })),
+    )
+    await ensureApp({ ...quiet, env: { HOME: '/h' }, launch, locate, endpoint: 'mcp' })
+    expect(launch).toHaveBeenCalledWith(locate(), ['--tritium-cli=mcp'], { HOME: '/h' }, undefined)
+
     // From the repo (task run_tritium_cli): the built dev app, started the way
     // `pnpm run start` does but without rebuilding, with the flag after `--`.
     fs.rmSync(file)

@@ -15,7 +15,8 @@ import * as os from 'os'
 import * as nodePath from 'path'
 import { randomBytes } from 'crypto'
 import { IPC } from '@shared/ipcChannels'
-import { DEFAULT_LOCAL_API_PORT, TRITIUM_CLI_FLAG } from '@shared/types/localApi'
+import { DEFAULT_LOCAL_API_PORT, cliFlagEndpoints } from '@shared/types/localApi'
+import type { LocalApiEndpoint } from '@shared/types/localApi'
 import { handleInvoke } from '../ipc/handleInvoke'
 import { secretId } from '../secretStore'
 import { saveSecretEnc } from '../stateStore'
@@ -23,6 +24,7 @@ import { getMainWindow } from '../windows/mainWindow'
 import { quitApp } from '../appQuit'
 import { appEndpoint } from './appEndpoint'
 import { consoleEndpoint } from './consoleEndpoint'
+import { EditLock } from './editLock'
 import { mcpEndpoint } from './mcpEndpoint'
 import { makeLocalApiRelay } from './relay'
 import { createLocalApiServer } from './server'
@@ -81,26 +83,30 @@ function newToken(): string {
 
 let server: LocalApiServer | null = null
 
-/** Whether tritium_cli launched this run of the app (or a second instance of it). */
-let cliAccess = false
+/** The endpoints tritium_cli asked for when it launched this run of the app (or a second instance of it). */
+const cliAccess = new Set<LocalApiEndpoint>()
 
 /**
- * Note a command line that carries TRITIUM_CLI_FLAG. Called with the app's own
- * argv before any window exists (the window asks later) and with a second
- * instance's (the window is told). Never turned back off for the run.
+ * Note a command line that carries TRITIUM_CLI_FLAG or TRITIUM_CLI_MCP_FLAG.
+ * Called with the app's own argv before any window exists (the window asks
+ * later) and with a second instance's (the window is told). An endpoint once
+ * granted stays granted for the run.
  */
 export function noteCliLaunch(argv: readonly string[]): void {
-  if (cliAccess || !argv.includes(TRITIUM_CLI_FLAG)) return
-  cliAccess = true
-  getMainWindow()?.webContents.send(IPC.LOCAL_API_CLI_ACCESS_GRANTED)
+  const before = cliAccess.size
+  for (const a of argv) for (const e of cliFlagEndpoints(a)) cliAccess.add(e)
+  if (cliAccess.size === before) return
+  getMainWindow()?.webContents.send(IPC.LOCAL_API_CLI_ACCESS_GRANTED, [...cliAccess])
 }
 
 /** Register the local API channels; the server is created closed. */
 export function registerLocalApiHandlers(mainWindow: BrowserWindow): void {
   token = loadToken()
   const relay = makeLocalApiRelay(() => getMainWindow() ?? mainWindow)
+  // One lock for every client, whichever endpoint it comes through.
+  const editLock = new EditLock()
   server = createLocalApiServer({
-    handlers: [mcpEndpoint(relay, app.getVersion()), consoleEndpoint(relay), appEndpoint(quitApp)],
+    handlers: [mcpEndpoint(relay, app.getVersion(), editLock), consoleEndpoint(relay, editLock), appEndpoint(quitApp)],
     token: () => token,
     // The owning plugin sends its stored port before switching an endpoint on.
     port: DEFAULT_LOCAL_API_PORT,
@@ -110,7 +116,7 @@ export function registerLocalApiHandlers(mainWindow: BrowserWindow): void {
 
   handleInvoke(IPC.LOCAL_API_REPLY, (_e, p) => relay.reply(p))
   handleInvoke(IPC.LOCAL_API_STATUS, () => srv.status())
-  handleInvoke(IPC.LOCAL_API_CLI_ACCESS, () => cliAccess)
+  handleInvoke(IPC.LOCAL_API_CLI_ACCESS, () => [...cliAccess])
   handleInvoke(IPC.LOCAL_API_CONTROL, async (_e, req) => {
     switch (req.action) {
       case 'endpoint':

@@ -38,7 +38,7 @@ import type {
 import type { CuemolClipWriteReq, CuemolClipReadRes, CuemolClipPeekRes } from './types/clipboard'
 import type {
   AppQuitRequest, AppQuitResponse,
-  LocalApiControlReq, LocalApiReplyPayload, LocalApiRequestPayload, LocalApiStatus,
+  LocalApiControlReq, LocalApiEndpoint, LocalApiReplyPayload, LocalApiRequestPayload, LocalApiStatus,
 } from './types/localApi'
 import type { UpdateStatus } from './types/update'
 
@@ -125,7 +125,7 @@ export interface InvokeChannels {
   [IPC.LOCAL_API_REPLY]:   { req: LocalApiReplyPayload; res: void }
   [IPC.LOCAL_API_CONTROL]: { req: LocalApiControlReq;   res: LocalApiStatus }
   [IPC.LOCAL_API_STATUS]:  { req: void;                 res: LocalApiStatus }
-  [IPC.LOCAL_API_CLI_ACCESS]: { req: void;              res: boolean }
+  [IPC.LOCAL_API_CLI_ACCESS]: { req: void;              res: LocalApiEndpoint[] }
   [IPC.UPDATE_GET_STATUS]:     { req: void; res: UpdateStatus }
   [IPC.UPDATE_CHECK]:          { req: void; res: void }
   [IPC.UPDATE_DOWNLOAD]:       { req: void; res: void }
@@ -230,7 +230,7 @@ export interface PushChannels {
   [IPC.RENDER_WINDOW_EDIT_PUSH]:  RenderWindowEditAction
   [IPC.RENDER_RELAY_REQUEST]:     RelayRequestPayload
   [IPC.LOCAL_API_REQUEST]:        LocalApiRequestPayload
-  [IPC.LOCAL_API_CLI_ACCESS_GRANTED]: void
+  [IPC.LOCAL_API_CLI_ACCESS_GRANTED]: LocalApiEndpoint[]
   [IPC.UPDATE_STATUS]:            UpdateStatus
 }
 

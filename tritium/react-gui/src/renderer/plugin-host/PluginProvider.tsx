@@ -38,6 +38,7 @@ import type { PluginChoices } from './pluginSelect'
 import type { RendererPlugin } from './types'
 import type { PluginPrefValue } from '@shared/types/uiPrefs'
 import { NO_PREFS, PluginContext } from './pluginContext'
+import { useCliAccessGrants } from './localApi'
 import type { PluginContextValue, PluginPrefsMap } from './pluginContext'
 
 /** Stable empty record so the initial state does not change identity per render. */
@@ -83,9 +84,11 @@ export const PluginProvider: React.FC<PluginProviderProps> = ({
     [plugins],
   )
   const switchable = useMemo(() => available.filter(isPluginSwitchable), [available])
+  // A plugin tritium_cli asked for (`cliActivatedBy`) is on for this run.
+  const cliGrants = useCliAccessGrants()
   const active = useMemo(
-    () => available.filter((p) => isPluginEnabled(p, choices)),
-    [available, choices],
+    () => available.filter((p) => isPluginEnabled(p, choices, cliGrants)),
+    [available, choices, cliGrants],
   )
   const contributions = useMemo(() => collectContributions(active), [active])
 

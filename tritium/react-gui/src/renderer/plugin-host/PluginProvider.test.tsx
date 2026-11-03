@@ -27,7 +27,12 @@ import type { RendererPlugin } from './types'
 
 void React
 
-type Switchability = { devOnly?: boolean; alwaysEnabled?: boolean; defaultEnabled?: boolean }
+type Switchability = {
+  devOnly?: boolean
+  alwaysEnabled?: boolean
+  defaultEnabled?: boolean
+  cliActivatedBy?: 'mcp' | 'console'
+}
 
 const plugin = (id: string, how: Switchability = {}): RendererPlugin => ({
   manifest: { id, name: id, version: '1.0.0', ...how },
@@ -57,6 +62,12 @@ describe('plugin enabled state', () => {
     // An explicit choice wins over the default, in both directions.
     expect(isPluginEnabled(plugin('a'), { a: false })).toBe(false)
     expect(isPluginEnabled(plugin('a', { defaultEnabled: false }), { a: true })).toBe(true)
+  })
+
+  it('turns a plugin on for a run whose tritium_cli asked for its endpoint, switched off or not', () => {
+    const mcp = plugin('mcp', { defaultEnabled: false, cliActivatedBy: 'mcp' })
+    expect(isPluginEnabled(mcp, { mcp: false }, ['console'])).toBe(false)
+    expect(isPluginEnabled(mcp, { mcp: false }, ['console', 'mcp'])).toBe(true)
   })
 
   it('keeps an alwaysEnabled plugin on whatever is stored for it', () => {

@@ -14,6 +14,7 @@ import type {
   ResolvedPluginView,
 } from './types'
 import type { SettingControl } from '@renderer/features/settings/settings/settingControl'
+import type { LocalApiEndpoint } from '@shared/types/localApi'
 
 /**
  * The plugins this build ships.
@@ -41,10 +42,18 @@ export function selectAvailablePlugins(
  */
 export type PluginChoices = Readonly<Record<string, boolean>>
 
-/** Whether `plugin` is on, given the user's choices. */
-export function isPluginEnabled(plugin: RendererPlugin, choices: PluginChoices): boolean {
+/**
+ * Whether `plugin` is on, given the user's choices and the endpoints
+ * tritium_cli asked for in this run (`cliActivatedBy`).
+ */
+export function isPluginEnabled(
+  plugin: RendererPlugin,
+  choices: PluginChoices,
+  cliGrants: readonly LocalApiEndpoint[] = [],
+): boolean {
   const { manifest } = plugin
   if (manifest.alwaysEnabled) return true
+  if (manifest.cliActivatedBy && cliGrants.includes(manifest.cliActivatedBy)) return true
   return choices[manifest.id] ?? manifest.defaultEnabled ?? true
 }
 
@@ -58,8 +67,9 @@ export function selectActivePlugins(
   plugins: readonly RendererPlugin[],
   choices: PluginChoices,
   devUi: boolean,
+  cliGrants: readonly LocalApiEndpoint[] = [],
 ): RendererPlugin[] {
-  return selectAvailablePlugins(plugins, devUi).filter((p) => isPluginEnabled(p, choices))
+  return selectAvailablePlugins(plugins, devUi).filter((p) => isPluginEnabled(p, choices, cliGrants))
 }
 
 /** No contributions at all. A shared constant so identity stays stable. */

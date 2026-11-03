@@ -12,8 +12,8 @@ import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
 import { spawn } from 'node:child_process'
-import { TRITIUM_CLI_FLAG } from '@cuemol/console-kit'
-import type { AppQuitResponse, LocalApiInfoFile } from '@cuemol/console-kit'
+import { TRITIUM_CLI_FLAG, TRITIUM_CLI_MCP_FLAG } from '@cuemol/console-kit'
+import type { AppQuitResponse, LocalApiEndpoint, LocalApiInfoFile } from '@cuemol/console-kit'
 import { DOWNLOAD_URL, locateApp } from './appLocator'
 
 /** Where the app writes its port and token. */
@@ -29,15 +29,23 @@ export const NOT_INSTALLED =
   `CueMol3 is not installed. Download it from ${DOWNLOAD_URL}\n` +
   '(installed somewhere unusual? set CUEMOL3_APP to the app).'
 
-/** The connection info, or an Error saying why there is none. */
-export function readInfo(file = infoFilePath()): LocalApiInfoFile | Error {
-  let info: LocalApiInfoFile
+export const MCP_NOT_RUNNING =
+  'CueMol is not running, or its MCP server is not open (run tritium_cli mcp, which starts it).'
+
+/** The info file as written, whatever it lists, or null when there is none. */
+export function readInfoFile(file = infoFilePath()): LocalApiInfoFile | null {
   try {
-    info = JSON.parse(fs.readFileSync(file, 'utf8')) as LocalApiInfoFile
+    const info = JSON.parse(fs.readFileSync(file, 'utf8')) as LocalApiInfoFile
+    return Array.isArray(info.endpoints) ? info : null
   } catch {
-    return new Error(NOT_RUNNING)
+    return null
   }
-  if (!Array.isArray(info.endpoints) || !info.endpoints.includes('console')) return new Error(NOT_RUNNING)
+}
+
+/** The connection info for `endpoint`, or an Error saying why there is none. */
+export function readInfo(file = infoFilePath(), endpoint: LocalApiEndpoint = 'console'): LocalApiInfoFile | Error {
+  const info = readInfoFile(file)
+  if (!info || !info.endpoints.includes(endpoint)) return new Error(endpoint === 'mcp' ? MCP_NOT_RUNNING : NOT_RUNNING)
   return info
 }
 
@@ -51,9 +59,9 @@ export function alive(pid: number): boolean {
   }
 }
 
-/** Info for a live app with the console endpoint open, or null. */
-function liveInfo(file: string): LocalApiInfoFile | null {
-  const info = readInfo(file)
+/** Info for a live app with `endpoint` open, or null. */
+function liveInfo(file: string, endpoint: LocalApiEndpoint): LocalApiInfoFile | null {
+  const info = readInfo(file, endpoint)
   if (info instanceof Error) return null
   // A crashed app leaves its file behind.
   if (typeof info.pid === 'number' && !alive(info.pid)) return null
@@ -89,17 +97,18 @@ function launchCommand(
   env: NodeJS.ProcessEnv,
   execPath: string,
   locate: () => string | null,
+  flag: string,
 ): { command: string; args: string[]; cwd?: string } | null {
-  if (env.ELECTRON_RUN_AS_NODE) return { command: execPath, args: [TRITIUM_CLI_FLAG] }
+  if (env.ELECTRON_RUN_AS_NODE) return { command: execPath, args: [flag] }
   if (env.TRITIUM_CLI_DEV_APP) {
     return {
       command: 'pnpm',
-      args: ['exec', 'electron-vite', 'preview', '--skipBuild', '--', TRITIUM_CLI_FLAG],
+      args: ['exec', 'electron-vite', 'preview', '--skipBuild', '--', flag],
       cwd: env.TRITIUM_CLI_DEV_APP,
     }
   }
   const app = locate()
-  return app ? { command: app, args: [TRITIUM_CLI_FLAG] } : null
+  return app ? { command: app, args: [flag] } : null
 }
 
 export interface EnsureAppOptions {
@@ -112,6 +121,8 @@ export interface EnsureAppOptions {
   onStart?: () => void
   timeoutMs?: number
   pollMs?: number
+  /** The endpoint to wait for; `mcp` launches with TRITIUM_CLI_MCP_FLAG. */
+  endpoint?: LocalApiEndpoint
 }
 
 /**
@@ -133,9 +144,10 @@ export async function ensureApp({
   onStart = () => process.stderr.write('Starting CueMol3...\n'),
   timeoutMs = START_TIMEOUT_MS,
   pollMs = 300,
+  endpoint = 'console',
 }: EnsureAppOptions = {}): Promise<void> {
-  if (liveInfo(file)) return
-  const how = launchCommand(env, execPath, locate)
+  if (liveInfo(file, endpoint)) return
+  const how = launchCommand(env, execPath, locate, endpoint === 'mcp' ? TRITIUM_CLI_MCP_FLAG : TRITIUM_CLI_FLAG)
   if (!how) throw new Error(NOT_INSTALLED)
   const appEnv = { ...env }
   delete appEnv.ELECTRON_RUN_AS_NODE
@@ -145,9 +157,13 @@ export async function ensureApp({
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, pollMs))
-    if (liveInfo(file)) return
+    if (liveInfo(file, endpoint)) return
   }
-  throw new Error('CueMol3 did not open command line access in time (is the Console plugin turned off?).')
+  throw new Error(
+    endpoint === 'mcp'
+      ? 'CueMol3 did not open its MCP server in time (is this CueMol3 too old for tritium_cli mcp?).'
+      : 'CueMol3 did not open command line access in time (is the Console plugin turned off?).',
+  )
 }
 
 /**

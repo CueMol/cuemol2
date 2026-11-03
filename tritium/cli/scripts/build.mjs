@@ -23,5 +23,6 @@ await build({
   format: 'esm',
   target: 'node18',
   // The entry's own shebang is kept by esbuild.
+  loader: { '.md': 'text' },
   logLevel: 'warning',
 })

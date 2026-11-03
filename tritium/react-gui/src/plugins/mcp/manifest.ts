@@ -19,6 +19,8 @@ export const mcpManifest: PluginManifest = {
     'drive CueMol through the Model Context Protocol.',
   // Off by default: it opens a port, which nobody should get without asking.
   defaultEnabled: false,
+  // `tritium_cli mcp` turns it on for that run: running the command is the asking.
+  cliActivatedBy: 'mcp',
   contributes: {
     statusBar: [{ id: 'mcp' }],
     settings: [

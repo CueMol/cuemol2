@@ -59,25 +59,36 @@ export function useLocalApiStatus(): LocalApiStatus | null {
   return status
 }
 
+const NO_GRANTS: readonly LocalApiEndpoint[] = []
+
 /**
- * Whether tritium_cli launched this run of the app (TRITIUM_CLI_FLAG), which
- * asks for the console endpoint to be open whatever its setting says. Once
- * true it stays true.
+ * The endpoints tritium_cli asked for when it launched this run of the app
+ * (TRITIUM_CLI_FLAG: the console; TRITIUM_CLI_MCP_FLAG: the MCP server too).
+ * Each is opened whatever its setting says, and stays granted for the run.
  */
-export function useCliAccessGranted(): boolean {
-  const [granted, setGranted] = useState(false)
+export function useCliAccessGrants(): readonly LocalApiEndpoint[] {
+  const [grants, setGrants] = useState<readonly LocalApiEndpoint[]>(NO_GRANTS)
   useEffect(() => {
     const api = window.electronAPI
     if (!api) return
     let live = true
-    const off = api.onPush(IPC.LOCAL_API_CLI_ACCESS_GRANTED, () => { if (live) setGranted(true) })
-    void api.invoke(IPC.LOCAL_API_CLI_ACCESS).then((g) => { if (live && g) setGranted(true) })
+    // Grants only grow, so the longer list is the newer one.
+    const take = (g: readonly LocalApiEndpoint[] | undefined) => {
+      if (live && g) setGrants((prev) => (g.length > prev.length ? [...g] : prev))
+    }
+    const off = api.onPush(IPC.LOCAL_API_CLI_ACCESS_GRANTED, take)
+    void api.invoke(IPC.LOCAL_API_CLI_ACCESS).then(take)
     return () => {
       live = false
       off()
     }
   }, [])
-  return granted
+  return grants
+}
+
+/** Whether tritium_cli asked for `endpoint` in this run (see useCliAccessGrants). */
+export function useCliAccessGranted(endpoint: LocalApiEndpoint = 'console'): boolean {
+  return useCliAccessGrants().includes(endpoint)
 }
 
 /**
