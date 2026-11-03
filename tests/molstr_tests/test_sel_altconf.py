@@ -49,10 +49,10 @@ VALID_CASES = [
     ("alt A ", "alt A"),
     ("alt A, B", "alt B,A"),
     # --- null keyword (atoms without alternate conformation) ---
-    ("alt null", "alt (empty)"),
-    ("alt A,null", "alt (empty),A"),
-    ("alt null,A", "alt A,(empty)"),
-    ("alt A,null,B", "alt B,(empty),A"),
+    ("alt null", "alt null"),
+    ("alt A,null", "alt null,A"),
+    ("alt null,A", "alt A,null"),
+    ("alt A,null,B", "alt B,null,A"),
     # --- Bare string names (SEL_TOKEN) ---
     # Single characters (typical case)
     ("alt a", "alt a"),
@@ -145,11 +145,11 @@ QUOTED_WORKAROUND_CASES = [
 HIERARCHICAL_CASES = [
     # Chain.residue.atom & alt expression
     ("A.7.* & alt A", "(A.7.*) & (alt A)"),
-    ("A.7.* & alt B,null", "(A.7.*) & (alt B,(empty))"),
+    ("A.7.* & alt B,null", "(A.7.*) & (alt B,null)"),
     ("*.10:20.* & alt A", "(*.10:20.*) & (alt A)"),
     # OR combinations
     ("alt A | alt B", "(alt A) | (alt B)"),
-    ("alt A | alt null", "(alt A) | (alt (empty))"),
+    ("alt A | alt null", "(alt A) | (alt null)"),
 ]
 
 # =============================================================================
@@ -193,19 +193,19 @@ class TestSelectAltconfNull:
         """Test 'null' keyword selects atoms without alternate conformation."""
         result = selobj.compile("alt null", 0)
         assert result
-        assert selobj.dumpNodes() == "alt (empty)"
+        assert selobj.dumpNodes() == "alt null"
 
     def test_null_with_single_altconf(self, selobj):
         """Test common pattern: select altconf A and non-altconf atoms."""
         result = selobj.compile("alt A,null", 0)
         assert result
-        assert selobj.dumpNodes() == "alt (empty),A"
+        assert selobj.dumpNodes() == "alt null,A"
 
     def test_null_with_multiple_altconf(self, selobj):
         """Test selecting multiple altconfs plus non-altconf atoms."""
         result = selobj.compile("alt A,B,null", 0)
         assert result
-        assert selobj.dumpNodes() == "alt (empty),B,A"
+        assert selobj.dumpNodes() == "alt null,B,A"
 
     # def test_null_ordering(self, selobj):
     #     """Test that order doesn't matter for null."""
@@ -222,7 +222,7 @@ class TestSelectAltconfNull:
     #     dump3 = selobj.dumpNodes()
 
     #     # All should produce same result (reversed order)
-    #     assert dump1 == dump2 == dump3 == "alt B,A,(empty)"
+    #     assert dump1 == dump2 == dump3 == "alt B,A,null"
 
 class TestSelectAltconfQuotedStrings:
     """Tests for quoted string handling in altconf selection."""

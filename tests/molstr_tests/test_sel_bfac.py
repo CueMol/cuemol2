@@ -110,27 +110,27 @@ CASE_SENSITIVITY_CASES = [
 # {kw} will be replaced with keyword
 COMBINATION_CASES = [
     # --- AND combinations ---
-    ("{kw}>50 and name CA", "({kw} > 50.000000) and (name CA)"),
-    ("{kw}<30 & {kw}>10", "({kw} < 30.000000) and ({kw} > 10.000000)"),
-    ("chain A and {kw}>40", "(chain A) and ({kw} > 40.000000)"),
+    ("{kw}>50 and name CA", "({kw} > 50.0) and (name CA)"),
+    ("{kw}<30 & {kw}>10", "({kw} < 30.0) and ({kw} > 10.0)"),
+    ("chain A and {kw}>40", "(chain A) and ({kw} > 40.0)"),
     # --- OR combinations ---
-    ("{kw}>100 or {kw}<10", "({kw} > 100.000000) or ({kw} < 10.000000)"),
-    ("{kw}=50 | name CA", "({kw} = 50.000000) or (name CA)"),
+    ("{kw}>100 or {kw}<10", "({kw} > 100.0) or ({kw} < 10.0)"),
+    ("{kw}=50 | name CA", "({kw} = 50.0) or (name CA)"),
     # --- NOT combinations ---
-    ("not {kw}>50", "!({kw} > 50.000000)"),
-    ("!{kw}<30", "!({kw} < 30.000000)"),
+    ("not {kw}>50", "!({kw} > 50.0)"),
+    ("!{kw}<30", "!({kw} < 30.0)"),
     # --- Complex combinations ---
     (
         "({kw}>50 and chain A) or name CA",
-        "(({kw} > 50.000000) and (chain A)) or (name CA)",
+        "(({kw} > 50.0) and (chain A)) or (name CA)",
     ),
     (
         "chain A and ({kw}>30 and {kw}<70)",
-        "(chain A) and (({kw} > 30.000000) and ({kw} < 70.000000))",
+        "(chain A) and (({kw} > 30.0) and ({kw} < 70.0))",
     ),
     # --- With floating point values ---
-    ("{kw}>50.5 and name CA", "({kw} > 50.500000) and (name CA)"),
-    ("{kw}<1.0e2 | {kw}<0.5", "({kw} < 100.000000) or ({kw} < 0.500000)"),
+    ("{kw}>50.5 and name CA", "({kw} > 50.5) and (name CA)"),
+    ("{kw}<1.0e2 | {kw}<0.5", "({kw} < 100.0) or ({kw} < 0.5)"),
 ]
 
 # =============================================================================
@@ -139,8 +139,15 @@ COMBINATION_CASES = [
 
 
 def format_value(value):
-    """Format a numeric value like C's printf %f (6 decimal places)."""
-    return "%f" % float(value)
+    """Format a numeric value as the selection is written back: the shortest
+    fixed-point form that reads back as the same double, with at least one
+    decimal (SelSimplifier::formatNumber)."""
+    v = float(value)
+    for prec in range(1, 18):
+        s = "%.*f" % (prec, v)
+        if float(s) == v:
+            return s
+    return "%.17f" % v
 
 
 # =============================================================================

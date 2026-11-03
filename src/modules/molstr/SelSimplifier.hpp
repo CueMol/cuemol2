@@ -49,9 +49,12 @@ namespace molstr {
     /// the shortest fixed-point form, no exponent (the scanner has none).
     static LString formatNumber(double value);
 
-    /// A property value as selection text (quoted, so that any value the
-    /// scanner can carry reads back unchanged).
+    /// A property value as selection text that reads back unchanged: bare
+    /// when the scanner reads it back as the same word, quoted otherwise.
     static LString quoteValue(const LString &value);
+
+    /// A name as a quoted string (the around target, "[...]"), always quoted.
+    static LString quoteName(const LString &name);
   };
 
 }

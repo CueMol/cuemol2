@@ -68,7 +68,7 @@ VALID_CASES = [
     ("name 123", "name 123"),
     ("name 0", "name 0"),
     # --- SEL_NULL (literal "null" string) ---
-    ("name null", "name (empty)"),
+    ("name null", "name null"),
     # --- SEL_COLON syntax ---
     ("name ABC:", "name ABC:"),  # SEL_STRING SEL_COLON
     ("name ABC :", "name ABC:"),  # SEL_STRING SEL_COLON
@@ -103,7 +103,7 @@ VALID_CASES = [
     ("name 'A',\"B\"", "name \"B\",'A'"),  # mixed quote types
     ("name C1',CA", "name CA,C1'"),  # nucleic acid + normal
     ("name O5',C1',N", "name N,C1',O5'"),  # multiple nucleic acid atoms
-    ("name null,CA", "name CA,(empty)"),  # null + normal
+    ("name null,CA", "name CA,null"),  # null + normal
     ("name 123,CA", "name CA,123"),  # integer + normal
 ]
 

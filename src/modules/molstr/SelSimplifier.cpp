@@ -11,6 +11,7 @@
 #include "ResidIndex.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <memory>
 #include <vector>
@@ -216,7 +217,7 @@ namespace {
       LString rval = "(" + write(e->kids[0]) + ") " + uopKeyword(e->op) + " " +
                      SelSimplifier::formatNumber(e->value);
       if (!e->artarg.isEmpty())
-        rval += " [" + SelSimplifier::quoteValue(e->artarg) + "]";
+        rval += " [" + SelSimplifier::quoteName(e->artarg) + "]";
       return rval;
     }
     case Expr::NAMES:
@@ -679,9 +680,36 @@ LString SelSimplifier::formatNumber(double value)
 
 LString SelSimplifier::quoteValue(const LString &value)
 {
-  // the scanner keeps a backslash escape as it is, so a value is written in
-  // whichever quote it does not contain
+  // A value the scanner reads back as the same word is written bare (as it
+  // was typed, mostly): a word starting with a letter or "_", or a small
+  // integer. Anything else is quoted. The scanner keeps a backslash escape
+  // as it is, so the quote used is one the value does not contain.
+  const char *p = value.c_str();
+  const int n = value.length();
+  bool bWord = n > 0 && (std::isalpha((unsigned char)p[0]) || p[0] == '_');
+  for (int i = 1; bWord && i < n; ++i) {
+    const unsigned char c = (unsigned char)p[i];
+    bWord = std::isalnum(c) || c == '_' || c == '\'' || c == '*';
+  }
+  if (bWord)
+    return value;
+
+  int i = (n > 0 && p[0] == '-') ? 1 : 0;
+  const int ndig = n - i;
+  bool bInt = ndig > 0 && ndig <= 9 && (p[i] != '0' || ndig == 1);
+  for (; bInt && i < n; ++i)
+    bInt = std::isdigit((unsigned char)p[i]);
+  if (bInt)
+    return value;
+
   if (value.indexOf('"') < 0)
     return "\"" + value + "\"";
   return "'" + value + "'";
+}
+
+LString SelSimplifier::quoteName(const LString &name)
+{
+  if (name.indexOf('"') < 0)
+    return "\"" + name + "\"";
+  return "'" + name + "'";
 }

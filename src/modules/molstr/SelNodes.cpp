@@ -69,7 +69,7 @@ LString SelOpNode::toString() const
       return "(" + rval + ") around " + SelSimplifier::formatNumber(m_dvalue);
     else
       return "(" + rval + ") around " + SelSimplifier::formatNumber(m_dvalue) + " [" +
-             SelSimplifier::quoteValue(m_artarg) + "]";
+             SelSimplifier::quoteName(m_artarg) + "]";
   }
   else if (m_nmode==OP_EXTEND) {
       return "(" + rval + ") extend " + SelSimplifier::formatNumber(m_dvalue);

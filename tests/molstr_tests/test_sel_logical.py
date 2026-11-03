@@ -140,9 +140,9 @@ COMPLEX_CASES = [
         "!(((name CA) and (name N)) or ((name O) and (elem C)))",
     ),
     # All operators combined with special selectors
-    ("all and not chain A or none", "((*) and (!(chain A))) or (!*)"),
-    ("(all or none) and not chain A", "((*) or (!*)) and (!(chain A))"),
-    ("not (all and chain A) or not none", "(!((*) and (chain A))) or (!(!*))"),
+    ("all and not chain A or none", "((*) and (!(chain A))) or (none)"),
+    ("(all or none) and not chain A", "((*) or (none)) and (!(chain A))"),
+    ("not (all and chain A) or not none", "(!((*) and (chain A))) or (!(none))"),
 ]
 
 # Invalid cases specific to logical operator combinations
