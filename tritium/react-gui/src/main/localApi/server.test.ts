@@ -10,6 +10,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import * as net from 'net'
+import { EditLock } from './editLock'
 import { createLocalApiServer } from './server'
 import type { LocalApiServer } from './server'
 import { mcpEndpoint } from './mcpEndpoint'
@@ -54,7 +55,7 @@ afterEach(async () => {
 
 async function start(asked: { endpoint: string; kind: string; payload: unknown }[] = []) {
   const port = await freePort()
-  server = createLocalApiServer({ handlers: [mcpEndpoint(fakeRelay(asked), '0.0.0')], token: () => TOKEN, port })
+  server = createLocalApiServer({ handlers: [mcpEndpoint(fakeRelay(asked), '0.0.0', new EditLock())], token: () => TOKEN, port })
   return { port, asked }
 }
 

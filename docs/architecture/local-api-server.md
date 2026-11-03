@@ -4,8 +4,10 @@ GUI アプリ (tritium) に内蔵した HTTP server。外部のプログラム�
 操作するための入口で、endpoint は 2 つ:
 
 - MCP (`/mcp`) -- plugin `mcp`。AI client から op catalog を tool として呼ぶ (§3, §4)。
-- console (`/console/run`, `/console/complete`, `/console/info`、`/app/quit`) -- plugin `console`。
+- console (`/console/run`, `/console/complete`, `/console/info`, `/console/lock`、`/app/quit`) -- plugin `console`。
   terminal の `tritium_cli` から console の native / PyMOL dialect を使い、app を終了する (§5)。
+
+どちらの endpoint から来た編集も、main の**編集ロック**で client 間の排他を取る (§7)。
 
 まだ実装していない項目は [backlog](../plans/261011-op-console-backlog-plan.md) の「MCP / agent」「console 本体」。
 
@@ -81,7 +83,10 @@ listen 中は `~/.cuemol/local-api.json` (mode 0600、`CUEMOL_LOCAL_API_INFO` �
 - 失敗した `tools/call` は、どこで失敗しても (main、window、worker) `{ ok: false, error }` の JSON を
   `isError: true` で返す (`shared/mcpResult.ts`)。`TOOL_RULES` が client にそう約束している。
 - `notifications/cancelled` は SDK に渡す前に拾い、実行中の call の AbortController を止める
-  (別の POST で届くため)。
+  (別の POST で届くため)。実行中の call は全 client 共通の Map に request id で持つので、id が衝突する
+  client 同士は互いの call を取り消し得る。`tritium_cli mcp` (§5.6) は id を書き換えてこれを避ける。
+- `tools/call` は編集ロック (§7) を call の間だけ取る。別の client が持っていれば
+  `EDIT_LOCK_BUSY_MESSAGE` の tool 結果 (`isError: true`) を返す。
 - SDK (`@modelcontextprotocol/sdk`) は devDependency で、main の bundle に同梱する。
 
 ### tool と 1 call の扱い (`plugins/mcp/worker/mcp.service.ts`)
@@ -135,16 +140,18 @@ scene は `discardChanges: true` が無いと閉じない (説明文で「捨て
 
 - **有効化**: Console plugin (既定 on) の Root が `useLocalApiEndpoint('console', ...)` を開く
   (`renderer/useConsoleEndpoint.ts`)。開くのは、Settings の「Command line access」(`remoteAccess`、
-  既定 off) が on のとき、または `--tritium-cli` 付きで起動された app の起動中 (下記)。
+  既定 off) が on のとき、または `--tritium-cli` (か `--tritium-cli=mcp`) 付きで起動された app の起動中 (下記)。
 - **wire 形式** (`shared/types/localApi.ts`):
-  - `POST /console/run` `{ dialect, text, cwd }` -> `{ entries, aborted, interrupted, cwd }`
+  - `POST /console/run` `{ dialect, text, cwd, lock? }` -> `{ entries, aborted, interrupted, cwd }`
+    (`lock` は §7。main が取り除いてから window に渡す)
+  - `POST /console/lock` `{ action: 'acquire' | 'release', owner }` -> `{}` (main が答える、§7)
   - `POST /console/complete` `{ dialect, line, cwd }` -> `{ replacement, messages, candidates? }`
     ([console-completion.md](console-completion.md))
   - `POST /console/info` `{}` -> `{ version, build, protocol }` (libcuemol2 の version と source
     revision。client の banner 用)。`protocol` は console-kit の `CONSOLE_PROTOCOL` (wire の改訂番号)。
     npm 版 (§5.5) の client は app と別に更新されるので、対話開始時に自分の値と比べ、違えば
     古い側を更新するよう警告する (警告だけで続行。`protocol` の無い古い app も同じ扱い)。
-    旧 client を壊す wire 変更をしたら値を上げる。
+    旧 client を壊す wire 変更をしたら値を上げる。現在 2 (`/console/lock` と `lock` を足したとき)。
   - body の形は main で検査し (`cwd` は絶対パス)、だめなら 400。worker の失敗 (busy 等) は 409 `{ error }`。
 - **実行**: panel と同じ worker service (`runCommand` / `complete`) を、アクティブなタブに対して
   呼ぶ。1 submission = 1 undo txn、排他 (`txnBusy()`) も panel と同じ。`load x.qsc` は panel と同じく
@@ -207,9 +214,35 @@ ES module `dist/tritium_cli.mjs` に bundle する (`task build_tritium` に含�
   実行中の Ctrl-C は中断、待機中は入力行の消去 / 終了。`exit` か Ctrl-D で抜ける (app は残る)。
   `quit` (`--force` / `force=true` で確認なし) は app ごと終了し、CLI も終わる (§5.4)。
   色は TTY のときだけで、`NO_COLOR` で消える。dim / 灰色は暗い端末で読みにくいので使わない。
-- 非対話: `-c "..."`、script ファイル、stdin のパイプ。全体を 1 submission として送る
-  (= 1 undo、途中で失敗するとそこで止まる)。失敗があれば exit code 1。
+- 非対話: `-c "..."`、ファイル引数 (下記)、stdin のパイプ。`-c` と script と stdin は全体を 1 submission
+  として送る (= 1 undo、途中で失敗するとそこで止まる)。
 - 出力: output は stdout、warning / error は stderr (TTY なら黄 / 赤)。echo 行は `--echo` のときだけ。
+  終了前に stdout / stderr の書き出しを待つ (pipe への書き込みは非同期で、`process.exit` で切れるため)。
+- **コマンドライン** (`src/args.ts`、gh 流): 最初の語が subcommand 名 (`skill` / `mcp` / `status` /
+  `help` / `version`) ならその subcommand、それ以外は console 自身の引数。同名のファイルは `./skill` と書く。
+  `-V` / `--version`、`-h` / `--help`、`help <subcommand>`、`<subcommand> --help`。
+  exit code: 0 成功 / 1 実行失敗 / 2 usage エラー / 130 Ctrl-C。
+  - `--version` / `version`: CLI の版 (+ `CONSOLE_PROTOCOL`) と、動いていれば app の版。app は起動しない。
+    CLI の版は bundle に埋め込まない (§5.5 の byte 比較が毎回差分になるため)。`dist/` の 1 つ上の
+    `package.json` (npm 版にはある、name が `@cuemol/tritium-cli` のとき) から読み、無ければ
+    `bundled with CueMol3` と出す (`src/version.ts`)。
+  - `status`: 情報ファイルを読み、稼働の有無・pid・port・開いている endpoint・版を出す。起動しない。
+    exit 0 = 稼働、1 = 非稼働 (`src/status.ts`)。
+- **ファイル引数** (`src/inputs.ts`): 拡張子で分ける。
+  - `.qax` -> native `run "<abs>"`、`.pml` -> 中身を PyMOL dialect で、`.txt` / `-` (stdin) -> 中身を
+    現在の dialect で。script は単独 (他のファイルや `-c` と併用すると exit 2)。
+  - `.qsc` -> scene。`load` の `.qsc` は txn の外で、長い行の中では拒否され、scene を開くのは
+    submission の後 (`runSubmission.ts`) なので、**1 個ずつ単独の submission** にして指定順に送る。
+    `/console/run` は scene を開き終えてから返るので、返った時点でそのタブがアクティブ。
+  - それ以外 -> data。native `load "<abs>"` (= `load_file`。reader は File > Open と同じく拡張子か中身で
+    選ぶ)。data と `-c` は 1 submission (= 1 undo) にまとめ、最後に開いた scene (アクティブタブ) に送る。
+    1 コマンド 1 行で送る (パスの括弧が次のコマンドを飲み込まないよう)。dialect が PyMOL なら `-c` は
+    別の submission になる。
+  - scene が 2 個以上あり data か `-c` もあるときは、どの scene に入れるか曖昧なので exit 2。
+  - 存在しないファイルは送る前に exit 1。パスは `"..."` で囲む (console に escape は無いので、`"` を含む
+    パスは `'...'`、両方含むものは渡せない)。
+  - 送り終えたら終了。`-i` を付け stdin が TTY なら続けて対話に入る。
+  - submission が 2 件以上なら、最初の前に編集ロックを取り、最後の後に放す (`src/runs.ts`、§7)。
 
 ### 5.2 scene コマンド (native dialect)
 
@@ -299,6 +332,37 @@ undo txn は scene ごとに分かれる。
     Publisher) に repository `CueMol/cuemol2`、workflow `build2.yml` を登録しておくこと。この設定は
     package が存在しないとできないので、最初の 1 回は手で publish した。
 
+### 5.6 `tritium_cli mcp` (stdio の MCP)
+
+MCP client に stdio transport で tool を出す (`src/mcpBridge.ts`)。中身は §3 の HTTP endpoint で、
+bridge は中継するだけ (SDK は使わない)。`claude mcp add cuemol -- tritium_cli mcp` のように登録する。
+
+- **起動**: `ensureApp({ endpoint: 'mcp' })`。情報ファイルに `mcp` が載るまで待つ。載っていなければ
+  `--tritium-cli=mcp` で起動する (動いている app にも 2 個目のプロセスとして渡す)。main の
+  `noteCliLaunch` は flag ごとに endpoint を付与し (`cliFlagEndpoints`、`console` + `mcp`)、
+  `LOCAL_API_CLI_ACCESS` / `LOCAL_API_CLI_ACCESS_GRANTED` で一覧を渡す。mcp plugin は manifest の
+  `cliActivatedBy: 'mcp'` により、**無効にされていてもその run の間は有効**になり
+  (`isPluginEnabled`)、`McpRoot` は「Accept connections」が off でも endpoint を開く。設定値は変えない。
+- stdin の 1 行 (JSON-RPC の message か batch) を 1 回の `POST /mcp` にし、応答を 1 行で stdout に書く。
+  202 (notification) は何も書かない。`text/event-stream` の応答なら `data:` 行を取り出す。initialize の
+  結果の `protocolVersion` を以後 `MCP-Protocol-Version` header に付ける。token と port は毎回情報
+  ファイルから読む。stdout には JSON-RPC 以外を書かない (起動中の案内は stderr)。
+- request は直列化しない (`notifications/cancelled` が実行中の call に届く必要があるため)。
+- **request id の書き換え**: main は実行中の call を全 client 共通に request id で持つ (§3)。bridge は
+  起動ごとの接頭辞 (`tcli-<pid>-<8 hex>-`) + 連番の文字列 id に置き換えて送り、応答の id を client の
+  元の値 (number / string の型も) に戻す。`notifications/cancelled` の `requestId` も同じ表で変換し、
+  表に無ければ (もう応答済み) 送らない。
+- app が落ちている・401 等: id のある request に JSON-RPC error (`-32000`) を返し、bridge は終わらない。
+  stdin の EOF で、応答待ちを待ってから終了。
+
+### 5.7 `tritium_cli skill`
+
+agent 向けの skill (`src/skill/SKILL.md`、frontmatter `name: cuemol`) を esbuild の text loader で
+bundle に入れ、`skill` で stdout に出す (app 不要)。`skill install [--dir DIR] [--force]` は既定で
+`~/.claude/skills/cuemol/SKILL.md` に書く。中身の違う既存ファイルは `--force` 無しでは上書きしない
+(`src/skill.ts`)。コマンドの一覧は skill に書かず、`tritium_cli -c help` を呼ぶよう指示する
+(app が自分の catalog から答えるので、app の版とずれない)。
+
 ## 6. 既知の制約
 
 - stateless なので `tools/list_changed` を送らない。tool の追加は client の再接続で反映。
@@ -307,3 +371,26 @@ undo txn は scene ごとに分かれる。
 - Windows の `tritium_cli.cmd` (GUI subsystem の exe を Node として動かす) で、対話 (readline) と
   Ctrl-C が動くかは未確認。npm 版は console subsystem の `node.exe` で動くので、この問題は無い。
 - npm 版の Windows / Linux での app 探索 (§5.1) は実機で未確認。
+- MCP の request id は main で client を区別せずに持つので、`tritium_cli mcp` を介さない HTTP client
+  同士で id が衝突すると、取り消しが別の client の call に届き得る (stateless で client を区別できない)。
+- `tritium_cli mcp` で有効になった mcp plugin は、その run の間 Settings の switch もオンに見える。
+
+## 7. 編集ロック (client 間の排他)
+
+全 client は app のアクティブ scene を共有し、worker の排他 (`txnBusy()`) は 1 submission の間しか
+守らない。`tritium_cli a.qsc b.pdb` の 2 つの submission の間に別の client が scene を開くと `b.pdb` が
+そちらに入るので、**1 回のコマンドライン全体**を排他にする。同時編集はサポートしない: 競合した側は
+待たずに `EDIT_LOCK_BUSY_MESSAGE` で失敗する (待ち行列・再試行は無い)。
+
+- main の `localApi/editLock.ts` (`EditLock`、Electron と時計を注入する純 module)。1 つを console と
+  MCP の endpoint が共有する (`localApi/index.ts`)。
+- **明示**: `POST /console/lock` `acquire` (owner は CLI の実行ごとの `randomUUID()`) -> 各 run に
+  `lock: owner` -> `release`。他の owner が持っていれば `acquire` も run も 409。
+- **暗黙**: `lock` の無い `/console/run` (`-c`、script、stdin、対話の 1 行) と MCP の `tools/call` は、
+  その request の間だけ自分で取り、終われば放す。対話の CLI は入力待ちの間は持たない。
+- 読むだけの request (`/console/complete`、`/console/info`、MCP の `initialize` / `tools/list`) は見ない。
+- **失効**: 実行中の request が 0 になってから 10 秒 (`EDIT_LOCK_IDLE_MS`) で失効する (CLI が `release`
+  せずに死んだ場合)。実行中の request がある間は失効しない (長い `render_image` を守る)。client の切断は
+  relay の cancel で request が終わるので、そこから数える。失効は次の判定のときに処理する (timer なし)。
+- CLI は成功・失敗・Ctrl-C で `release` を送る。`/console/lock` の無い古い app (404) にはロック無しで送る。
+- GUI (console panel、agent) は参加しない (従来どおり `txnBusy()` だけ)。

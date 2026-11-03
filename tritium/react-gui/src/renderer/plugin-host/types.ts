@@ -14,6 +14,7 @@ import type { AppIconKey } from '@renderer/h3-kit/primitives'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type { PluginCommandId, PluginMenuContribution } from '@shared/types/pluginContrib'
 import type { PluginPrefValue } from '@shared/types/uiPrefs'
+import type { LocalApiEndpoint } from '@shared/types/localApi'
 import type {
   PluginSettingControl,
   SettingControl,
@@ -149,6 +150,12 @@ export interface PluginManifest {
    * `alwaysEnabled` is set.
    */
   defaultEnabled?: boolean
+  /**
+   * A local API endpoint whose request from tritium_cli turns the plugin on
+   * for the rest of that run (`tritium_cli mcp` asks for `mcp`), even when it
+   * is switched off. The user's choice is left as it was.
+   */
+  cliActivatedBy?: LocalApiEndpoint
   contributes?: PluginContributes
 }
 

@@ -25,6 +25,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import type { CallToolResult, ListToolsResult } from '@modelcontextprotocol/sdk/types.js'
 import { mcpErrorResult } from '@shared/mcpResult'
+import { EDIT_LOCK_BUSY_MESSAGE } from '@shared/types/localApi'
+import type { EditLock } from './editLock'
 import { relayed } from './relay'
 import type { LocalApiRelay } from './relay'
 import type { EndpointHandler } from './server'
@@ -54,8 +56,11 @@ function cancelledRequestIds(body: unknown): string[] {
  * Create the endpoint.
  *
  * @param version - the app version, reported to the client as the server's
+ * @param lock - the edit lock, shared with the console endpoint: a call
+ *   takes it for its own duration, and is turned away while another client
+ *   holds it
  */
-export function mcpEndpoint(relay: LocalApiRelay, version: string): EndpointHandler {
+export function mcpEndpoint(relay: LocalApiRelay, version: string, lock: EditLock): EndpointHandler {
   let instructions: string | null = null
 
   /**
@@ -84,6 +89,8 @@ export function mcpEndpoint(relay: LocalApiRelay, version: string): EndpointHand
       (await relayed(relay, 'mcp', 'listTools', {})) as ListToolsResult,
     )
     server.setRequestHandler(CallToolRequestSchema, async (req, extra) => {
+      const end = lock.enter()
+      if (!end) return mcpErrorResult(EDIT_LOCK_BUSY_MESSAGE) as CallToolResult
       const key = String(extra.requestId)
       const ac = new AbortController()
       const onAbort = () => ac.abort()
@@ -103,6 +110,7 @@ export function mcpEndpoint(relay: LocalApiRelay, version: string): EndpointHand
       } finally {
         extra.signal.removeEventListener('abort', onAbort)
         if (running.get(key) === ac) running.delete(key)
+        end()
       }
     })
     return mcp

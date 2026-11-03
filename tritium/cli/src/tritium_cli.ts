@@ -19,13 +19,16 @@
  * repo, `task run_tritium_cli` builds and runs it against the dev app.
  *
  *   tritium_cli                        interactive (Tab completes, Ctrl-C stops a run)
- *   tritium_cli -c "fetch 1crn; show cartoon"
- *   tritium_cli script.qax             run a qax (actions) file, or a text file of commands
+ *   tritium_cli -c "fetch 1crn; create_renderer 1crn, ribbon"
+ *   tritium_cli 1crn.pdb map.ccp4      open files (inputs.ts), then exit; -i stays interactive
+ *   tritium_cli script.qax             run a script (.qax, .pml, .txt)
  *   cat cmds.txt | tritium_cli         run what is piped in
- *   tritium_cli -c quit                quit the app (asks to save; quit --force does not)
- *   --dialect pymol                       speak PyMOL instead of native
- *   --echo                                print each command before its output
- *   --no-launch                           fail instead of starting the app
+ *   tritium_cli skill [install]        the agent skill (skill.ts)
+ *   tritium_cli mcp                    MCP over stdio, relayed to /mcp (mcpBridge.ts)
+ *   tritium_cli status | --version     about the app, without starting it
+ *
+ * The command line is read in args.ts. A command line that is several runs
+ * holds the app's edit lock across them (runs.ts).
  */
 
 import * as fs from 'node:fs'
@@ -42,25 +45,30 @@ import type {
   ConsoleCompleteResponse,
   ConsoleDialectId,
   ConsoleInfoResponse,
+  ConsoleRunRequest,
   ConsoleRunResponse,
   ConsoleWireEntry,
   LocalApiInfoFile,
 } from '@cuemol/console-kit'
 import { CONSOLE_PROTOCOL, quitLine } from '@cuemol/console-kit'
-import { ensureApp, NOT_RUNNING, post, quitApp, readInfo } from './connection'
+import { randomBytes } from 'node:crypto'
+import type { LocalApiEndpoint } from '@cuemol/console-kit'
+import { parseArgv, SUBCOMMAND_USAGE, USAGE, UsageError } from './args'
+import type { RunCommand } from './args'
+import { alive, ensureApp, MCP_NOT_RUNNING, post, quitApp, readInfo, readInfoFile } from './connection'
+import { buildSubmissions } from './inputs'
+import type { Submission } from './inputs'
+import { createMcpBridge } from './mcpBridge'
+import { defaultSkillDir, installSkill } from './skill'
+import SKILL_TEXT from './skill/SKILL.md'
+import { statusReport } from './status'
+import { packageVersion, versionLines } from './version'
+import { LOCK_UNSUPPORTED, sendRuns } from './runs'
+import type { LockApi } from './runs'
 import { markdownToAnsi } from './markdownAnsi'
 
 const HISTORY_FILE = path.join(os.homedir(), '.tritium_cli_history')
 const HISTORY_SIZE = 1000
-
-const USAGE = `usage: tritium_cli [--dialect native|pymol] [--echo] [--no-launch] [-c COMMANDS | SCRIPT]
-
-Runs CueMol console commands in the running app, against the active tab.
-With no COMMANDS or SCRIPT and a terminal on stdin, starts an interactive
-prompt; type "native" or "pymol" to switch dialect, "exit" or Ctrl-D to leave.
-"quit" quits CueMol itself and then leaves (it asks to save changes;
-"quit --force" or "quit force=true" does not).
-Starts CueMol3 when it is not running (unless --no-launch).`
 
 // --- Output ---
 
@@ -436,12 +444,23 @@ const session: { dialect: ConsoleDialectId; cwd: string; echo: boolean } = {
   echo: false,
 }
 
-/** Run `text` as one submission; resolves to whether it all ran. */
-async function run(text: string, signal: AbortSignal): Promise<boolean> {
+/**
+ * Run `text` as one submission; resolves to whether it all ran.
+ *
+ * @param dialect - what `text` is written in; the session's by default
+ * @param lock - the edit lock it runs under (`withEditLock`); none takes one for this run alone
+ */
+async function run(
+  text: string,
+  signal: AbortSignal,
+  dialect: ConsoleDialectId = session.dialect,
+  lock?: string,
+): Promise<boolean> {
   const stop = startSpinner(spinnerLabel(text))
   let res: ConsoleRunResponse
   try {
-    res = await post<ConsoleRunResponse>('/console/run', { dialect: session.dialect, text, cwd: session.cwd }, signal)
+    const body: ConsoleRunRequest = { dialect, text, cwd: session.cwd, ...(lock ? { lock } : {}) }
+    res = await post<ConsoleRunResponse>('/console/run', body, signal)
   } finally {
     stop()
   }
@@ -450,19 +469,42 @@ async function run(text: string, signal: AbortSignal): Promise<boolean> {
   return !res.aborted
 }
 
-/** Non-interactive: one submission, exit status 1 when any of it failed. */
-async function runOnce(text: string): Promise<number> {
+/**
+ * Non-interactive: the runs in order, stopping at the first that fails;
+ * exit status 1 when any of it failed.
+ *
+ * Several runs hold the edit lock from the first to the last (sendRuns), so
+ * no other client edits or switches tabs in between.
+ */
+async function runOnce(subs: readonly Submission[]): Promise<number> {
   const ac = new AbortController()
   process.on('SIGINT', () => ac.abort())
-  const quit = quitLine(text)
+  const quit = subs.length === 1 ? quitLine(subs[0].text) : null
   if (quit) return (await requestQuit(quit.force, ac.signal)) ? 0 : 1
   try {
-    return (await run(text, ac.signal)) ? 0 : 1
+    return (await sendRuns(subs, (s, lock) => run(s.text, ac.signal, s.dialect, lock), lockApi)) ? 0 : 1
   } catch (e) {
     if (ac.signal.aborted) return 130
     process.stderr.write(`${sgr(STYLE.red, (e as Error).message, process.stderr)}\n`)
     return 1
   }
+}
+
+/** `/console/lock` over the connection. */
+const lockApi: LockApi = {
+  acquire: async (owner) => {
+    try {
+      await post('/console/lock', { action: 'acquire', owner }, undefined, LOCK_UNSUPPORTED)
+      return 'held'
+    } catch (e) {
+      // An app from before the lock: go on without one.
+      if ((e as Error).message === LOCK_UNSUPPORTED) return 'unsupported'
+      throw e
+    }
+  },
+  release: async (owner) => {
+    await post('/console/lock', { action: 'release', owner }, undefined, LOCK_UNSUPPORTED).catch(() => {})
+  },
 }
 
 /**
@@ -595,39 +637,8 @@ async function interactive(): Promise<number> {
   }))
 }
 
+
 // --- Entry ---
-
-/** The options on the command line, or an Error. */
-/** What the command line asked for. */
-export interface CliOptions {
-  dialect: ConsoleDialectId
-  echo: boolean
-  launch: boolean
-  command: string | null
-  script: string | null
-  help: boolean
-}
-
-export function parseArgv(argv: readonly string[]): CliOptions | Error {
-  const opts: CliOptions = { dialect: 'native', echo: false, launch: true, command: null, script: null, help: false }
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]
-    if (a === '-h' || a === '--help') opts.help = true
-    else if (a === '--echo') opts.echo = true
-    else if (a === '--no-launch') opts.launch = false
-    else if (a === '-c' || a === '--command') {
-      if (i + 1 >= argv.length) return new Error(`${a} needs the commands to run`)
-      opts.command = argv[++i]
-    } else if (a === '--dialect' || a.startsWith('--dialect=')) {
-      const v = a.includes('=') ? a.slice(a.indexOf('=') + 1) : argv[++i]
-      if (v !== 'native' && v !== 'pymol') return new Error('--dialect must be native or pymol')
-      opts.dialect = v
-    } else if (a.startsWith('-') && a !== '-') return new Error(`unknown option ${a}`)
-    else if (opts.script === null) opts.script = a
-    else return new Error('only one script can be given')
-  }
-  return opts
-}
 
 function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -638,54 +649,164 @@ function readStdin(): Promise<string> {
   })
 }
 
-async function main(argv: string[]): Promise<number> {
-  const opts = parseArgv(argv)
-  if (opts instanceof Error) {
-    process.stderr.write(`tritium_cli: ${opts.message}\n${USAGE}\n`)
-    return 2
+const isFile = (p: string): boolean => {
+  try {
+    return fs.statSync(p).isFile()
+  } catch {
+    return false
   }
-  if (opts.help) {
-    process.stdout.write(`${USAGE}\n`)
-    return 0
-  }
-  session.dialect = opts.dialect
-  session.echo = opts.echo
+}
 
+/** Print an error the way every failure is printed. */
+function fail(message: string): void {
+  process.stderr.write(`${sgr(STYLE.red, message, process.stderr)}\n`)
+}
+
+/** The app's /console/info when it is running with the console open, without starting it. */
+async function appInfoIfRunning(): Promise<ConsoleInfoResponse | null> {
+  const info = readInfo()
+  if (info instanceof Error || !alive(info.pid)) return null
+  return post<ConsoleInfoResponse>('/console/info', {}).catch(() => null)
+}
+
+/** Start the app if asked to and needed; false (with the reason printed) when it is not there. */
+async function connect(launch: boolean, endpoint: LocalApiEndpoint = 'console'): Promise<boolean> {
   let stopSpinner = () => {}
   try {
-    if (opts.launch) {
+    if (launch) {
       await ensureApp({
+        endpoint,
         onStart: () => {
           if (process.stderr.isTTY) stopSpinner = startSpinner('Starting CueMol3', 0)
           else process.stderr.write('Starting CueMol3...\n')
         },
       })
-    } else if (readInfo() instanceof Error) {
-      throw new Error(NOT_RUNNING)
+    } else {
+      const info = readInfo(undefined, endpoint)
+      if (info instanceof Error) throw info
     }
+    return true
   } catch (e) {
     stopSpinner()
-    process.stderr.write(`${sgr(STYLE.red, (e as Error).message, process.stderr)}\n`)
+    fail((e as Error).message)
+    return false
+  } finally {
+    stopSpinner()
+  }
+}
+
+/** The console's own command line: files, -c, piped text, or the prompt. */
+async function runMain(opts: RunCommand): Promise<number> {
+  session.dialect = opts.dialect
+  session.echo = opts.echo
+  const stdinText = opts.files.includes('-') ? await readStdin() : null
+  const subs = buildSubmissions(opts.files, opts.command, opts.dialect, session.cwd, {
+    isFile,
+    readText: (p) => {
+      if (p === '-') return stdinText
+      try {
+        return fs.readFileSync(p, 'utf8')
+      } catch {
+        return null
+      }
+    },
+  })
+  if (subs instanceof UsageError) {
+    process.stderr.write(`tritium_cli: ${subs.message}\n${USAGE}\n`)
+    return 2
+  }
+  if (subs instanceof Error) {
+    fail(`tritium_cli: ${subs.message}`)
     return 1
   }
-  stopSpinner()
+  if (!(await connect(opts.launch))) return 1
 
-  if (opts.command !== null) return runOnce(opts.command)
-  if (opts.script !== null && opts.script !== '-') {
-    // A qax file is XML, read by the app itself (each action its own undo
-    // step); a text script is sent line by line.
-    if (opts.script.toLowerCase().endsWith('.qax')) return runOnce(`run "${path.resolve(opts.script)}"`)
-    let text
-    try {
-      text = fs.readFileSync(opts.script, 'utf8')
-    } catch {
-      process.stderr.write(`tritium_cli: cannot read ${opts.script}\n`)
-      return 1
-    }
-    return runOnce(text)
+  if (subs.length > 0) {
+    const code = await runOnce(subs)
+    if (code !== 0 || !opts.interactive || !process.stdin.isTTY) return code
+    return interactive()
   }
-  if (!process.stdin.isTTY || opts.script === '-') return runOnce(await readStdin())
+  if (!process.stdin.isTTY) return runOnce([{ text: await readStdin(), dialect: opts.dialect }])
   return interactive()
+}
+
+/** `tritium_cli mcp`: the stdio transport over the app's /mcp. */
+async function mcpMain(launch: boolean): Promise<number> {
+  if (!(await connect(launch, 'mcp'))) return 1
+  const bridge = createMcpBridge({
+    prefix: `tcli-${process.pid}-${randomBytes(4).toString('hex')}-`,
+    write: (line) => process.stdout.write(`${line}\n`),
+    post: async (body, headers) => {
+      const info = readInfo(undefined, 'mcp')
+      if (info instanceof Error) throw info
+      let res: Response
+      try {
+        res = await fetch(`http://127.0.0.1:${info.port}/mcp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json, text/event-stream',
+            Authorization: `Bearer ${info.token}`,
+            ...headers,
+          },
+          body: JSON.stringify(body),
+        })
+      } catch {
+        throw new Error(MCP_NOT_RUNNING)
+      }
+      if (res.status === 404) throw new Error(MCP_NOT_RUNNING)
+      if (res.status === 401 || res.status === 403) throw new Error(`CueMol refused the connection (${res.status}).`)
+      return { status: res.status, text: await res.text() }
+    },
+  })
+  const rl = readline.createInterface({ input: process.stdin, terminal: false })
+  const pending = new Set<Promise<void>>()
+  rl.on('line', (line) => {
+    const p = bridge.handleLine(line).catch((e: unknown) => fail(`tritium_cli mcp: ${(e as Error).message}`))
+    pending.add(p)
+    void p.finally(() => pending.delete(p))
+  })
+  await new Promise<void>((resolve) => rl.on('close', () => resolve()))
+  await Promise.allSettled([...pending])
+  return 0
+}
+
+async function main(argv: string[]): Promise<number> {
+  const cmd = parseArgv(argv)
+  if (cmd instanceof UsageError) {
+    process.stderr.write(`tritium_cli: ${cmd.message}\n${USAGE}\n`)
+    return 2
+  }
+  switch (cmd.kind) {
+    case 'help':
+      process.stdout.write(`${cmd.topic ? SUBCOMMAND_USAGE[cmd.topic] : USAGE}\n`)
+      return 0
+    case 'version':
+      for (const l of versionLines(packageVersion(), await appInfoIfRunning())) process.stdout.write(`${l}\n`)
+      return 0
+    case 'status': {
+      const { lines, code } = statusReport(readInfoFile(), alive, await appInfoIfRunning())
+      for (const l of lines) process.stdout.write(`${l}\n`)
+      return code
+    }
+    case 'skill': {
+      if (!cmd.install) {
+        process.stdout.write(SKILL_TEXT)
+        return 0
+      }
+      const written = installSkill(SKILL_TEXT, cmd.dir ? path.resolve(cmd.dir) : defaultSkillDir(), cmd.force)
+      if (written instanceof Error) {
+        fail(`tritium_cli: ${written.message}`)
+        return 1
+      }
+      process.stdout.write(`Installed ${written}\n`)
+      return 0
+    }
+    case 'mcp':
+      return mcpMain(cmd.launch)
+    case 'run':
+      return runMain(cmd)
+  }
 }
 
 /** Whether this module is the script Node was started with (through a symlink, as npm's bin link is). */
@@ -698,7 +819,16 @@ function isEntry(): boolean {
   }
 }
 
-// Run only when executed, so a test can import the helpers above.
+/** Resolves once everything written to `stream` so far has gone out (a pipe is written asynchronously). */
+const flushed = (stream: NodeJS.WriteStream): Promise<void> => new Promise((resolve) => stream.write('', () => resolve()))
+
 if (isEntry()) {
-  void main(process.argv.slice(2)).then((code) => process.exit(code))
+  // Exit only after the output is out: piped, a large answer (MCP tools/list,
+  // help) is still queued when main returns, and process.exit would cut it.
+  void main(process.argv.slice(2))
+    .then(async (code) => {
+      await Promise.all([flushed(process.stdout), flushed(process.stderr)])
+      return code
+    })
+    .then((code) => process.exit(code))
 }

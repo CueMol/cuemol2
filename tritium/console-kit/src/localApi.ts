@@ -30,6 +30,20 @@ export interface LocalApiInfoFile {
  */
 export const TRITIUM_CLI_FLAG = '--tritium-cli'
 
+/**
+ * TRITIUM_CLI_FLAG asking for the MCP endpoint as well (`tritium_cli mcp`).
+ * The MCP plugin is mounted for that run even when it is switched off, and
+ * its settings are left alone, as for the console.
+ */
+export const TRITIUM_CLI_MCP_FLAG = `${TRITIUM_CLI_FLAG}=mcp`
+
+/** The endpoints a launch with `arg` asks for; empty when it is not one of the flags. */
+export function cliFlagEndpoints(arg: string): LocalApiEndpoint[] {
+  if (arg === TRITIUM_CLI_FLAG) return ['console']
+  if (arg === TRITIUM_CLI_MCP_FLAG) return ['console', 'mcp']
+  return []
+}
+
 // --- The console endpoint's wire format ---
 
 export type ConsoleDialectId = 'native' | 'pymol'
@@ -49,6 +63,11 @@ export interface ConsoleRunRequest {
   text: string
   /** The client's working directory, absolute. */
   cwd: string
+  /**
+   * The edit lock this run belongs to (`/console/lock`). Absent, the run
+   * takes the lock for itself while it lasts.
+   */
+  lock?: string
 }
 
 export interface ConsoleRunResponse {
@@ -82,7 +101,21 @@ export interface ConsoleCompleteResponse {
  * npm, apart from the app, so the two can be from different releases; raise
  * this when a change to the bodies above breaks an older client or app.
  */
-export const CONSOLE_PROTOCOL = 1
+export const CONSOLE_PROTOCOL = 2
+
+/**
+ * `POST /console/lock`: hold the edit lock across several runs, so that no
+ * other client edits or switches scenes between them. `owner` is the
+ * client's own random id, sent again as `ConsoleRunRequest.lock`.
+ */
+export interface ConsoleLockRequest {
+  action: 'acquire' | 'release'
+  owner: string
+}
+
+/** What a client turned away by the edit lock is told (409, or an MCP tool result). */
+export const EDIT_LOCK_BUSY_MESSAGE =
+  'CueMol is busy: another command line client is using it. Try again when it has finished.'
 
 /** `POST /console/info` (empty body): what the client shows in its banner. */
 export interface ConsoleInfoResponse {

@@ -227,11 +227,13 @@ mount 中かつ `enabled` の間、`endpoint` を開きます。その endpoint 
 plugin の有効/無効に endpoint が連動します。`handlers` は ref で読むので毎 render
 作り直して構いません。
 
-### `useCliAccessGranted(): boolean`
+### `useCliAccessGranted(endpoint = 'console'): boolean` / `useCliAccessGrants(): LocalApiEndpoint[]`
 
-この app が `tritium_cli` から起動された (起動中に 2 個目のプロセスとして `--tritium-cli` を
-受け取った場合も含む) なら true。一度 true になれば app の終了まで戻らない。console plugin は
-これを設定値と OR して console endpoint を開く (設定値は変えない)。
+この app が `tritium_cli` から起動され (起動中に 2 個目のプロセスとして受け取った場合も含む)、
+その起動で `endpoint` を求められたなら true。`--tritium-cli` は `console`、`--tritium-cli=mcp`
+(`tritium_cli mcp`) は `console` と `mcp` を求める。一度付与されれば app の終了まで戻らない。
+console plugin と mcp plugin は、これを自分の設定値と OR して endpoint を開く (設定値は変えない)。
+`useCliAccessGrants()` は付与された endpoint の一覧。
 
 ### `useLocalApiStatus(): LocalApiStatus | null`
 

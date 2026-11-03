@@ -15,6 +15,7 @@ import {
   controlLocalApi,
   useCueMol,
   useEnsureActiveScene,
+  useCliAccessGranted,
   useLocalApiEndpoint,
   useOpenSceneFile,
   useTrackedEndpointCalls,
@@ -51,7 +52,10 @@ export const McpRoot: React.FC = () => {
     void controlLocalApi({ action: 'setPort', port })
   }, [port])
 
-  useLocalApiEndpoint('mcp', cm !== null && serverEnabled, {
+  // `tritium_cli mcp` asked for the server: open it whatever the switch says.
+  const cliLaunched = useCliAccessGranted('mcp')
+
+  useLocalApiEndpoint('mcp', cm !== null && (serverEnabled || cliLaunched), {
     async handle({ reqId, kind, payload }) {
       if (!cm) throw new Error('CueMol is not ready yet.')
       switch (kind) {

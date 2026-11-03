@@ -41,6 +41,7 @@ interface PluginManifest {
   devOnly?: boolean
   alwaysEnabled?: boolean
   defaultEnabled?: boolean
+  cliActivatedBy?: LocalApiEndpoint  // tritium_cli がこの endpoint を求めた run の間は有効
   contributes?: PluginContributes
 }
 ```
@@ -67,6 +68,13 @@ interface PluginManifest {
 menu / toolbar / view / bottom tab も同じ render で消える。
 **無効化は進行中の処理を中断する**ので、長い処理を持つ switchable な plugin ではそこを
 考慮すること。
+
+### `cliActivatedBy` (`mcp`)
+
+`tritium_cli` がこの endpoint を求めて app を起動した run の間 (`useCliAccessGrants()`)、
+保存された選択がオフでも plugin を有効にする (`isPluginEnabled` の第 3 引数)。選択は書き換えないので、
+次の起動では元に戻る。`tritium_cli mcp` を実行したこと自体を opt-in とみなすための仕組みで、
+mcp plugin が `cliActivatedBy: 'mcp'` を持つ。この run の間は Settings の switch もオンに見える。
 
 ### devOnly (現状は該当なし)
 
