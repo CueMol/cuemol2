@@ -46,7 +46,8 @@ selection の式を、今の式を文字列のまま包んで次の式を作る�
   | ノード | 書き方 |
   |---|---|
   | 数値 (`around` などの距離、`bfac` / `occ`) | 読み直して同じ値になる最短の小数 (`SelSimplifier::formatNumber`)。scanner は指数表記を読まないので使わない。小数点を必ず付ける (整数として読まれると桁あふれするため) |
-  | `rprop` の値 | 引用符で囲む (`SelSimplifier::quoteValue`)。scanner は `\"` をそのまま残すので、値に含まれない方の引用符を使う |
+  | `rprop` の値 | scanner が同じ語として読み直せる値 (英字か `_` で始まる語、9 桁以下の整数) はそのまま、それ以外は引用符で囲む (`SelSimplifier::quoteValue`)。scanner は `\"` をそのまま残すので、値に含まれない方の引用符を使う |
+  | `around` の対象 (`[...]`) | 以前と同じく常に引用符で囲む (`SelSimplifier::quoteName`) |
   | 名前付き参照 | 名前そのもの (以前は `Ref(name)`) |
   | 空 | `none` (以前は `!*`)。空の名前は `null` (以前は `(empty)`) |
 
