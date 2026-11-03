@@ -59,6 +59,10 @@ vi.mock('../dialects', async () => {
     },
   }
   return {
+    registeredMetas: () => [
+      { id: 'native', label: 'CueMol', scripts: [{ ext: '.qax', submit: 'path' }] },
+      { id: 'pymol', label: 'PyMOL', scripts: [{ ext: '.pml', submit: 'text' }] },
+    ],
     dialectOf: () => ({
       meta: { id: 'spaced', label: 'Spaced', prompt: 'Sp>', txnPrefix: 'sp: ', actionSource: 'sp', historyKey: '', scripts: [], cliColor: 'cyan' },
       syntax,

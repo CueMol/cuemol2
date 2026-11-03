@@ -23,14 +23,16 @@ import { rowToQax } from '@renderer/worker/server/actions/export'
 import { parseQax, writeQax } from '@renderer/worker/server/actions/qax/codec'
 import type { QaxAction } from '@renderer/worker/server/actions/qax/model'
 import { QAX_VERSION } from '@renderer/worker/server/actions/qax/model'
-import { DIALECT_METAS } from '../../shared/dialectMeta'
+import { registeredMetas } from '../dialects/registry'
 
 /**
  * The rows a console log records: the console's own submissions, in any
  * dialect, and the qax files it replayed. `qax` is the source of a replay
  * (each action its own transaction), which no dialect names as its own.
  */
-const CONSOLE_SOURCES: ReadonlySet<ActionSource> = new Set([...DIALECT_METAS.map((m) => m.actionSource), 'qax'])
+function consoleSources(): ReadonlySet<ActionSource> {
+  return new Set([...registeredMetas().map((m) => m.actionSource), 'qax'])
+}
 
 interface OpenLog {
   path: string
@@ -85,7 +87,7 @@ export function openQaxLog(ctx: WorkerContext, filePath: string, mode: 'w' | 'a'
     const row = rows[rows.length - 1]
     if (!row || row.undone || log.last.get(sceneId) === row) return
     log.last.set(sceneId, row)
-    if (!row.source || !CONSOLE_SOURCES.has(row.source)) return
+    if (!row.source || !consoleSources().has(row.source)) return
     log.actions.push(rowToQax(row))
     if (!flush(log)) closeQaxLog()
   })

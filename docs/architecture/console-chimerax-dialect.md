@@ -11,15 +11,17 @@ ChimeraX のソース (`~/ext/ChimeraX/src/bundles/`) のうち、写したも�
 
 | ChimeraX | ChX |
 |---|---|
-| `core/src/commands/cli.py` (コマンド名・引数・型) | `dialects/chimerax/cli/` |
-| `core/src/commands/_atomspec.peg`、`atomspec.py` | `dialects/chimerax/spec/` |
+| `core/src/commands/cli.py` (コマンド名・引数・型) | `worker/cli/` |
+| `core/src/commands/_atomspec.peg`、`atomspec.py` | `worker/spec/` |
 | `atomic/src/selectors.py`、`std_commands/src/selectors.py` | `spec/selectors.ts` |
 | `core/src/colors.py` (CSS4 の色名)、`atomic/src/colors.py` (Jmol の元素色) | `colorTables.ts` (生成したデータ) |
 | `std_commands/bundle_info.xml` (コマンドの登録順) | `commands/registry.ts` |
 
 ## 1. 位置づけ
 
-- パーサとコマンドは TS で Web Worker に置く (`plugins/console/worker/dialects/chimerax/`)。
+- built-in plugin `chimerax-console` (表示名「ChimeraX console (ChX)」、既定オン) として、console plugin に dialect を足す
+  ([op-catalog.md](op-catalog.md) §5)。パーサとコマンドは TS で Web Worker に置く (`plugins/chimerax-console/worker/`)。
+  plugin をオフにすると、console の切り替えと `tritium_cli` から消える。
 - **コマンドは ChimeraX の文法を読み、op catalog の op の列に変える層**。op は `invokeOp` で呼ぶ
   (`display.ts` の `runOp`、`opContextOf(cc, 'chx')`)。agent・MCP・native console と同じ操作の定義を通るので、
   引数と selection の検査、ファイルの書き込み先の制限、操作の記録 (action log に native の op として残る) が揃う。
@@ -30,12 +32,12 @@ ChimeraX のソース (`~/ext/ChimeraX/src/bundles/`) のうち、写したも�
   (`helpers/sceneResolver`)、object の一覧 (`scene/listSceneObjects`)。
 - 意味が一致するものだけ移す。近いもので違う結果を出すより、理由を言って断る。読めるが未対応の
   keyword は受け付けて `<cmd>: <keyword> is not supported yet; ignored` と warn し、スクリプトを先へ進める。
-- **分離**: `dialects/chimerax/` は native と PyMOL の dialect を import せず、逆も同じ。外部から import するのは
-  dialect 表 (`dialects/index.ts`) だけ。eslint (`eslint.config.mjs`) が、この向きと worker service の
-  許可リストを検査する。ChX を外すには、このディレクトリと、`dialects/index.ts` と `shared/dialectMeta.ts` の
-  1 行ずつを消せばよい。
+- **分離**: console の内部は `@plugins/console/worker/dialect-api` (と `shared/dialectMeta`) からしか使わず、
+  PyMOL の plugin とは互いを import しない。console も この plugin を import しない (登録を通して受け取る)。
+  eslint (`eslint.config.mjs`) が、この向きと worker service の許可リストを検査する。ChX を外すには、
+  `plugins/chimerax-console/` と `plugins/index.ts` の 1 行を消せばよい。
 
-### `DialectMeta` の値 (`shared/dialectMeta.ts`)
+### `DialectMeta` の値 (`plugins/chimerax-console/shared/meta.ts`)
 
 | 項目 | 値 |
 |---|---|
@@ -168,7 +170,7 @@ renderer で表し、**その selection と paint が表示の状態そのもの
 
 ## 7. テスト
 
-`plugins/console/worker/dialects/chimerax/`:
+`plugins/chimerax-console/worker/`:
 
 - `cli/syntax.test.ts`: `;` と `#` の分け方、登録順の前方一致と sub-command、spec の省略と keyword の前方一致・
   重複、ファイル名の `\` を escape しないこと

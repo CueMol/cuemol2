@@ -80,3 +80,14 @@ export function usePlugins(): PluginContextValue {
 export function usePluginContributions(): PluginContributions {
   return usePlugins().contributions
 }
+
+const NO_EXTENSIONS: readonly unknown[] = []
+
+/**
+ * What the switched-on plugins add to the extension point `point`
+ * (`contributes.extensions`), in plugin order. The reading plugin checks the
+ * values' form; a switched-off plugin's entries are not here.
+ */
+export function usePluginExtensions(point: string): readonly unknown[] {
+  return usePlugins().contributions.extensions[point] ?? NO_EXTENSIONS
+}

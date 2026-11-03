@@ -153,7 +153,7 @@ scene は `discardChanges: true` が無いと閉じない (説明文で「捨て
   - `POST /console/info` `{}` -> `{ version, build, protocol, dialects }` (libcuemol2 の version と source
     revision。client の banner 用)。`dialects` は app が話す dialect の一覧 (`id`、`label`、`prompt`、
     `scripts: { ext, submit: 'text' | 'path' }[]`、`cliColor`)。console plugin の
-    `shared/dialectMeta.ts` (`DIALECT_METAS`) をそのまま返す。client は dialect の表を持たず、これで
+    `useDialectMetas()` (native と、有効な dialect の plugin の meta。[op-catalog.md](op-catalog.md) §5) をそのまま返す。client は dialect の表を持たず、これで
     `--dialect` の検証・prompt の色・切り替えの語・script ファイルの送り方を決める。`protocol` は console-kit の `CONSOLE_PROTOCOL` (wire の改訂番号)。
     npm 版 (§5.5) の client は app と別に更新されるので、対話開始時に自分の値と比べ、違えば
     古い側を更新するよう警告する (警告だけで続行。`protocol` の無い古い app も同じ扱い)。

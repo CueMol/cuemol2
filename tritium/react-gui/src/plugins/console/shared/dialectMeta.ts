@@ -1,12 +1,15 @@
 /**
  * @file plugins/console/shared/dialectMeta.ts
- * @description The dialects the console speaks, and what each says about itself.
+ * @description What a dialect says about itself, and the native dialect's own.
  *
- * The one list of dialects. The panel (its switch, prompt, history), the
- * worker (the undo label, the action log's source, which dialect owns a
- * script file) and the command-line client (through `/console/info`) read
- * a dialect's properties from here and nowhere else, so adding or removing
- * a dialect is a row here and its entry in `worker/dialects/index.ts`.
+ * The console speaks native itself; every other dialect comes from a plugin
+ * of its own, which declares its `DialectMeta` under the `console.dialect`
+ * extension point (`contributes.extensions`) and registers its
+ * implementation in the worker (`worker/dialect-api.ts`). The panel (its
+ * switch, prompt, history), the endpoint and `/console/info` read the metas
+ * of native plus the switched-on plugins (`renderer/useDialectMetas.ts`);
+ * the worker reads those of the registered dialects. Nothing names a
+ * dialect other than native.
  *
  * Plain data with no imports: the renderer, the worker and main all read it.
  */
@@ -46,74 +49,69 @@ export interface DialectMeta {
   cliColor: 'cyan' | 'magenta' | 'green' | 'yellow' | 'blue'
 }
 
-/** Every dialect, in the order the panel's switch shows them. */
-export const DIALECT_METAS: readonly DialectMeta[] = [
-  {
-    id: 'native',
-    label: 'CueMol',
-    prompt: 'CueMol>',
-    txnPrefix: 'cmd: ',
-    actionSource: 'cmd',
-    historyKey: 'cuemol.console.history.native',
-    scripts: [{ ext: '.qax', submit: 'path' }],
-    cliColor: 'cyan',
-  },
-  {
-    id: 'pymol',
-    label: 'PyMOL',
-    prompt: 'PyM>',
-    txnPrefix: 'pym: ',
-    actionSource: 'pym',
-    // The key it had before the console spoke more than one language.
-    historyKey: 'cuemol.pymconsole.history',
-    scripts: [{ ext: '.pml', submit: 'text' }],
-    cliColor: 'magenta',
-  },
-  {
-    id: 'chimerax',
-    label: 'ChimeraX',
-    prompt: 'ChX>',
-    txnPrefix: 'chx: ',
-    actionSource: 'chx',
-    historyKey: 'cuemol.console.history.chimerax',
-    scripts: [{ ext: '.cxc', submit: 'text' }],
-    cliColor: 'green',
-  },
-]
+/** The extension point a dialect plugin declares its meta under. */
+export const DIALECT_EXTENSION = 'console.dialect'
 
-/** A dialect's id. Any string: whether it names a dialect is `isDialectId`. */
+/** The native dialect: the console's own, always there. */
+export const NATIVE_META: DialectMeta = {
+  id: 'native',
+  label: 'CueMol',
+  prompt: 'CueMol>',
+  txnPrefix: 'cmd: ',
+  actionSource: 'cmd',
+  historyKey: 'cuemol.console.history.native',
+  scripts: [{ ext: '.qax', submit: 'path' }],
+  cliColor: 'cyan',
+}
+
+/** A dialect's id. Any string: whether it names a dialect depends on the list at hand. */
 export type DialectId = string
 
 /** The dialect a fresh panel speaks, and what an unknown id falls back to. */
-export const DEFAULT_DIALECT: DialectId = 'native'
+export const DEFAULT_DIALECT: DialectId = NATIVE_META.id
 
-/** The dialect with this id, or null. */
-export function dialectMeta(id: string): DialectMeta | null {
-  return DIALECT_METAS.find((m) => m.id === id) ?? null
+/** Whether `v` has the shape of a `DialectMeta` (a plugin's extension value). */
+export function isDialectMeta(v: unknown): v is DialectMeta {
+  const m = v as Partial<DialectMeta> | null
+  return (
+    typeof m === 'object' && m !== null &&
+    typeof m.id === 'string' && m.id !== '' &&
+    typeof m.label === 'string' && typeof m.prompt === 'string' &&
+    typeof m.txnPrefix === 'string' && typeof m.actionSource === 'string' &&
+    typeof m.historyKey === 'string' && Array.isArray(m.scripts)
+  )
 }
 
-/** Whether `id` names a dialect. */
-export function isDialectId(id: unknown): id is DialectId {
-  return typeof id === 'string' && dialectMeta(id) !== null
+/** The dialect with this id in `metas`, or null. */
+export function findMeta(metas: readonly DialectMeta[], id: string): DialectMeta | null {
+  return metas.find((m) => m.id === id) ?? null
+}
+
+/** Whether `id` names a dialect in `metas`. */
+export function isDialectId(metas: readonly DialectMeta[], id: unknown): id is DialectId {
+  return typeof id === 'string' && findMeta(metas, id) !== null
 }
 
 /**
- * `id` when it names a dialect, else the default -- for a stored preference,
- * which may name a dialect this build no longer has.
+ * `id` when it names a dialect in `metas`, else the default -- for a stored
+ * preference, which may name a dialect whose plugin is now switched off.
  */
-export function knownDialect(id: unknown): DialectId {
-  return isDialectId(id) ? id : DEFAULT_DIALECT
+export function knownDialect(metas: readonly DialectMeta[], id: unknown): DialectId {
+  return isDialectId(metas, id) ? id : DEFAULT_DIALECT
 }
 
-/** The dialect with this id, or the default one. */
-export function metaOf(id: string): DialectMeta {
-  return dialectMeta(id) ?? (dialectMeta(DEFAULT_DIALECT) as DialectMeta)
+/** The dialect with this id in `metas`, or native. */
+export function metaOf(metas: readonly DialectMeta[], id: string): DialectMeta {
+  return findMeta(metas, id) ?? NATIVE_META
 }
 
-/** The dialect whose script `filePath` is (by extension), with how it is sent; null for none. */
-export function scriptOwner(filePath: string): { meta: DialectMeta; script: DialectScript } | null {
+/** The dialect in `metas` whose script `filePath` is (by extension), with how it is sent; null for none. */
+export function scriptOwner(
+  metas: readonly DialectMeta[],
+  filePath: string,
+): { meta: DialectMeta; script: DialectScript } | null {
   const lower = filePath.toLowerCase()
-  for (const meta of DIALECT_METAS) {
+  for (const meta of metas) {
     const script = meta.scripts.find((s) => lower.endsWith(s.ext))
     if (script) return { meta, script }
   }

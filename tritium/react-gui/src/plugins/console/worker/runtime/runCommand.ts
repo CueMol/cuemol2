@@ -35,7 +35,7 @@ import type {
   SceneRequest,
 } from '../../shared/consoleTypes'
 import * as fs from 'fs'
-import { dialectOf } from '../dialects'
+import { dialectOf, registeredMetas } from '../dialects'
 import { scriptOwner } from '../../shared/dialectMeta'
 import { resolvePath } from './paths'
 import { beginRun, endRun, isStopped, noteRunStream } from './runControl'
@@ -148,7 +148,7 @@ function resolveCommand(
  * script (by extension, `dialectMeta.ts`), or null.
  */
 function scriptRefusal(dialect: ConsoleDialect, filePath: string): string | null {
-  const owner = scriptOwner(filePath)?.meta
+  const owner = scriptOwner(registeredMetas(), filePath)?.meta
   if (!owner || owner.id === dialect.meta.id) return null
   return `Error: ${filePath} is a ${owner.label} script; switch the console to the ${owner.label} dialect to run it`
 }
@@ -544,7 +544,7 @@ async function runScriptPath(
   args: RunCommandArgs,
   scriptPath: string,
 ): Promise<RunCommandResult> {
-  const owner = scriptOwner(scriptPath)?.meta
+  const owner = scriptOwner(registeredMetas(), scriptPath)?.meta
   if (!owner || owner.id !== dialect.meta.id) {
     return fail(`${scriptPath} is not a script of the ${dialect.meta.label} console`, 'invalid-args')
   }

@@ -35,7 +35,9 @@ import type { RecallState } from '@renderer/utils/commandRecall'
 import { consoleServices } from '../calls'
 import { CONSOLE_PLUGIN_ID, DIALECT_PREF } from '../shared/consoleTypes'
 import type { ConsoleEntry, DialectId } from '../shared/consoleTypes'
-import { DIALECT_METAS, isDialectId, knownDialect, metaOf } from '../shared/dialectMeta'
+import { isDialectId, knownDialect, metaOf } from '../shared/dialectMeta'
+import type { DialectMeta } from '../shared/dialectMeta'
+import { useDialectMetas } from './useDialectMetas'
 import { ConsoleTranscript } from './ConsoleTranscript'
 import { consoleSession, useConsoleSession } from './consoleSessionStore'
 import { historyOf } from './commandHistory'
@@ -45,7 +47,6 @@ void React
 const NEWLINE = '\n'
 
 /** The switch's segments, in the order shown. */
-const DIALECT_OPTIONS: { label: string; value: DialectId }[] = DIALECT_METAS.map((m) => ({ label: m.label, value: m.id }))
 
 /**
  * The completed text before the caret, without a separator the text after
@@ -81,15 +82,15 @@ function cellsAcross(el: HTMLElement): number {
 }
 
 /** What the user types to switch: the dialect's id, alone on the line. */
-function dialectNamedBy(text: string): DialectId | null {
+function dialectNamedBy(metas: readonly DialectMeta[], text: string): DialectId | null {
   const word = text.trim().toLowerCase()
-  return isDialectId(word) ? word : null
+  return isDialectId(metas, word) ? word : null
 }
 
 /** The prompt's placeholder: `help`, and the words that switch to the other dialects. */
-function placeholderFor(dialect: DialectId): string {
-  const others = DIALECT_METAS.filter((m) => m.id !== dialect).map((m) => `"${m.id}"`)
-  return `help  (or ${others.join(' / ')} to switch)`
+function placeholderFor(metas: readonly DialectMeta[], dialect: DialectId): string {
+  const others = metas.filter((m) => m.id !== dialect).map((m) => `"${m.id}"`)
+  return others.length === 0 ? 'help' : `help  (or ${others.join(' / ')} to switch)`
 }
 
 export const ConsolePanel: BottomTabComponent = ({
@@ -107,17 +108,21 @@ export const ConsolePanel: BottomTabComponent = ({
   // The strip's width in characters, for the grid.
   const [cells, setCells] = useState(80)
   const { prefs, setPref } = usePluginPrefs(CONSOLE_PLUGIN_ID)
-  const dialect: DialectId = knownDialect(prefs[DIALECT_PREF])
-  const history = historyOf(dialect)
+  const metas = useDialectMetas()
+  // The switch's segments, in the order shown.
+  const dialectOptions = useMemo(() => metas.map((m) => ({ label: m.label, value: m.id })), [metas])
+  const dialect: DialectId = knownDialect(metas, prefs[DIALECT_PREF])
+  const meta = metaOf(metas, dialect)
+  const history = historyOf(meta)
 
   const switchDialect = useCallback(
     (next: DialectId) => {
       if (next === dialect) return
       setPref(DIALECT_PREF, next)
       setRecall(IDLE)
-      consoleSession.notice(`Now speaking ${metaOf(next).label} commands.`)
+      consoleSession.notice(`Now speaking ${metaOf(metas, next).label} commands.`)
     },
-    [dialect, setPref],
+    [dialect, metas, setPref],
   )
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -269,7 +274,7 @@ export const ConsolePanel: BottomTabComponent = ({
     const text = draft.trim()
     if (text === '' || running || !runner) return
     // Switching is the panel's business, not a command either dialect knows.
-    const named = dialectNamedBy(text)
+    const named = dialectNamedBy(metas, text)
     if (named) {
       consoleSession.setDraft('')
       switchDialect(named)
@@ -282,7 +287,7 @@ export const ConsolePanel: BottomTabComponent = ({
     closeMenu()
     consoleSession.setDraft('')
     runner(text, dialect)
-  }, [draft, running, runner, dialect, history, switchDialect, menuView, acceptMenu, closeMenu])
+  }, [draft, running, runner, dialect, metas, history, switchDialect, menuView, acceptMenu, closeMenu])
 
   // Typing accepts what the menu shows and goes on from there.
   const handleChange = useCallback(
@@ -386,7 +391,7 @@ export const ConsolePanel: BottomTabComponent = ({
           fill={false}
           value={dialect}
           onValueChange={switchDialect}
-          options={DIALECT_OPTIONS}
+          options={dialectOptions}
           disabled={running}
         />
         <FormButton
@@ -470,7 +475,7 @@ export const ConsolePanel: BottomTabComponent = ({
 
       <div className="console-prompt">
         <span className="console-prompt-symbol type-console" aria-hidden>
-          {metaOf(dialect).prompt}
+          {meta.prompt}
         </span>
         <TextAreaField
           ref={inputRef}
@@ -490,8 +495,8 @@ export const ConsolePanel: BottomTabComponent = ({
           // throwing it away. A disabled prompt would additionally swallow
           // `autoFocus`, which fires once on mount and cannot retry.
           autoFocus
-          placeholder={placeholderFor(dialect)}
-          ariaLabel={`${metaOf(dialect).prompt} command`}
+          placeholder={placeholderFor(metas, dialect)}
+          ariaLabel={`${meta.prompt} command`}
         />
       </div>
     </div>

@@ -22,6 +22,8 @@ import { catalogPlugin } from './catalog'
 import { getPdbPlugin } from './getpdb'
 import { mdtoolsPlugin } from './mdtools'
 import { consolePlugin } from './console'
+import { pymolConsolePlugin } from './pymol-console'
+import { chimeraxConsolePlugin } from './chimerax-console'
 import { mcpPlugin } from './mcp'
 import { sequencePlugin } from './sequence'
 
@@ -32,5 +34,7 @@ export const BUILTIN_PLUGINS: readonly RendererPlugin[] = [
   agentPlugin,
   mdtoolsPlugin,
   consolePlugin,
+  pymolConsolePlugin,
+  chimeraxConsolePlugin,
   mcpPlugin,
 ]

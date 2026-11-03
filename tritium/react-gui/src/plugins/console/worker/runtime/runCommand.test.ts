@@ -115,7 +115,13 @@ vi.mock('../dialects', async () => {
   // The comma grammar with PyMOL's rule, as the stub commands are written in it.
   const { commaSyntax } = await import('../parser/commaSyntax')
   const syntax = commaSyntax({ rule: 'pymol', fileFallback: true, pythonRefusal: 'Error: no Python' })
-  return { dialectOf: () => ({
+  return {
+  // What the registered dialects' scripts are: native's qax, a dialect's pml.
+  registeredMetas: () => [
+    { id: 'native', label: 'CueMol', scripts: [{ ext: '.qax', submit: 'path' }] },
+    { id: 'pymol', label: 'PyMOL', scripts: [{ ext: '.pml', submit: 'text' }] },
+  ],
+  dialectOf: () => ({
     syntax,
     meta: {
       id: dialect.id,

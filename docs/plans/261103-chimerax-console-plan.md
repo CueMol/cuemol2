@@ -1,6 +1,6 @@
 # ChimeraX 互換 console (ChX console) の残りの計画
 
-ChX console (console plugin の ChimeraX dialect) の基盤と基本コマンドの仕様は
+ChX console (plugin `chimerax-console`。console に足す ChimeraX dialect) の基盤と基本コマンドの仕様は
 `docs/architecture/console-chimerax-dialect.md` にある。dialect の一覧と `DialectSyntax` は
 `docs/architecture/op-catalog.md` §5。ここには、まだ実装していないコマンドと、その実装に要る CueMol 側の機能を残す。
 ChimeraX のソースは `~/ext/ChimeraX/src/bundles/`。
@@ -9,7 +9,7 @@ ChimeraX のソースは `~/ext/ChimeraX/src/bundles/`。
 
 コマンドを 1 つ足すときに触るのは次の 3 つだけ:
 
-- `commands/<領域>.ts` の追加
+- `plugins/chimerax-console/worker/commands/<領域>.ts` の追加
 - `registry.ts` への 1 行
 - 必要ならテスト 1 件
 

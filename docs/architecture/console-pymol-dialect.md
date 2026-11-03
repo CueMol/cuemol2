@@ -11,16 +11,19 @@ runtime (1 submit = 1 txn、Stop、script、log)、引数パーサ、補完、he
 
 ## 1. 位置づけ
 
+- built-in plugin `pymol-console` (表示名「PyMOL console」、既定オン) として、console plugin に dialect を足す
+  ([op-catalog.md](op-catalog.md) §5)。オフにすると console の切り替えと `tritium_cli` から消える。外すときは
+  `plugins/pymol-console/` と `plugins/index.ts` の 1 行を消す。
 - パーサとコマンドは **TS で Web Worker に置く**。embedded Python は使わない (C++ に PyMOL 用の
   入口は無く、cuetty / pymod とは共有しない)。Python を要するものは理由付きで断る:
   `/` で始まる行 (`commaSyntax` の `pythonRefusal`)、`@x.py` / `@x.pym` (`refuseScript`)、`run x.py`、`log_open x.py`。
 - 各コマンドは既存の worker service を呼ぶ薄い adapter で、計算は service か C++ に置く。
-  PyMOL 固有の解釈 (引数の文法、PyMOL の名前と文言、selection 翻訳) は `dialects/pymol/` の中に閉じ、
-  runtime と native dialect はここを import しない。
+  PyMOL 固有の解釈 (引数の文法、PyMOL の名前と文言、selection 翻訳) はこの plugin の中に閉じる。console の内部は
+  `@plugins/console/worker/dialect-api` からしか使わず、console はこの plugin を import しない。
 - PyMOL と**意味が一致するものだけ**を移す。近いもので代用して違う結果を出すより、理由を言って断る。
 - native dialect の生成コマンド (op) は使わない。例外は `ray` / `png ray=1` が呼ぶ `render_image` op。
 
-### `ConsoleDialect` の PyMOL 固有の値 (`dialects/pymol/index.ts`)
+### `ConsoleDialect` の PyMOL 固有の値 (`plugins/pymol-console/worker/index.ts`、meta は `shared/meta.ts`)
 
 | 項目 | 値 |
 |---|---|
@@ -31,7 +34,7 @@ runtime (1 submit = 1 txn、Stop、script、log)、引数パーサ、補完、he
 
 ### 構成
 
-`dialects/pymol/` の下に `index.ts` (`PYMOL_DIALECT`)、`sources.ts` (補完の候補源)、`sel/` (selection 翻訳、§2)、
+`plugins/pymol-console/` の `worker/` の下に `index.ts` (`PYMOL_DIALECT`)、`dialect.service.ts` (起動時の登録)、`sources.ts` (補完の候補源)、`sel/` (selection 翻訳、§2)、
 `commands/` (`registry.ts` の `PYM_COMMANDS` と `help`、共通の `helpers.ts` (名前 -> uid、glob (照合は native と共通の `catalog/refs.ts` の `globToRegExp`)、
 `moleculeSelections`、`OWNED = 'pym:'`)・`namedSelections.ts`・`pymolColors.ts`、領域ごとの `*Commands.ts` (§3))。
 
@@ -271,8 +274,8 @@ camera の操作は undo しない ([ADR-0025](../migration/adr/ADR-0025-view-pa
 ## 5. テスト
 
 - `parser/parse.test.ts`、`runtime/runCommand.test.ts` (両 dialect 共用のパーサと runtime)
-- `dialects/pymol/sel/translate.test.ts`: `-` / `+` の 2 つの意味、優先順位、マクロ、2 集合演算子、断る語
-- `dialects/pymol/commands/`: `repCommands.test.ts` (和 / 差、GUI の renderer に触れない、式の中の object 名)、
+- `plugins/pymol-console/worker/sel/translate.test.ts`: `-` / `+` の 2 つの意味、優先順位、マクロ、2 集合演算子、断る語
+- `plugins/pymol-console/worker/commands/`: `repCommands.test.ts` (和 / 差、GUI の renderer に触れない、式の中の object 名)、
   `repSettings.test.ts`、`fileCommands.test.ts` (format、load の renderer、delete の探索順)、
   `saveCommands.test.ts` (部分保存と `convToLink`)、`measureCommands.test.ts`、`mapCommands.test.ts` (carve)、
   `colorCommands.test.ts`、`labelExpr.test.ts`、`viewMatrix.test.ts` (往復)、`pymolArgs.test.ts`

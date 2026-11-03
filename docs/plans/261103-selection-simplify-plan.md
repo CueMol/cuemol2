@@ -54,9 +54,9 @@ GUI での編集との兼ね合いは今のままになる。
 - C++: `molstr` に簡単化の処理 (例: `SelSimplifier.{hpp,cpp}`) を足す。入力の木は変えず、簡単にした木を新しく作る。
 - `SelCommand` に「簡単にした式を返す」メソッドを足し、`.qif` で公開する (`SelCommand.qif`)。
   libcuemol2 と tritium core の再ビルド、wrapper の再生成が要る。
-- TS: ChX dialect の `display.ts` の `writeSel` で、書き込む前に式を簡単にする
+- TS: ChX dialect (`plugins/chimerax-console/worker/display.ts`) の `writeSel` で、書き込む前に式を簡単にする
   (読み取り専用の補助なので、`eslint.config.mjs` の ChX の許可リストに helper を 1 つ足す)。
-  PyMOL dialect の `repCommands.ts` の `updateOwned` にも同じ処理を使える。
+  PyMOL dialect (`plugins/pymol-console/worker/commands/repCommands.ts`) の `updateOwned` にも同じ処理を使える。
 
 ## 4. テスト
 

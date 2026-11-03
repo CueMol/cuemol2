@@ -42,6 +42,10 @@ export type { InvokeOptions } from '@renderer/worker/client/WorkerTransport'
 export { definePluginChannel } from './pluginChannels'
 export type { PluginChannel } from './pluginChannels'
 
+// --- What other plugins add to this one (contributes.extensions) ---
+// From pluginContext, which reads the registry without importing it.
+export { usePluginExtensions } from './pluginContext'
+
 // --- Preferences and secrets ---
 export { usePluginPrefs } from './usePluginPrefs'
 export type { PluginPrefs } from './usePluginPrefs'

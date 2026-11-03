@@ -80,6 +80,7 @@ export const EMPTY_CONTRIBUTIONS: PluginContributions = {
   bottomTabs: [],
   statusBar: [],
   settings: [],
+  extensions: {},
 }
 
 /**
@@ -90,8 +91,9 @@ export const EMPTY_CONTRIBUTIONS: PluginContributions = {
  * rendered as a hole; `validatePlugin` has already reported it.
  */
 export function collectContributions(active: readonly RendererPlugin[]): PluginContributions {
+  const extensions: Record<string, unknown[]> = {}
   const out: PluginContributions = {
-    menus: [], toolbar: [], views: [], bottomTabs: [], statusBar: [], settings: [],
+    menus: [], toolbar: [], views: [], bottomTabs: [], statusBar: [], settings: [], extensions,
   }
 
   for (const plugin of active) {
@@ -140,6 +142,10 @@ export function collectContributions(active: readonly RendererPlugin[]): PluginC
         control = setting.control
       }
       out.settings.push({ ...setting, control, pluginId, pluginName })
+    }
+
+    for (const [point, values] of Object.entries(contributes.extensions ?? {})) {
+      ;(extensions[point] ??= []).push(...values)
     }
   }
 

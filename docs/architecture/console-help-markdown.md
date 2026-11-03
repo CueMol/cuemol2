@@ -70,7 +70,7 @@ console だけの文章は op を持たないもの (builtin と PyMOL コマン
 
 ## help の構成 (PyMOL)
 
-`plugins/console/worker/dialects/pymol/commands/registry.ts`。PyMOL コマンドには主題の分類がないので、
+`plugins/pymol-console/worker/commands/registry.ts`。PyMOL コマンドには主題の分類がないので、
 `help` はコマンドの表と `select` についての注意 (名前付きの式で、使うたびに評価し直す)。
 `help <command>` は native と同じ `commandHelp` で、引数の表は名前と既定値だけ (説明を持たないため)。
 
