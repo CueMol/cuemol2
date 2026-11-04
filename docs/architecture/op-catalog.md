@@ -272,9 +272,8 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
 **PyMOL dialect** (prompt `PyM>`): 従来の pymconsole のコマンド。PyMOL の名前・引数・選択式
 (CueMol 式へ翻訳) と `pym:<rep>` 規約はこの dialect の中に閉じる (詳細は
 [console-pymol-dialect.md](console-pymol-dialect.md))。
-コマンドは PyMOL の引数と文言のまま、書き込みを op で行う (`runOp`、ChimeraX dialect と共通の入口。
-native の生成コマンドは通らない)。`load` / `fetch` / `save` / map / 計測 / view / movie はまだ
-service を直接呼ぶ ([op 化の計画](../plans/261104-pymol-dialect-ops-plan.md))。
+コマンドは PyMOL の引数と文言のまま、書き込みをすべて op で行う (`runOp`、ChimeraX dialect と共通の入口。
+native の生成コマンドは通らない)。worker service は読み取りにだけ使い、eslint が許可リストで検査する。
 `ray` は native の `render_image` で一時ファイルに描き、undo 位置とカメラを署名として覚える。
 直後の `png` (幅・高さ指定なし) は、署名が変わっていなければその画像を書き出す。`png ..., ray=1`
 はその場で ray tracing する。
@@ -310,7 +309,7 @@ op 名 (= console のコマンド名、MCP と agent の tool 名) と alias は
   | `show` / `hide` | 表示する / 隠す (この意味だけ。情報の表示には使わない) |
 
   固有の動詞 (`superpose`、`measure`、`merge`、`cut`、`rotate`、`pan`、`focus`、`center`、
-  `recenter`、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture`、`convert` (object の型を変える)、`paste` (Copy した XML から足す)、`reload` (元のファイルから読み直す)、`quit` / `exit` など) は、
+  `recenter`、`orient` (主軸を画面の軸に合わせる)、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture`、`convert` (object の型を変える)、`paste` (Copy した XML から足す)、`reload` (元のファイルから読み直す)、`quit` / `exit` など) は、
   上の動詞と意味が重ならないものに限って使う。`make` / `gen` / `new` (→ `create`)、
   `compute` / `regen` (→ `calc` / `recalc`)、`change` / `update` (→ `set`)、一覧の `get` (→ `list`) は使わない。
 - **目的語**: `scene`、`object`、`renderer`、`group`、`camera`、`view`、`prop(s)`、`selection`、
@@ -406,6 +405,23 @@ set は名前で指す。同じ名前があれば scene の set を global (syst
   null は `default` という名前の set (scene の既定の set。MolSelPane が書き込める set の無い scene に作るのも
   この名前)
 
+### 視点・frame・書き出しの op (PyMOL dialect の op 化で足したもの)
+
+- `set_view` の `rotation`: camera の向きを quaternion `[a, x, y, z]` で書く (param 種別 `quat`。`vec3` と同じく
+  console では空白区切り、qax では `a x y z`)。書く順は rotation -> center -> distance -> slab -> zoom
+  (`setViewXform`)。C++ の `View::setSlabDepth` が slab をその時点の distance の 2 倍までに切り詰めるので、
+  distance を先に書かないと遠い視点の slab が欠ける。
+- `focus_selection objId, selection, zoom`: object の中の selection に視点を合わせる (`zoom` false は中心だけ)。
+  `center_view` と違い、object の選択を書き換えず undo の行も作らない。`orient_view objId, selection`: selection
+  の主軸を画面の軸に合わせてから合わせる (`MolCoord.orientView`)。どちらも `mutates: false`、`replay: true`。
+  agent では toolset `view`。
+- `set_frame objId, frame`: 複数 frame を持つ object (morph、MD trajectory) の frame を 0 から指定する。範囲外は
+  断る。再生と同じく undo の step にしない (`mutates: false`、`replay: true`)。toolset `anim`。
+- `save_object` の `selection` / `format` / `link`: selection の原子だけを書く (writer の `sel`)、writer 名で
+  形式を選ぶ。`link` (既定 true) は object の参照元を書いたファイルに付け替える (Save as と同じ)。selection を
+  付けたときは常に付け替えない (部分のファイルから読み直すと残りの原子を失うため)。
+- `create_renderer` の `mapCenterPolicy`: map の renderer を作るときの中心の決め方 (load と同じ値)。
+
 ### view property と reader のオプション
 
 - **view property** (View > View property の inspector と同じ generic property bridge):
@@ -434,9 +450,11 @@ set は名前で指す。同じ名前があれば scene の set を global (syst
     `readerTarget`)。読めなければ reader の例外で失敗する (`load_ccp4 f.pdb` → Invalid file format)。
     sniff の誤判定 (CCP4 map が NAMD coor と判定されたことがある) に左右されないため。ただし C++ reader が
     寛容なものは失敗しないことがある (PDB reader は知らない行を読み飛ばすので、`load_pdb f.cif` は object を作る)。
-  - reader を引数で選ばせないのは、console 補完のため: `rendererType` の候補は、その前の `path` を読む reader の
-    object から作る (`fileRendererTypes`)。`reader=` 引数だと、`rendererType` を補完する時点ではまだ書かれていない。
-    形式ごとの op は path param に自分の reader を持たせ (`path(desc, readerName)`)、補完もその reader で引く。
+  - `load_file` の `reader` は、sniff を飛ばしてその reader で読む (`readerTarget`。PyMOL の `load ..., format=`)。
+    オプションを変える手段にはしない: `rendererType` の候補は、その前の `path` を読む reader の object から作る
+    (`fileRendererTypes`) ので、後ろに書く `reader` は補完に効かない。オプションと補完を reader に合わせたいときは
+    形式ごとの op を使う。形式ごとの op は path param に自分の reader を持たせ (`path(desc, readerName)`)、補完も
+    その reader で引く。
     - `load_pdb` (PDB): `loadModel`、`loadAnisou`、`loadAltConf`、`loadSegid`、`build2ndry`、`autoTopology`
     - `load_mmcif` (mmCIF の座標モデル。structure factor の CIF map は `load_file` か `fetch_map`): `loadModel`、
       `loadAnisou`、`loadAltConf`、`build2ndry`、`autoTopology`

@@ -43,8 +43,24 @@ runtime (1 submit = 1 txn、Stop、script、log)、引数パーサ、補完、he
   `label` -> `set_atom_labels`。`enable` / `disable` -> `set_visible`。`delete` / `set_name` ->
   `delete_node` / `rename_node` / `remove_selection`。load の後の改名は `rename_node`。`ray` / `png ray=1`
   -> `render_image`。
-- まだ service を直接呼んでいるもの (`load` / `fetch` / `save` / `png` / map / 計測 / view / movie) は、
-  [op 化の計画](../plans/261104-pymol-dialect-ops-plan.md) で移す。
+- `load` -> `load_file` (見つけた reader を `reader` で渡し、読み直しの sniff をさせない)、URL は `fetch_url`、
+  `.qsc` / `.pse` は `cc.openScene`。`fetch` -> `fetch_pdb` (assembly は `fetch_url`)、`fetch_map`、`fetch_emdb`、
+  chain 指定は `delete_atoms`。renderer の名前 (`pym:` か `pym:<rep>`) と `zoom=0` は `rendererName` /
+  `centerView` で渡す。
+- `save` -> `save_object` (`selection`、`format` に writer 名、`link: false`。部分の書き出しで object の参照元が
+  変わらない)、`save_scene`、`export_scene`。`png` -> `export_scene`。
+- `isomesh` / `isosurface` -> `create_renderer` (`mapCenterPolicy: setMapCenter`)、`recenter_map`、
+  `set_map_contour`、carve は `set_node_prop` (`bndry_*`)。`isolevel` -> `set_map_contour`。
+- `distance` / `angle` / `dihedral` -> `measure_selections`、cutoff / mode 付きの `distance` ->
+  `analyze_interactions`。`align` / `super` / `pair_fit` -> `superpose` (RMSD の表示は読み取り)。
+- 視点: `zoom <object>` -> `focus_node`、`zoom <selection>` / `center <selection>` -> `focus_selection`
+  (object の選択を変えない)、`center <object>` / `reset` / `set_view` -> `set_view` (`rotation` を含む。
+  `set_view` は投影方式を `set_projection` でも戻す)、`orient` -> `orient_view`、`turn` -> `rotate_view`、
+  `move` -> `pan_view`、`view` -> `save_camera` / `apply_camera` / `delete_camera`。
+- movie: `frame` / `rewind` -> `set_frame` (範囲外は dialect が丸めて warn)、`mplay` / `mstop` / `rewind` ->
+  `animate`。
+- この規則は eslint (`eslint.config.mjs`) が検査する。`plugins/pymol-console/worker/` から import できる
+  worker service は、読み取りに使うものの許可リストだけ。
 
 ### `ConsoleDialect` の PyMOL 固有の値 (`plugins/pymol-console/worker/index.ts`、meta は `shared/meta.ts`)
 
