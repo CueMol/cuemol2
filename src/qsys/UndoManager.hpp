@@ -52,7 +52,9 @@ namespace qsys {
         }
       }
 
-      /// Perform undo
+      /// Perform undo. Stops at the first EditInfo that fails; the ones
+      /// before it stay undone (no EditInfo promises to change nothing when
+      /// it fails, so the step cannot be put back reliably).
       bool undo() {
         std::list<EditInfo *>::const_iterator iter = m_data.begin();
         for (; iter!=m_data.end(); iter++) {
@@ -103,6 +105,19 @@ namespace qsys {
     /// nesting level of transaction
     unsigned int m_nTxnNestLevel;
 
+    /// true once a failed undo/redo/rollback has discarded the history,
+    /// until the owner reads it with takeHistoryDropped()
+    bool m_bHistoryDropped;
+
+    /// Run one step's undo (or redo) with recording disabled; a false
+    /// return or an exception from an EditInfo is a failure (logged).
+    bool runStep(UndoInfo *pui, bool bUndo);
+
+    /// Discard the whole history after a failure that may have left the
+    /// scene partly changed, so no record is applied to a state it was
+    /// not made for.
+    void dropHistory(const char *what, const LString &desc);
+
     //  /// UNDO/REDO buffer size
     //  unsigned int m_nLimit;
 
@@ -131,6 +146,13 @@ namespace qsys {
     void addEditInfo(EditInfo *pei);
     void rollbackTxn();
     void commitTxn();
+
+    /// Whether a failure discarded the history since the last call (resets it).
+    bool takeHistoryDropped() {
+      bool res = m_bHistoryDropped;
+      m_bHistoryDropped = false;
+      return res;
+    }
 
     /// return true if in transaction
     bool isInTxn() const { return m_pPendInfo!=NULL; }

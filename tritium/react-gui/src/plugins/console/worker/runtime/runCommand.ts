@@ -374,7 +374,8 @@ async function runStandalone(
     const which = spec.undoStack
     const res = which === 'undo' ? undo(ctx, { sceneId: args.sceneId }) : redo(ctx, { sceneId: args.sceneId })
     if (!res.ok) {
-      entries.push({ kind: 'error', text: `Error: nothing to ${which}` })
+      // "nothing to undo", or the step that failed (the history is gone then).
+      entries.push({ kind: 'error', text: `Error: ${res.error}` })
       return ok({ entries, mutated: false, aborted: true, interrupted: false, ...cwdOut })
     }
     if (!cmd.quiet) writeLog(cmd.display)

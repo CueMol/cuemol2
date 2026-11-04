@@ -11,6 +11,7 @@
  */
 import type { ElectronFileFilter } from '@shared/types/fileDialog';
 import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes';
+import type { HistoryStepResult } from '@renderer/worker/server/services/undo/historyStep';
 import type { NewSceneInitialProps } from '@renderer/worker/shared/newSceneTypes';
 import { type InvokeOptions,
     WorkerTransport,
@@ -347,9 +348,9 @@ export class AsyncCueMol {
 
     // --- Edit ---
 
-    /** Undo the last transaction on a scene. */
-    undo(scene_id: number, depth = 0): Promise<boolean> { return editApi.undo(this._transport, scene_id, depth); }
+    /** Undo `depth + 1` transactions on a scene; a failure names the step that failed. */
+    undo(scene_id: number, depth = 0): Promise<HistoryStepResult> { return editApi.undo(this._transport, scene_id, depth); }
 
     /** Redo the most recently undone transaction. */
-    redo(scene_id: number, depth = 0): Promise<boolean> { return editApi.redo(this._transport, scene_id, depth); }
+    redo(scene_id: number, depth = 0): Promise<HistoryStepResult> { return editApi.redo(this._transport, scene_id, depth); }
 }

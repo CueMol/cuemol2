@@ -10,10 +10,11 @@
 import type { RedoArgs } from '@renderer/worker/server/services/undo/redo'
 import type { ClearUndoDataArgs, UndoArgs } from '@renderer/worker/server/services/undo/undo'
 import type { GetUndoStateArgs, UndoState } from '@renderer/worker/server/services/undo/undoState'
+import type { HistoryStepResult } from '@renderer/worker/server/services/undo/historyStep'
 
 export interface UndoCalls {
-  redo:                       { args: RedoArgs; result: { ok: boolean } }
-  undo:                       { args: UndoArgs; result: { ok: boolean } }
+  redo:                       { args: RedoArgs; result: HistoryStepResult }
+  undo:                       { args: UndoArgs; result: HistoryStepResult }
   getUndoState:               { args: GetUndoStateArgs; result: UndoState }
   clearUndoData:              { args: ClearUndoDataArgs; result: { ok: boolean } }
 }

@@ -38,6 +38,8 @@ import { useRegisterCommand } from '@renderer/commands/CommandRegistry'
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener'
 import { SEM_SCENE, SEM_ANY } from '@renderer/event'
 import { EVENT_BURST_DEBOUNCE_MS } from '@renderer/utils/timing'
+import { useShowErrorAlert } from '@renderer/dialogs/ErrorAlertDialogProvider'
+import type { HistoryStepResult } from '@renderer/worker/server/services/undo/historyStep'
 import { useLatestRef } from '@renderer/hooks/react/useLatestRef'
 import { useUndoRedoLocked } from '@renderer/contexts/UndoRedoLockContext'
 
@@ -148,21 +150,30 @@ export function useUndoRedoState({
 
   // The single choke point for running an undo: the Edit menu, Cmd+Z, the
   // toolbar button and the history dropdown all arrive here.
+  // A failed step (not "nothing to undo") is told to the user: C++ has
+  // dropped the history then, and the scene may be partly changed.
+  const showErrorAlert = useShowErrorAlert()
+  const reportFailure = useCallback((title: string, res: HistoryStepResult) => {
+    if (res && !res.ok && res.code !== 'not-found') void showErrorAlert({ title, message: res.error })
+  }, [showErrorAlert])
+
   const pickUndo = useCallback((depth = 0) => {
     const sceneId = sceneIdRef.current
     if (!cm || sceneId === undefined || lockedRef.current) return
     cm.undo(sceneId, depth)
+      .then((res) => reportFailure('Undo', res))
       .catch((e: unknown) => console.error('undo failed:', e))
       .finally(() => { void refresh() })
-  }, [cm, refresh, sceneIdRef, lockedRef])
+  }, [cm, refresh, sceneIdRef, lockedRef, reportFailure])
 
   const pickRedo = useCallback((depth = 0) => {
     const sceneId = sceneIdRef.current
     if (!cm || sceneId === undefined || lockedRef.current) return
     cm.redo(sceneId, depth)
+      .then((res) => reportFailure('Redo', res))
       .catch((e: unknown) => console.error('redo failed:', e))
       .finally(() => { void refresh() })
-  }, [cm, refresh, sceneIdRef, lockedRef])
+  }, [cm, refresh, sceneIdRef, lockedRef, reportFailure])
 
   const clearUndo = useCallback(() => {
     const sceneId = sceneIdRef.current

@@ -17,6 +17,51 @@ UndoManager::UndoManager()
   m_pPendInfo = NULL;
   m_nTxnNestLevel = 0;
 //  m_nLimit = 20;
+  m_bHistoryDropped = false;
+}
+
+namespace {
+  /// Disables recording for its scope, and restores the flag on any exit
+  /// (an exception included), so a failed undo never leaves recording off.
+  class DisableGuard
+  {
+  private:
+    bool &m_flag;
+    bool m_old;
+
+  public:
+    explicit DisableGuard(bool &flag) : m_flag(flag), m_old(flag) { m_flag = true; }
+    ~DisableGuard() { m_flag = m_old; }
+  };
+}
+
+bool UndoManager::runStep(UndoInfo *pui, bool bUndo)
+{
+  const char *what = bUndo ? "undo" : "redo";
+  DisableGuard guard(m_fDisable);
+  try {
+    if (bUndo ? pui->undo() : pui->redo())
+      return true;
+    LOG_DPRINTLN("UndoManager> %s of \"%s\" failed", what, pui->getDesc().c_str());
+  }
+  catch (const qlib::LException &e) {
+    LOG_DPRINTLN("UndoManager> %s of \"%s\" failed: %s", what, pui->getDesc().c_str(), e.getMsg().c_str());
+  }
+  catch (const std::exception &e) {
+    LOG_DPRINTLN("UndoManager> %s of \"%s\" failed: %s", what, pui->getDesc().c_str(), e.what());
+  }
+  catch (...) {
+    LOG_DPRINTLN("UndoManager> %s of \"%s\" failed: unknown exception", what, pui->getDesc().c_str());
+  }
+  return false;
+}
+
+void UndoManager::dropHistory(const char *what, const LString &desc)
+{
+  LOG_DPRINTLN("UndoManager> %s of \"%s\" failed; the scene may be partly changed, so the undo history was cleared",
+               what, desc.c_str());
+  clearAllInfo();
+  m_bHistoryDropped = true;
 }
 
 UndoManager::~UndoManager()
@@ -54,14 +99,16 @@ bool UndoManager::undo()
   if (!isUndoable())
     return false;
 
+  // Moved to the redo side only once it has worked: on failure the scene
+  // may be partly changed, and the whole history goes (dropHistory).
   UndoInfo *pui = m_udata.front();
+  if (!runStep(pui, true)) {
+    dropHistory("undo", pui->getDesc());
+    return false;
+  }
   m_udata.pop_front();
   m_rdata.push_front(pui);
-  
-  m_fDisable = true;
-  bool res = pui->undo();
-  m_fDisable = false;
-  return res;
+  return true;
 }
 
 bool UndoManager::redo()
@@ -70,13 +117,13 @@ bool UndoManager::redo()
     return false;
 
   UndoInfo *pui = m_rdata.front();
+  if (!runStep(pui, false)) {
+    dropHistory("redo", pui->getDesc());
+    return false;
+  }
   m_rdata.pop_front();
   m_udata.push_front(pui);
-  
-  m_fDisable = true;
-  bool res = pui->redo();
-  m_fDisable = false;
-  return res;
+  return true;
 }
 
 bool UndoManager::undo(int n)
@@ -217,10 +264,17 @@ void UndoManager::rollbackTxn()
     return;
   }
 
-  // undo pending operation
-  m_pPendInfo->undo();
-  delete m_pPendInfo;
+  // undo pending operation, with recording off so the undo itself adds
+  // nothing to the transaction being taken back
+  UndoInfo *pPend = m_pPendInfo;
   m_pPendInfo = NULL;
+  const LString desc = pPend->getDesc();
+  const bool ok = runStep(pPend, true);
+  delete pPend;
+  // The change it could not take back stays in the scene, which the
+  // existing undo/redo records were not made for.
+  if (!ok)
+    dropHistory("rollback", desc);
 
   MB_DPRINTLN("===== Rollback TXN =====");
 }

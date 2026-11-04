@@ -1566,14 +1566,36 @@ void Scene::commitUndoTxn()
   }
 }
 
+/// Tell the UI the undo history went away when a failure discarded it.
+static void fireIfHistoryDropped(Scene *pScene, UndoManager &um)
+{
+  if (!um.takeHistoryDropped())
+    return;
+  SceneEvent ev;
+  ev.setType(SceneEvent::SCE_SCENE_UNDOINFO);
+  ev.setSource(pScene->getUID());
+  ev.setTarget(pScene->getUID());
+  pScene->fireSceneEvent(ev);
+}
+
 bool Scene::undo(int n)
 {
-  return m_undomgr.undo(n);
+  const bool res = m_undomgr.undo(n);
+  fireIfHistoryDropped(this, m_undomgr);
+  return res;
 }
 
 bool Scene::redo(int n)
 {
-  return m_undomgr.redo(n);
+  const bool res = m_undomgr.redo(n);
+  fireIfHistoryDropped(this, m_undomgr);
+  return res;
+}
+
+void Scene::rollbackUndoTxn()
+{
+  m_undomgr.rollbackTxn();
+  fireIfHistoryDropped(this, m_undomgr);
 }
 
 void Scene::clearUndoDataScr()
