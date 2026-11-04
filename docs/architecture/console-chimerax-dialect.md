@@ -164,10 +164,25 @@ renderer で表し、**その selection と paint が表示の状態そのもの
 - **色**: target の atom 系 (a / b) は 3 つの atom renderer に**同じ** paint entry を、cartoon 系 (c / r) は ribbon の
   2 つに入れる (`add_paint_at` で先頭に。後から入れた色が勝つ)。renderer をまとめて作ってあるので、`color red
   target a` の後に style を変えても赤のまま。paint への切り替え (`set_renderer_coloring` の `paint-type-paint`) は、
-  まだ PaintColoring でない renderer にだけ行う (`ensurePaint`)。`setRendererColoring` は呼ぶたびに新しい表を作るので、
+  まだ PaintColoring でない renderer にだけ行う (`ensurePaint`。renderer の coloring の class を見る。GUI のパネルの
+  `canPaint` は分子に選択が無いと false になるので、判定に使うと選択の無いときに毎回切り替えてしまう)。`setRendererColoring` は呼ぶたびに新しい表を作るので、
   毎回切り替えると `color /A red; color /B blue` の 2 回目で A の赤が消える。
 - `byhetero` は炭素以外、`byelement` は炭素も、元素ごとの entry (Jmol の色) を入れる。atom の renderer だけに入れ、
   cartoon の色は変えない (ChimeraX と同じ)。entry を作る元素は生体分子と ligand に多いものに限る (`PAINTED_ELEMENTS`)。
+- `bychain` / `bymodel` / `random` は atom・cartoon・surface のどれにも入れる (`colorSchemes.ts`)。
+  - `bychain`: spec の触れる chain ごとに `chain X` との積の entry。色は ChimeraX の表 (`atomic/colors.py`
+    `chain_colors`、a-z と 0-9、大文字小文字を区別しない)。表に無い chain id には、ChimeraX は id を seed にした Python の
+    乱数で色を作るので再現できない。同じ範囲 (128-255) の色を id の hash から作り、違うことを warn する。
+  - `bymodel`: model の色 (`atomic_color_names`: #1 tan、sky blue、plum、light green、salmon、light gray、deep pink、
+    gold、dodger blue、purple)。11 番目以降は表を回して warn する (ChimeraX は他と見分けやすい色を作る)。
+  - `random`: 残基ごとの乱数の色 (ChimeraX は原子ごと。原子ごとの entry は paint の表を原子の数だけ膨らませる)。
+    記録される op は実際の色を持つので、qax の再生では同じ色になる。
+  - `bypolymer` / `byidentity` は断る (配列ごとの ChimeraX の seed 付き乱数の色を再現できない)。
+- `rainbow` は palette に沿って補間した色の entry を入れる。`residues` (既定) は chain ごとに spec の polymer 残基を順に
+  並べ、位置 (0..1) を 64 段に量子化し、同じ色の連続した残基を `resi a:b` の 1 つの entry にまとめる (1 chain あたり最大
+  64 entry)。`chains` は model ごとに chain id 順、`structures` は model ごとに 1 色。palette は組み込みの名前
+  (`rainbow` (既定、青から赤) `grayscale` `red-white-blue` `blue-white-red` `cyan-white-maroon` `cyan-gray-maroon`
+  `lipophilicity` と別名)、`c1:c2:...`、位置付きの `v1,c1:v2,c2:...`、先頭の `^` で反転 (`colorarg.py` `ColormapArg`)。
 - **surface** (`surface.ts`): ChimeraX と同じく chain ごとに 1 つ、`dsurface` の `chx:surface:<chain>` を、surface に
   触れたとき (`surface`、`show ... surfaces`) に作る。接している chain どうしをまとめて計算すると、chain の間の面が消える
   ため。表面を作る原子 (`sel` = `(chain X) and (protein or nucleic)`) と表示する原子 (`showsel`。含まれない原子の頂点は
@@ -185,6 +200,21 @@ renderer で表し、**その selection と paint が表示の状態そのもの
   (`CA`、無ければ `C4'`、どちらも無い ligand・水・イオンは残基の最初の原子) に `aid` の selection で付ける。原子を指す
   spec (`/A:10@CB`) も先に残基に広げる (`byres`)。ChimeraX の既定の位置 (残基の中心) とは異なり、ラベルは代表原子の
   位置に出る。
+- **`open` の auto style** (`autoStyle.ts`、ChimeraX の `structure.py` `apply_auto_styling`): 開いた molecule を
+  polymer の chain 数・原子数・polymer の残基数で分け (閾値は ChimeraX と同じ)、5 つの renderer の selection と paint を
+  書く。
+
+  | 分類 | 条件 | 表示 | 色 |
+  |---|---|---|---|
+  | non-polymer | polymer の chain が無い | 全原子 stick | model の色、炭素以外は元素の色 |
+  | small polymer | chain 5 未満、原子 20 万未満、残基 5000 未満 | cartoon (protein / nucleic)、ligand と金属から 3.6 A 以内の残基を stick (`byres ((L) expand 3.6)`)、その中の金属とイオンは sphere、炭素に付いた水素は隠す。残基が 10 以下 (短いペプチド) なら全原子 stick で cartoon 無し | 同上 (cartoon も model の色) |
+  | medium polymer | chain 250 未満、原子 100 万未満 | 全原子 sphere、ligand は stick、水は ball | 全 chain が同じ配列なら chain の色、ligand と水は元素の色 |
+  | large polymer | それ以外 | 全原子 sphere | model の色 |
+
+  CueMol で区別できないものは近似する: イオンはハロゲンと金属の原子 (ChimeraX は 1 原子の残基)、炭素に付いた水素は
+  標準残基の極性水素の名前の裏 (ChimeraX は結合から決める IDATM 型 `HC`)。medium / large で配列の違う chain があると、
+  ChimeraX は配列ごとの色にするが、CueMol では model の色のまま warn する。ChimeraX の lighting の切り替え、核酸の
+  tube/slab、糖鎖の SNFG 表示は行わない。
 - **制約**:
   - CueMol に原子ごとの表示フラグは無く、どの原子を描くかは renderer の selection だけで決まる。そのため**非表示の原子の
     style は保持しない**。`style :ALA sphere` -> `hide :ALA atoms` -> `show :ALA atoms` では ALA は stick で出る
@@ -198,13 +228,14 @@ renderer で表し、**その selection と paint が表示の状態そのもの
 
 | コマンド | 引数 | op | 備考 |
 |---|---|---|---|
-| `open` | `names`、`name`、`format` (無視)、`fromDatabase` (無視) | `fetch_pdb`、`load_file`、`create_renderer`、`set_renderer_styles`、`set_renderer_selection` | 4 文字の PDB id (`pdb:1abc` も。ファイルとして無いとき) は mmCIF で fetch。`.cxc` は script として実行。`.qsc` は scene として開く (txn の外、行に単独)。molecule は ribbon (`chx:cartoon`) で読み、ligand を stick にする (ChimeraX の自動の style の簡易版)。molecule でないもの (map) は File > Open と同じに開く。`Opened <name> as #N` と言う |
+| `open` | `names`、`name`、`format` (無視)、`fromDatabase` (無視) | `fetch_pdb`、`load_file`、`create_renderer`、`set_renderer_styles`、`set_renderer_selection`、`set_renderer_coloring`、`add_paint_at` | 4 文字の PDB id (`pdb:1abc` も。ファイルとして無いとき) は mmCIF で fetch。`.cxc` は script として実行。`.qsc` は scene として開く (txn の外、行に単独)。molecule は ribbon (`chx:cartoon`) で読み、ChimeraX の auto style で表示と色を決める (§5)。molecule でないもの (map) は File > Open と同じに開く。`Opened <name> as #N` と言う |
 | `close` | `[models]` | `delete_node` | spec が無ければ全部 |
 | `delete` | `atoms`、`attachedHyds` (無視) | `delete_atoms` | |
 | `show` / `hide` | `[spec] [what]`、`target` | `set_renderer_selection`、`set_visible`、`create_renderer`・`set_node_prop` (surface) | what: `atoms` `bonds` `cartoons` `ribbons` `surfaces` `models` (`pseudobonds` は warn)。target の文字 `a b c r m s p`。surface は §5 |
 | `cartoon` / `cartoon hide` | `[spec]`、`smooth` / `suppressBackboneDisplay` (無視) | `set_renderer_selection` | |
 | `style` | `[spec] stick\|ball\|sphere`、`dashes` / `ringFill` (無視) | `set_renderer_selection` | |
-| `color` | `[spec] [色 \| byhetero \| byelement]`、`target`、`transparency` / `halfbond` / `what` (無視) | `set_renderer_coloring`、`add_paint_at` | target の既定は ChimeraX と同じ `acsbpf` (`s` はある surface に塗る)。色は名前、hex (`#rgb` から 16 桁まで、alpha 付きも)、`rgb()` `rgba()` `hsl()` `hsla()` `gray()` (数値は整数なら 0-255、小数点付きなら 0-1、`%`、色相は `deg` / `rad` / `grad` / `turn`)、`r,g,b[,a]` の百分率 (`colors.ts`)。CueMol の paint は alpha を持たないので、色が alpha を述べていれば warn して不透明で塗る |
+| `color` | `[spec] [色 \| byhetero \| byelement \| bychain \| bymodel \| random]`、`target`、`transparency` / `halfbond` / `what` (無視) | `set_renderer_coloring`、`add_paint_at` | target の既定は ChimeraX と同じ `acsbpf` (`s` はある surface に塗る)。色は名前、hex (`#rgb` から 16 桁まで、alpha 付きも)、`rgb()` `rgba()` `hsl()` `hsla()` `gray()` (数値は整数なら 0-255、小数点付きなら 0-1、`%`、色相は `deg` / `rad` / `grad` / `turn`)、`r,g,b[,a]` の百分率 (`colors.ts`)。CueMol の paint は alpha を持たないので、色が alpha を述べていれば warn して不透明で塗る |
+| `rainbow` | `[spec] [residues\|chains\|structures]`、`target`、`palette`、`transparency` (無視) | `set_renderer_coloring`、`add_paint_at` | §5。`polymers` は断る (配列を比べない) |
 | `view` | `[spec]`、`frames` / `pad` (無視)、`view <名前>` | `set_view`、`apply_camera` | 下記。spec でない語は名前付き view として戻す |
 | `view name` / `view list` / `view delete` | `name` / `name\|all` | `save_camera`、`list_cameras`、`delete_camera` | ChimeraX の予約語 (`clip` `cofr` `delete` `list` `matrix` ...) を前方一致で含む名前は断る。CueMol のカメラは視点だけで、ChimeraX のように model の位置は戻さない |
 | `view matrix` | `camera M` (12 数値)、`models` / `coordinateSystem` は断る | `set_view` ×2、`set_projection` | 下記 |
@@ -284,6 +315,9 @@ renderer で表し、**その selection と paint が表示の状態そのもの
   一部を断ること、残基ラベルの代表原子の fallback
 - `commands/analysisCommands.test.ts`: `distance` がちょうど 2 原子だけを測ること、`matchmaker` が基準以外の model
   ごとに重ねること
+- `colorSchemes.test.ts`: chain の色を大文字小文字を区別せずに引くこと、`rainbow residues` が 64 段以下の範囲にまとめ、
+  青から赤で、`^` で逆になること
+- `autoStyle.test.ts`: ChimeraX の大きさの閾値、短いペプチドを stick にすること、small polymer の selection の式
 - (`cli/syntax.test.ts` の前方一致に、`sel` `su` `tr` `tu` `sa` `la` `di` `mm` `al` の短縮形)
 
 dialect に依存しない基盤 (ダミーの文法の dialect で補完と実行が同じ文法を通ること、別 dialect の script を断る文言) は

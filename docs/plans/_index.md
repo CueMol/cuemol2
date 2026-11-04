@@ -31,7 +31,7 @@
 | [261027-palette-set-switch-plan.md](261027-palette-set-switch-plan.md) | 分子の既定の色分けのテーマ (`default_paint`) を GUI から選ぶ | **未実装 / 今後の課題**。テーマの定義と style での手動切り替えは実装済み (`../architecture/default-paint-palette.md`) |
 | [261028-get-pdb-emdb-followups-plan.md](261028-get-pdb-emdb-followups-plan.md) | Get PDB の EMDB 対応で後回しにした項目 (subsample、検証値の表示、EMDB 単独 entry の検索、Volume Server) | **未実装 (候補の一覧)**。EMDB 対応とキーワード検索は実装済み (`../architecture/get-pdb-emdb.md`、`../architecture/get-pdb-keyword-search.md`) |
 | [261103-tritium-cli-autoupdate-plan.md](261103-tritium-cli-autoupdate-plan.md) | `tritium_cli autoupdate`: app の updater を `/app/update` で駆動 (owner 付き lease、GUI の自動 restart 抑止、開始 phase ごとの引き継ぎ) | **未着手 / 後日**。subcommand 拡充 (実装済み、`../architecture/local-api-server.md` §5) から分離 |
-| [261103-chimerax-console-plan.md](261103-chimerax-console-plan.md) | ChX console (console の ChimeraX dialect) の残り: 既存機能で作れるコマンドを 5 つの PR で実装する (atom spec と色の書き方 / 視点 / 選択・名前・info・alias / 表現と解析 / 色の拡張と open の auto style)。後で: lighting・windowsize・clip、backbone を隠す規則、非表示の原子の style 保持、`fit_view` | **未実装** (基盤と基本コマンドは実装済み。`../architecture/console-chimerax-dialect.md`) |
+| [261103-chimerax-console-plan.md](261103-chimerax-console-plan.md) | ChX console (console の ChimeraX dialect) の残り: lighting・windowsize・clip (CueMol 側の機能追加が先に要る)、backbone を隠す規則と非表示の原子の style 保持 (表示状態を別に持つ必要がある)、`fit_view` op | **未実装** (既存機能で作れるコマンドは実装済み。`../architecture/console-chimerax-dialect.md`) |
 | [261017-tube-raycast-memo-plan.md](261017-tube-raycast-memo-plan.md) | tube / cartoon の GPU raycast (impostor) の設計メモ: dev201608 の rctube の経緯、掃引パラメータの 1D 求根 + 断面 SDF 案、文献調査 | **検討メモ**。着手前に CPU で試作して安定性を確かめる |
 
 ## 実装済み (旧ルールで残っているもの)
