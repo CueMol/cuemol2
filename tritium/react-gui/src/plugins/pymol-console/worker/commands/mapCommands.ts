@@ -39,16 +39,13 @@
  */
 
 import { getNewRendererOptions } from '@renderer/worker/server/services/rend/getNewRendererOptions'
-import { createRendererOnObject } from '@renderer/worker/server/services/rend/createRendererOnObject'
 import { listMapRenderers } from '@renderer/worker/server/services/map/renderers'
 import { getMapRendererState } from '@renderer/worker/server/services/map/state'
-import { redrawMapCenter, setMapRendererProp } from '@renderer/worker/server/services/map/props'
 import type { MapRendererEntry } from '@renderer/worker/server/services/map/types'
-import { setGenericProp } from '@renderer/worker/server/services/props/write'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { isDefaulted, moleculeSelections, resolveObjects, toNumber } from './helpers'
+import { isDefaulted, moleculeSelections, resolveObjects, runOp, toNumber } from './helpers'
 
 /** PyMOL's two mesh commands, as the CueMol renderer type each becomes. */
 const MESH_TYPES = {
@@ -56,15 +53,10 @@ const MESH_TYPES = {
   isosurface: 'isosurf',
 } as const
 
-/** Set a map renderer's contour level, in the map's own unit. */
-function writeLevel(ctx: WorkerContext, sceneId: number, rendId: number, level: number): boolean {
-  return setMapRendererProp(ctx, {
-    sceneId,
-    rendId,
-    propName: 'siglevel',
-    value: level,
-    mode: 'commit',
-  }).ok
+/** Set a map renderer's contour level, in the map's own unit (`set_map_contour`). */
+async function writeLevel(ctx: WorkerContext, cc: CmdContext, rendId: number, level: number): Promise<boolean> {
+  const res = await runOp(ctx, cc, 'set_map_contour', { rendId, level, extent: null, color: null, alpha: null })
+  return res.ok
 }
 
 /**
@@ -76,10 +68,10 @@ function writeLevel(ctx: WorkerContext, sceneId: number, rendId: number, level: 
  * `recenter_map`. Only a DensityMap gets it, as on the file-open path; other
  * scalar objects (ElePotMap) keep their centre.
  */
-function centreOnView(ctx: WorkerContext, cc: CmdContext, objId: number, rendId: number): void {
+async function centreOnView(ctx: WorkerContext, cc: CmdContext, objId: number, rendId: number): Promise<void> {
   const obj = getSceneOrNull(ctx, cc.sceneId)?.getObject(objId) as { map_type_resolved?: unknown } | null | undefined
   if (typeof obj?.map_type_resolved !== 'string') return
-  redrawMapCenter(ctx, { sceneId: cc.sceneId, rendId, viewId: cc.viewId })
+  await runOp(ctx, cc, 'recenter_map', { rendId })
 }
 
 /** The map object `pattern` names, or a reason it named nothing usable. */
@@ -127,31 +119,22 @@ function optionalLength(raw: string): number | null | 'bad' {
  * name at every rebuild), and an empty name switches the boundary off, which
  * is how the region goes back to the plain box.
  */
-function writeBoundary(
+async function writeBoundary(
   ctx: WorkerContext,
-  sceneId: number,
+  cc: CmdContext,
   rendId: number,
   molName: string,
   selStr: string,
   range: number | null,
-): boolean {
-  const write = (propName: string, value: string | number, valueType: string): boolean =>
-    setGenericProp(ctx, {
-      sceneId,
-      nodeId: rendId,
-      nodeType: 'renderer',
-      propName,
-      op: 'set',
-      valueType,
-      value,
-      mode: 'commit',
-    }).ok
+): Promise<boolean> {
+  const write = async (prop: string, value: string | number): Promise<boolean> =>
+    (await runOp(ctx, cc, 'set_node_prop', { nodeType: 'renderer', nodeId: rendId, prop, value: String(value) })).ok
 
-  if (!write('bndry_molname', molName, 'string')) return false
+  if (!(await write('bndry_molname', molName))) return false
   // The selection is compiled by the property bridge, as a renderer's own
   // `sel` is.
-  if (!write('bndry_sel', selStr, 'object<MolSelection>')) return false
-  if (range !== null && !write('bndry_rng', range, 'real')) return false
+  if (!(await write('bndry_sel', selStr))) return false
+  if (range !== null && !(await write('bndry_rng', range))) return false
   return true
 }
 
@@ -210,7 +193,7 @@ function meshCommand(name: 'isomesh' | 'isosurface'): PymCommand {
       null,
       { source: 'selections', description: 'selection', suffix: ', ' },
     ],
-    run(ctx, args, cc) {
+    async run(ctx, args, cc) {
       for (const [arg, def] of [
         ['state', '1'],
         ['source_state', '0'],
@@ -261,41 +244,37 @@ function meshCommand(name: 'isomesh' | 'isosurface'): PymCommand {
         (r) => r.objId === map.objId && r.type === rendererType,
       )
       if (existing.length > 0) {
-        if (!writeLevel(ctx, cc.sceneId, existing[0].rendId, level)) {
+        if (!(await writeLevel(ctx, cc, existing[0].rendId, level))) {
           return { ok: false, error: `Error: could not set the level of "${rendName}"` }
         }
-        if (boundary && !writeBoundary(ctx, cc.sceneId, existing[0].rendId,
-                                       boundary.molName, boundary.selStr, range)) {
+        if (boundary && !(await writeBoundary(ctx, cc, existing[0].rendId,
+                                              boundary.molName, boundary.selStr, range))) {
           return { ok: false, error: `Error: could not carve "${rendName}"` }
         }
         cc.print(` ${name}: "${rendName}" at ${level}`)
         return { ok: true }
       }
 
-      const created = createRendererOnObject(ctx, {
-        sceneId: cc.sceneId,
+      const created = await runOp(ctx, cc, 'create_renderer', {
         objId: map.objId,
-        rendOpts: {
-          objectName: map.name,
-          rendererType,
-          rendererName: rendName,
-          selectionEnabled: false,
-          selection: '',
-          centerView: false,
-          mapCenterPolicy: 'setMapCenter',
-        },
+        rendererType,
+        name: rendName,
+        selection: null,
+        centerView: false,
+        mapCenterPolicy: 'setMapCenter',
       })
-      if (!created.ok || created.newRendId === undefined) {
+      const rendId = created.ok ? (created.data as { rendererId?: number } | undefined)?.rendererId : undefined
+      if (rendId === undefined) {
         return { ok: false, error: `Error: could not contour "${map.name}"` }
       }
       // Only a boxed region needs a centre; a carved one takes its place
       // from the atoms.
-      if (!boundary) centreOnView(ctx, cc, map.objId, created.newRendId)
-      if (!writeLevel(ctx, cc.sceneId, created.newRendId, level)) {
+      if (!boundary) await centreOnView(ctx, cc, map.objId, rendId)
+      if (!(await writeLevel(ctx, cc, rendId, level))) {
         return { ok: false, error: `Error: could not set the level of "${rendName}"` }
       }
-      if (boundary && !writeBoundary(ctx, cc.sceneId, created.newRendId,
-                                     boundary.molName, boundary.selStr, range)) {
+      if (boundary && !(await writeBoundary(ctx, cc, rendId,
+                                            boundary.molName, boundary.selStr, range))) {
         return { ok: false, error: `Error: could not carve "${rendName}"` }
       }
       cc.print(` ${name}: "${rendName}" on "${map.name}" at ${level}`)
@@ -317,7 +296,7 @@ const isolevel: PymCommand = {
   mutates: true,
   summary: 'Change the contour level of a map renderer, or read it back.',
   completions: [{ source: 'mapRenderers', description: 'map renderer', suffix: ', ' }],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     if (!isDefaulted(args.state, '1')) cc.warn('isolevel: state is ignored (not supported)')
 
     const rendName = args.name.trim()
@@ -340,7 +319,7 @@ const isolevel: PymCommand = {
     const level = toNumber(args.level)
     if (level === null) return { ok: false, error: `Error: "${args.level}" is not a level` }
     for (const rend of found) {
-      if (!writeLevel(ctx, cc.sceneId, rend.rendId, level)) {
+      if (!(await writeLevel(ctx, cc, rend.rendId, level))) {
         return { ok: false, error: `Error: could not set the level of "${rendName}"` }
       }
     }

@@ -9,7 +9,7 @@ import {
 import { PDB_ID_RE, pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
 import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/file/headlessOpen'
 import { defineOp } from '../op'
-import { LOAD_RENDERER_PARAMS, NULL_RENDERER_DOC, applyRendererArgs, loadObjectFile, openTarget, SCENE_FILE_RE } from '../fileLoad'
+import { LOAD_RENDERER_PARAMS, NULL_RENDERER_DOC, applyRendererArgs, loadObjectFile, openTarget, readerTarget, SCENE_FILE_RE } from '../fileLoad'
 import type { OpContext, OpOutcome } from '../op'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { enumOf, optional, path, rendererType, selection, string } from '../params'
@@ -128,6 +128,7 @@ export const loadFile = defineOp({
     rendererType: optional(rendererType(`Renderer to create for it. ${NULL_RENDERER_DOC}`)),
     selection: optional(selection('Draw only this selection. Null draws everything.')),
     name: optional(string('Name of the new object. Null uses the file name.')),
+    reader: optional(string('Reader name to read it with, skipping the extension and content lookup (for a file that lookup gets wrong). Null picks it as File > Open does.')),
     ...LOAD_RENDERER_PARAMS,
   },
   mutates: true,
@@ -137,7 +138,7 @@ export const loadFile = defineOp({
   aliases: [{ name: 'load', summary: 'Open a structure file, or a .qsc scene.' }],
   outsideTxn: (args) => typeof args.path === 'string' && SCENE_FILE_RE.test(args.path.trim()),
   run(ctx, args, oc) {
-    const target = openTarget(ctx, args.path)
+    const target = args.reader !== null ? readerTarget(ctx, args.path, args.reader) : openTarget(ctx, args.path)
     if ('error' in target) return { ok: false, error: target.error }
     if (target.scene) {
       // A scene is opened by the UI the way File > Open does it -- into the

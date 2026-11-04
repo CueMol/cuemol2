@@ -109,6 +109,7 @@ const PARAM_TYPE_NAMES: Readonly<Record<string, string>> = {
   propValue: 'value',
   real: 'number',
   vec3: 'x, y, z',
+  quat: 'a, x, y, z',
 }
 
 /** A command's help: for one made from an op, the op's own text, which the MCP server sends too. */

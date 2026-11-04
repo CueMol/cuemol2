@@ -353,12 +353,25 @@ export default tseslint.config(
   },
 
   // --- A dialect plugin uses the console's dialect-api only, and not the other plugin ---
+  // The PyMOL dialect writes through op catalog ops (runOp), as ChX does; a
+  // worker service is imported only for a read the catalog does not make an
+  // op of (op-catalog.md 3.1), listed here.
   {
     files: ['src/plugins/pymol-console/worker/**/*.ts'],
-    rules: restrict(...PLUGIN_WORKER_PATTERNS, CONSOLE_DIALECT_API_ONLY, {
-      group: ['@plugins/chimerax-console', '@plugins/chimerax-console/**'],
-      message: 'The dialect plugins do not import each other.',
-    }),
+    rules: restrict(
+      ...PLUGIN_WORKER_PATTERNS,
+      CONSOLE_DIALECT_API_ONLY,
+      {
+        group: ['@plugins/chimerax-console', '@plugins/chimerax-console/**'],
+        message: 'The dialect plugins do not import each other.',
+      },
+      {
+        regex:
+          '^@renderer/worker/server/services/(?!(props/read|file/getCompatibleRendererNames|file/headlessOpen|helpers/atomintr|helpers/makeSel|helpers/pickReaderName|helpers/readerFilter|helpers/sceneResolver|helpers/simplifySel|map/renderers|map/state|map/types|navi/atomLabels|rend/getNewRendererOptions|scene/exportImage|scene/listSceneObjects|sceneTree/sceneTree|select/getMolStructure|select/getSelDefs|select/getSelHitCount|style/styleSetEdit)$)',
+        message:
+          'The PyMOL dialect writes through op catalog ops (runOp), not worker services; only the read-only helpers listed in eslint.config.mjs may be imported.',
+      },
+    ),
   },
 
   // --- The ChX (ChimeraX) dialect goes through the op catalog ---

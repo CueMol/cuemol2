@@ -25,17 +25,12 @@
  * point of asking.
  */
 
-import {
-  appendMeasureLabelBySel,
-  measureAtomCount,
-} from '@renderer/worker/server/services/helpers/atomintr'
+import { measureAtomCount } from '@renderer/worker/server/services/helpers/atomintr'
 import type { MeasureMode } from '@renderer/worker/server/services/helpers/atomintr'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
-import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord'
-import { analyzeInteractions } from '@renderer/worker/server/services/molops/analyzeInteractions'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { isDefaulted, moleculeSelections, resolveMolSelection, toNumber } from './helpers'
+import { isDefaulted, moleculeSelections, resolveMolSelection, runOp, toNumber } from './helpers'
 import type { MoleculeSelection } from './helpers'
 
 /**
@@ -111,12 +106,12 @@ export function contactMode(modeArg: string, cutoffArg: string): ContactMode | {
  * distance as a contact search: one dashed label per atom pair between the
  * two selections within the cutoff, in one molecule or across two.
  */
-function distanceContacts(
+async function distanceContacts(
   ctx: WorkerContext,
   cc: CmdContext,
   args: Record<string, string>,
   mode: Extract<ContactMode, { kind: 'contacts' }>,
-): CmdOutcome {
+): Promise<CmdOutcome> {
   if (args.selection1.trim() === '' || args.selection2.trim() === '') {
     return { ok: false, error: 'Error: distance needs 2 selections' }
   }
@@ -125,22 +120,21 @@ function distanceContacts(
   const two = resolveMolSelection(ctx, cc.sceneId, args.selection2, cc.warn)
   if (!two.ok) return two
   const across = one.target.obj.uid !== two.target.obj.uid
-  const res = analyzeInteractions(ctx, {
-    sceneId: cc.sceneId,
+  const res = await runOp(ctx, cc, 'analyze_interactions', {
     objId: one.target.obj.uid,
-    selStr: one.target.selStr,
-    useMol2: across,
-    ...(across ? { objId2: two.target.obj.uid } : {}),
-    useSel2: true,
-    selStr2: two.target.selStr,
-    minDist: 0,
+    selection: one.target.selStr,
     maxDist: mode.maxDist,
+    // C++ `hbond` (polar only) is the op's includeCarbon off.
+    includeCarbon: !mode.hbondOnly,
+    minDist: 0,
     maxLabels: MAX_CONTACT_LABELS,
-    hbondOnly: mode.hbondOnly,
-    rendName: args.name.trim() !== '' ? args.name.trim() : 'measure',
+    labelSet: args.name.trim() !== '' ? args.name.trim() : 'measure',
+    obj2Id: across ? two.target.obj.uid : null,
+    selection2: two.target.selStr,
   })
-  if (!res.ok) return { ok: false, error: `Error: distance: ${res.error ?? 'the contacts could not be computed'}` }
-  cc.print(` distance: ${res.count ?? 0} contacts within ${mode.maxDist} angstroms${mode.hbondOnly ? ' (polar)' : ''}`)
+  if (!res.ok) return { ok: false, error: `Error: distance: ${res.error.replace(/^Error: /, '')}` }
+  const count = (res.data as { count?: number } | undefined)?.count ?? 0
+  cc.print(` distance: ${count} contacts within ${mode.maxDist} angstroms${mode.hbondOnly ? ' (polar)' : ''}`)
   return { ok: true }
 }
 
@@ -170,7 +164,7 @@ function measureCommand(name: 'distance' | 'angle' | 'dihedral', mode: MeasureMo
         suffix: ', ' as const,
       })),
     ],
-    run(ctx, args, cc) {
+    async run(ctx, args, cc) {
       // distance with a cutoff or an all-pairs mode draws one label per
       // contact, through the interaction analysis the GUI uses.
       if (name === 'distance') {
@@ -220,24 +214,17 @@ function measureCommand(name: 'distance' | 'angle' | 'dihedral', mode: MeasureMo
         if (!it) return { ok: false, error: `Error: ${name} across molecules is not supported; name one object` }
         sels.push(it.selStr)
       }
-      const mols = [measured.obj]
-
-      const mol = scene.getObject(mols[0].uid) as unknown as MolCoord | null
-      if (!mol) return { ok: false, error: `Error: could not read "${mols[0].name}"` }
-
       const target = args.name.trim()
-      const res = appendMeasureLabelBySel(
-        scene,
-        mol,
-        mode,
-        sels,
-        target === '' ? undefined : target,
-        ctx,
-      )
-      if (!res.ok) return { ok: false, error: `Error: ${res.error}` }
+      const res = await runOp(ctx, cc, 'measure_selections', {
+        objId: measured.obj.uid,
+        selections: sels.join('; '),
+        label: target === '' ? 'measure' : target,
+      })
+      if (!res.ok) return res
+      const value = (res.data as { value?: number } | undefined)?.value ?? 0
 
       // Two decimals, as the coordinates themselves are given to about that.
-      cc.print(` ${name}: ${res.value.toFixed(2)} ${unit}`)
+      cc.print(` ${name}: ${value.toFixed(2)} ${unit}`)
       return { ok: true }
     },
   }

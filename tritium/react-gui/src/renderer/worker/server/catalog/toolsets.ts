@@ -54,7 +54,8 @@ export const TOOLSETS: readonly Toolset[] = [
     id: 'view',
     description:
       'Camera: saving and restoring named views, perspective or orthographic projection, ' +
-      'sliding the view, and fitting it to one object or renderer.',
+      'sliding the view, fitting it to one object or renderer, and fitting or orienting it on a ' +
+      "selection without changing the object's selection.",
   },
   {
     id: 'map',

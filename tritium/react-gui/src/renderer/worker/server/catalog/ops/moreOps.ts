@@ -18,10 +18,11 @@ import { saveScene } from '@renderer/worker/server/services/scene/saveScene'
 import { getObjectSaveInfo, saveObjectToFile } from '@renderer/worker/server/services/file/objectSave'
 import { goTime, pause, play, stop } from '@renderer/worker/server/services/anim/transport'
 import { focusOnNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { NO_OBJECT, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
-import { color, coloringTarget, enumOf, nodeId, objectId, optional, path, real, rendererId, string } from '../params'
+import { boolean, color, coloringTarget, enumOf, integer, nodeId, objectId, optional, path, real, rendererId, selection, string } from '../params'
 import { outputPath } from '../outputFile'
 
 export const listRendererStyles = defineOp({
@@ -167,12 +168,17 @@ export const saveObject = defineOp({
   name: 'save_object',
   description:
     'Write one object to a file in the format its extension names (for a MolCoord object e.g. .pdb ' +
-    'or .cif). ' +
+    'or .cif), or the format given. With a selection only those atoms are written. ' +
+    'A whole-object write makes the file the object\'s source (as Save as does) unless link is false; ' +
+    'a partial one never does. ' +
     'Give a plain file name, which is saved to the desktop, or an absolute path where the ' +
     'caller allows one; the full path is reported back -- tell the user where it went.',
   params: {
     objId: objectId('Uid of the object.'),
     fileName: path('The file, e.g. model.pdb.'),
+    selection: optional(selection('Write only these atoms (a MolCoord object). Null writes the whole object.')),
+    format: optional(string('Writer name, from the formats the object can be written as. Null picks it by the extension.')),
+    link: optional(boolean('False keeps the object\'s source as it is. Null or true points it at the new file (whole-object writes only).')),
   },
   mutates: false,
   expose: { tool: 'files', console: true },
@@ -184,12 +190,24 @@ export const saveObject = defineOp({
     const info = getObjectSaveInfo(ctx, { sceneId: oc.sceneId, objId: args.objId })
     if (!info.ok) return { ok: false, error: NO_OBJECT }
     const ext = nodePath.extname(target.path).slice(1).toLowerCase()
-    const writer = info.filters.find((f) => f.extensions.map((e) => e.toLowerCase()).includes(ext))
+    const writer = args.format !== null
+      ? info.filters.find((f) => f.name === args.format)
+      : info.filters.find((f) => f.extensions.map((e) => e.toLowerCase()).includes(ext))
     if (!writer) {
+      if (args.format !== null) {
+        return { ok: false, error: `No writer named ${args.format}. This object can be written as: ${info.filters.map((f) => f.name).join(', ')}.` }
+      }
       const known = info.filters.flatMap((f) => f.extensions).join(', ')
       return { ok: false, error: `No writer for .${ext}. This object can be written as: ${known}.` }
     }
-    const res = saveObjectToFile(ctx, { sceneId: oc.sceneId, objId: args.objId, path: target.path, writerName: writer.name })
+    const res = saveObjectToFile(ctx, {
+      sceneId: oc.sceneId,
+      objId: args.objId,
+      path: target.path,
+      writerName: writer.name,
+      ...(args.selection !== null ? { selection: args.selection } : {}),
+      ...(args.link !== null ? { link: args.link } : {}),
+    })
     return res.ok ? { ok: true, data: { path: target.path, format: writer.name } } : { ok: false, error: `The object could not be written to ${target.path}.` }
   },
 })
@@ -218,6 +236,50 @@ export const animate = defineOp({
           : goTime(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, ms: args.timeMs ?? 0 })
     if (!res.ok) return { ok: false, error: res.error }
     return { ok: true, data: { state: res.mgr.playState, timeMs: res.mgr.elapsedMs, lengthMs: res.mgr.lengthMs } }
+  },
+})
+
+/** An object with frames of its own (a MorphMol, an MD trajectory). */
+interface FramedObject {
+  nframe: number
+  frame: number
+}
+
+export const setFrame = defineOp({
+  name: 'set_frame',
+  description:
+    'Show one frame of an object that has several (a morph or an MD trajectory). Frames count ' +
+    'from 0. Like playing the animation, this is not an undo step.',
+  params: {
+    objId: objectId('Uid of the object with frames.'),
+    frame: integer('The frame, from 0 to the number of frames minus 1.'),
+  },
+  // Moving through frames is playback, not an edit (action-log.md 2.3).
+  mutates: false,
+  describe: (a, n) => `Show frame ${a.frame} of ${n('objId')}`,
+  replay: true,
+  expose: { tool: 'anim', console: true },
+  group: 'animation',
+  run(ctx, args, oc) {
+    const obj = getSceneOrNull(ctx, oc.sceneId)?.getObject(args.objId) as unknown as FramedObject | null
+    if (!obj) return { ok: false, error: NO_OBJECT }
+    let nframe = 0
+    try {
+      // Absent on an object without frames: the getter throws or is undefined.
+      nframe = Number(obj.nframe) || 0
+    } catch {
+      nframe = 0
+    }
+    if (nframe === 0) return { ok: false, error: 'That object has no frames.' }
+    if (args.frame < 0 || args.frame >= nframe) {
+      return { ok: false, error: `frame must be from 0 to ${nframe - 1}.` }
+    }
+    try {
+      obj.frame = args.frame
+    } catch {
+      return { ok: false, error: 'The frame could not be shown.' }
+    }
+    return { ok: true, data: { frame: args.frame, nframe } }
   },
 })
 
@@ -251,5 +313,6 @@ export const MORE_OPS = [
   saveSceneOp,
   saveObject,
   animate,
+  setFrame,
   focusNode,
 ]

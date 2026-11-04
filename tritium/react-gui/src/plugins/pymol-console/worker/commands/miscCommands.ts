@@ -9,15 +9,11 @@
  */
 
 import * as path from 'path'
-import {
-  exportScene,
-  getAvailableSceneExporters,
-  getSceneExportInfo,
-} from '@renderer/worker/server/services/scene/exportImage'
+import { getSceneExportInfo } from '@renderer/worker/server/services/scene/exportImage'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { closeLog, currentLog, openLog, writeLog } from '@plugins/console/worker/dialect-api'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { isDefaulted, resolvePath, toNumber } from './helpers'
+import { isDefaulted, resolvePath, runOp, toNumber } from './helpers'
 import { rayToFile, writeLastRay } from './rayCommands'
 import { quitCommand } from '@plugins/console/worker/dialect-api'
 
@@ -82,7 +78,6 @@ const png: PymCommand = {
       width: args.width,
       height: args.height,
       dpi: args.dpi,
-      ray: args.ray,
     })
   },
 }
@@ -93,17 +88,16 @@ export interface PngRequest {
   width: string
   height: string
   dpi: string
-  ray: string
 }
 
 /**
  * Write the view to a PNG.
  *
  * Given only one of width and height, the other follows the view's aspect
- * ratio, as in PyMOL. `ray=1` renders with the ray tracer (umbreon) when the
- * build has it.
+ * ratio, as in PyMOL. Written by `export_scene`; `ray=1` never reaches here
+ * (`png` sends it to the ray tracer job first).
  */
-export function writePng(ctx: WorkerContext, cc: CmdContext, req: PngRequest): CmdOutcome {
+export async function writePng(ctx: WorkerContext, cc: CmdContext, req: PngRequest): Promise<CmdOutcome> {
   const info = getSceneExportInfo(ctx, { sceneId: cc.sceneId, viewId: cc.viewId })
   if (!info.ok || info.width <= 0 || info.height <= 0) return { ok: false, error: 'Error: no active view' }
 
@@ -120,23 +114,16 @@ export function writePng(ctx: WorkerContext, cc: CmdContext, req: PngRequest): C
     height = info.height
   }
 
-  let exporterName = 'png'
-  if (!isDefaulted(req.ray, '0')) {
-    if (getAvailableSceneExporters(ctx).names.includes('umbreon')) exporterName = 'umbreon'
-    else cc.warn('png: ray is ignored (this build has no ray tracer)')
-  }
-
   let filePath = resolvePath(cc.cwd, req.filename)
   if (path.extname(filePath) === '') filePath += '.png'
 
-  const res = exportScene(ctx, {
-    sceneId: cc.sceneId,
-    viewId: cc.viewId,
-    filePath,
-    exporterName,
+  const res = await runOp(ctx, cc, 'export_scene', {
+    path: filePath,
+    format: 'png',
     width,
     height,
-    ...(dpi > 0 ? { resoln: dpi } : {}),
+    transparent: null,
+    dpi: dpi > 0 ? Math.round(dpi) : null,
   })
   if (!res.ok) return { ok: false, error: `Error: could not write ${filePath}` }
   cc.print(` png: wrote ${filePath}`)

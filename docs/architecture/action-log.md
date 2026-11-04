@@ -91,9 +91,8 @@ undo / redo、`clearUndoData`、scene の読み込み (`clearAllData`) など、
 
 ### 2.2 GUI: service が自分の op を記録する
 
-GUI (dialog・Inspector・scene tree) は op を通らず、worker の service を直接呼ぶ。PyMOL dialect
-の一部のコマンド (`load` / `fetch` / `save` / map / 計測 / view / movie) も、まだ service を直接
-呼ぶ。そこで記録点を service 関数そのものに置き、同じ op で
+GUI (dialog・Inspector・scene tree) は op を通らず、worker の service を直接呼ぶ。そこで記録点を
+service 関数そのものに置き、同じ op で
 できる変更は、その op と引数で記録する (`actions/serviceOps.ts` の `recordOp` と、その上に作った
 helper)。
 
@@ -101,7 +100,7 @@ helper)。
   何も記録されない。
 - op の実行中は、service 側では記録しない。op を経由した呼び出しでは op 自体が記録されるので、
   二重にならない。
-- PyMOL のコマンドは、呼んだ op (と、op 化前のコマンドでは service) の分だけ native の op が並ぶ。
+- PyMOL / ChimeraX のコマンドは op を呼ぶので、呼んだ op の分だけ native の op が並ぶ。
   たとえば `show sticks` は `create_renderer ... name=pym:sticks, selection=...` と `set_renderer_styles`
   として、`color red, resn ALA` は renderer ごとの `add_paint` と、元の選択に戻す `set_mol_selection`
   として記録される。PyMOL の入力文字列は、内部データにも qax にも持たない。行の `label` (`pym: ...`)
@@ -165,8 +164,10 @@ console に出す (記録の漏れを見つけるため)。
 
 ### 2.3 記録できていないもの (既知)
 
-- PyMOL dialect の `frame` / `rewind`: object の frame を動かすだけで txn を開かない
-  (アニメーションの再生と同じ扱い)。`set_view` / `orient` / `center` などの視点の変更は下の理由で記録しない。
+- 視点・frame・再生だけの入力 (PyMOL の `zoom` / `orient` / `set_view` / `frame` など、native の
+  `rotate_view` など): op (`set_view`、`focus_selection`、`orient_view`、`set_frame`) は `replay` で記録する
+  が、scene が変わらなければ txn は rollback するので行が残らない。scene を変える入力と同じ行にあるときだけ、
+  その step に並ぶ。
 - 対応する op が無いもの: MD trajectory (mdtools plugin の service で、plugin から op を足す仕組みが無い)。
   計画は [261013-action-record-coverage-plan.md](../plans/261013-action-record-coverage-plan.md)。
 - **scene を変えない操作は記録しない** (意図して): style set / camera を元のファイルへ上書きする Save は、

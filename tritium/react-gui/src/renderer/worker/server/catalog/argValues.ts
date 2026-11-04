@@ -46,6 +46,10 @@ export function checkArg(name: string, p: Param<unknown>, value: unknown): strin
       return Array.isArray(value) && value.length === 3 && value.every((x) => typeof x === 'number' && Number.isFinite(x))
         ? null
         : `${name} must be three numbers, x y z.`
+    case 'quat':
+      return Array.isArray(value) && value.length === 4 && value.every((x) => typeof x === 'number' && Number.isFinite(x))
+        ? null
+        : `${name} must be four numbers, a x y z.`
     default:
       return null
   }

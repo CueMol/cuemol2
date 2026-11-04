@@ -11,26 +11,24 @@
  * A trajectory's playback loop runs in the Trajectory tab (renderer side),
  * not in the worker, so `mplay` cannot start it; it says so.
  *
- * PyMOL numbers states from 1, CueMol frames from 0.
+ * PyMOL numbers states from 1, CueMol frames from 0. The moves are the
+ * `set_frame` and `animate` ops; neither is an undo step.
  */
 
-import { goTime, pause, play } from '@renderer/worker/server/services/anim/transport'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CmdContext, PymCommand } from './types'
-import { isAllSelection, resolveObjects, toNumber } from './helpers'
+import { isAllSelection, resolveObjects, runOp, toNumber } from './helpers'
 
-/** An object's frame cursor: MorphMol and Trajectory both have one. */
+/** An object's frame count: MorphMol and Trajectory both have one. */
 interface FramedObject {
   nframe: number
-  frame: number
 }
 
 /** One object that has more than one frame. */
 interface FramedEntry {
   entry: SceneObjectEntry
-  obj: FramedObject
   nframe: number
 }
 
@@ -49,7 +47,7 @@ function framedObjects(ctx: WorkerContext, sceneId: number, pattern: string): Fr
     } catch {
       nframe = 0
     }
-    if (nframe > 0) out.push({ entry, obj, nframe })
+    if (nframe > 0) out.push({ entry, nframe })
   }
   return out
 }
@@ -59,17 +57,14 @@ function framedObjects(ctx: WorkerContext, sceneId: number, pattern: string): Fr
  *
  * @returns how many objects moved.
  */
-function setFrames(targets: FramedEntry[], frame: number, cc: CmdContext): number {
+async function setFrames(ctx: WorkerContext, targets: FramedEntry[], frame: number, cc: CmdContext): Promise<number> {
   let moved = 0
   for (const t of targets) {
     const clamped = Math.max(0, Math.min(frame, t.nframe - 1))
     if (clamped !== frame) cc.warn(`"${t.entry.name}" has ${t.nframe} states; showing state ${clamped + 1}`)
-    try {
-      t.obj.frame = clamped
-      moved += 1
-    } catch {
-      cc.warn(`cannot move "${t.entry.name}" to state ${clamped + 1}`)
-    }
+    const res = await runOp(ctx, cc, 'set_frame', { objId: t.entry.uid, frame: clamped })
+    if (res.ok) moved += 1
+    else cc.warn(`cannot move "${t.entry.name}" to state ${clamped + 1}`)
   }
   return moved
 }
@@ -80,14 +75,14 @@ const frameCmd: PymCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Show state N of every multi-state object (MorphMol, trajectory).',
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const n = toNumber(args.frame)
     if (n === null || !Number.isInteger(n) || n < 1) {
       return { ok: false, error: 'Error: frame must be a whole number from 1' }
     }
     const targets = framedObjects(ctx, cc.sceneId, 'all')
     if (targets.length === 0) return { ok: false, error: 'Error: no object in the scene has more than one state' }
-    setFrames(targets, n - 1, cc)
+    await setFrames(ctx, targets, n - 1, cc)
     return { ok: true }
   },
 }
@@ -98,11 +93,11 @@ const rewind: PymCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Go back to the first state, and to the start of the animation.',
-  run(ctx, _args, cc) {
+  async run(ctx, _args, cc) {
     const targets = framedObjects(ctx, cc.sceneId, 'all')
-    setFrames(targets, 0, cc)
+    await setFrames(ctx, targets, 0, cc)
     // Seeking the timeline fails when the scene has none; nothing to rewind.
-    goTime(ctx, { sceneId: cc.sceneId, viewId: cc.viewId, ms: 0 })
+    await runOp(ctx, cc, 'animate', { action: 'seek', timeMs: 0 })
     return { ok: true }
   },
 }
@@ -131,14 +126,14 @@ const mplay: PymCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Play the scene animation (the Animation panel timeline).',
-  run(ctx, _args, cc) {
-    const res = play(ctx, { sceneId: cc.sceneId, viewId: cc.viewId })
+  async run(ctx, _args, cc) {
+    const res = await runOp(ctx, cc, 'animate', { action: 'play', timeMs: null })
     if (res.ok) return { ok: true }
     const traj = framedObjects(ctx, cc.sceneId, 'all').length > 0
     return {
       ok: false,
       error:
-        `Error: cannot play the animation: ${res.error}` +
+        `Error: cannot play the animation: ${res.error.replace(/^Error: /, '')}` +
         (traj ? ' (a trajectory plays from the Trajectory tab, not from here)' : ''),
     }
   },
@@ -150,11 +145,11 @@ const mstop: PymCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Stop the scene animation where it is.',
-  run(ctx, _args, cc) {
-    // PyMOL's mstop leaves the movie on the current frame; stop() would
-    // rewind it, pause() does not.
-    const res = pause(ctx, { sceneId: cc.sceneId })
-    return res.ok ? { ok: true } : { ok: false, error: `Error: cannot stop the animation: ${res.error}` }
+  async run(ctx, _args, cc) {
+    // PyMOL's mstop leaves the movie on the current frame; stop would
+    // rewind it, pause does not.
+    const res = await runOp(ctx, cc, 'animate', { action: 'pause', timeMs: null })
+    return res.ok ? { ok: true } : { ok: false, error: `Error: cannot stop the animation: ${res.error.replace(/^Error: /, '')}` }
   },
 }
 

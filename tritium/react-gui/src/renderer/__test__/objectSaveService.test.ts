@@ -1,4 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+// A partial save compiles its selection; the compiled form is what the writer gets.
+const SEL = { __sel: true }
+vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({ makeSel: () => SEL }))
+
 import { services } from '@renderer/worker/server/services/file/file.service'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
@@ -81,10 +86,13 @@ function makeFixture(opts: FixtureOpts = {}) {
     const writeFn = vi.fn(() => { if (writeThrows) throw new Error('write boom') })
     const detach = vi.fn(() => null)
     let convToLink = false
+    let sel: unknown = null
     const writer = opts.writer ?? {
         setPath,
         get convToLink() { return convToLink },
         set convToLink(v: boolean) { convToLink = v },
+        get sel() { return sel },
+        set sel(v: unknown) { sel = v },
         attach,
         write: writeFn,
         detach,
@@ -109,6 +117,7 @@ function makeFixture(opts: FixtureOpts = {}) {
         findCompatibleWriterNamesForObj, getInfoJSON2, createHandler,
         setPath, attach, writeFn, detach,
         getConvToLink: () => convToLink,
+        getSel: () => sel,
     }
 }
 
@@ -241,6 +250,18 @@ describe('saveObjectToFile', () => {
         expect(attach).toHaveBeenCalledWith(obj)
         expect(writeFn).toHaveBeenCalled()
         expect(detach).toHaveBeenCalled()
+    })
+
+    it('writes a selection without pointing the object at the partial file', () => {
+        // With convToLink the object would load back from a file holding only
+        // part of it once the scene is saved and reopened.
+        const { ctx, getConvToLink, getSel } = makeFixture()
+        const res = services.saveObjectToFile(ctx, {
+            sceneId: 1, objId: 10, path: '/tmp/part.pdb', writerName: 'pdb', selection: 'chain A', link: true,
+        })
+        expect(res).toEqual({ ok: true })
+        expect(getSel()).toBe(SEL)
+        expect(getConvToLink()).toBe(false)
     })
 
     it('reports the written file in the message log, but not on failure', () => {
