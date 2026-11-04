@@ -1,21 +1,16 @@
 // Runs in Web Worker thread. Wrappers are sync (no await on C++ wrappers).
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { syncActionRows } from '@renderer/worker/server/actions/actionLog';
+import { stepHistory, type HistoryStepResult } from './historyStep';
 
 export interface UndoArgs {
     sceneId: number;
     depth?: number;
 }
 
-/**
- * Undo `depth + 1` steps. C++ fires no event for an undo, so the action log
- * is brought in line here, which is what tells the renderer the history moved.
- */
-export function undo(ctx: WorkerContext, args: UndoArgs): { ok: boolean } {
-    const scene = ctx.sceMgr.getScene(args.sceneId);
-    const ok = scene.undo(args.depth ?? 0);
-    syncActionRows(scene, args.sceneId);
-    return { ok };
+/** Undo `depth + 1` steps, one at a time (`stepHistory`). */
+export function undo(ctx: WorkerContext, args: UndoArgs): HistoryStepResult {
+    return stepHistory(ctx, args, 'undo');
 }
 
 export interface ClearUndoDataArgs {

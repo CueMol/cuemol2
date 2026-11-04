@@ -24,6 +24,7 @@ import { useUndoRedoState } from '@renderer/hooks/useUndoRedoState'
 
 vi.mock('@cuemol/core/src/wrappers/wrapper-loader', () => ({ wrapper_map: {} }))
 vi.mock('@cuemol/core/src/BaseWrapper', () => ({ BaseWrapper: class {} }))
+vi.mock('@renderer/dialogs/ErrorAlertDialogProvider', () => ({ useShowErrorAlert: () => vi.fn() }))
 vi.mock('@renderer/hooks/cuemol/useCueMolEventListener', () => ({
   useCueMolEventListener: () => undefined,
 }))

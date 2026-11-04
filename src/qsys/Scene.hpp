@@ -561,9 +561,7 @@ namespace qsys {
     void startUndoTxn(const LString &descr) {
       m_undomgr.startTxn(descr);
     }
-    void rollbackUndoTxn() {
-      m_undomgr.rollbackTxn();
-    }
+    void rollbackUndoTxn();
     void commitUndoTxn();
 
     bool isUndoable() const {

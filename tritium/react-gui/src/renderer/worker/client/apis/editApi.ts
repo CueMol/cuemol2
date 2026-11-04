@@ -5,6 +5,7 @@
  * scene.
  */
 import { WorkerTransport } from '@renderer/worker/client/WorkerTransport';
+import type { HistoryStepResult } from '@renderer/worker/server/services/undo/historyStep';
 
 /**
  * Undo the last transaction on a scene.
@@ -12,14 +13,14 @@ import { WorkerTransport } from '@renderer/worker/client/WorkerTransport';
  * @param transport - Worker transport.
  * @param scene_id - Scene uid whose `UndoManager` is invoked.
  * @param depth - Number of additional transactions to undo (0 = one).
- * @returns `true` if at least one transaction was undone.
+ * @returns how many were undone; `not-found` when there was nothing to undo,
+ *   `native` (with the step that failed) when an undo failed.
  * @remarks Calls `undo` worker service.
  */
 export async function undo(
     transport: WorkerTransport, scene_id: number, depth = 0,
-): Promise<boolean> {
-    const result = await transport.invokeService('undo', { sceneId: scene_id, depth });
-    return result?.ok ?? false;
+): Promise<HistoryStepResult> {
+    return transport.invokeService('undo', { sceneId: scene_id, depth });
 }
 
 /**
@@ -28,12 +29,11 @@ export async function undo(
  * @param transport - Worker transport.
  * @param scene_id - Scene uid whose `UndoManager` is invoked.
  * @param depth - Number of additional transactions to redo (0 = one).
- * @returns `true` if at least one transaction was redone.
+ * @returns as `undo`.
  * @remarks Calls `redo` worker service.
  */
 export async function redo(
     transport: WorkerTransport, scene_id: number, depth = 0,
-): Promise<boolean> {
-    const result = await transport.invokeService('redo', { sceneId: scene_id, depth });
-    return result?.ok ?? false;
+): Promise<HistoryStepResult> {
+    return transport.invokeService('redo', { sceneId: scene_id, depth });
 }

@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <stdexcept>
 #include <common.h>
 #include "qsys/UndoManager.hpp"
 
@@ -21,6 +22,36 @@ public:
     bool isUndoable() const override { return undoable; }
     bool isRedoable() const override { return redoable; }
 };
+
+// An EditInfo that changes the scene and then fails, as one whose work
+// throws half way through does (TrajBlockEditInfo turns a load error after
+// removing a block into false). `*changed` stands for the scene.
+class ChangeThenFailEditInfo : public EditInfo {
+public:
+    int *changed;
+    explicit ChangeThenFailEditInfo(int *p) : changed(p) {}
+    bool undo() override { ++*changed; return false; }
+    bool redo() override { ++*changed; return false; }
+    bool isUndoable() const override { return true; }
+    bool isRedoable() const override { return true; }
+};
+
+// An EditInfo whose undo throws.
+class ThrowEditInfo : public EditInfo {
+public:
+    bool undo() override { throw std::runtime_error("boom"); }
+    bool redo() override { throw std::runtime_error("boom"); }
+    bool isUndoable() const override { return true; }
+    bool isRedoable() const override { return true; }
+};
+
+/// Commit one transaction holding `pei`.
+void commitOne(UndoManager &um, const char *desc, EditInfo *pei)
+{
+    um.startTxn(desc);
+    um.addEditInfo(pei);
+    um.commitTxn();
+}
 
 }  // namespace
 
@@ -220,4 +251,61 @@ TEST(UndoManagerTest, DescIndexOutOfRangeReturnsFalse)
     ASSERT_TRUE(um.undo());
     EXPECT_TRUE(um.getRedoDesc(0, desc));
     EXPECT_FALSE(um.getRedoDesc(3, desc));
+}
+
+// A step that fails may have changed the scene (no EditInfo promises
+// otherwise), so no record is left to be applied to that state: the whole
+// history goes, the step that failed included.
+TEST(UndoManagerTest, FailedUndoDropsTheHistory)
+{
+    UndoManager um;
+    int changed = 0;
+    commitOne(um, "older", new CountEditInfo());
+    commitOne(um, "fails", new ChangeThenFailEditInfo(&changed));
+    commitOne(um, "redone", new CountEditInfo());
+    ASSERT_TRUE(um.undo());   // "redone" goes to the redo side
+
+    EXPECT_FALSE(um.undo());  // "fails"
+    EXPECT_EQ(changed, 1);
+    EXPECT_EQ(um.getUndoSize(), 0);
+    EXPECT_EQ(um.getRedoSize(), 0);
+    EXPECT_TRUE(um.takeHistoryDropped());
+    EXPECT_FALSE(um.takeHistoryDropped());
+}
+
+// An exception from an EditInfo is a failure like false, and recording is
+// back on afterwards, so later edits can still be undone.
+TEST(UndoManagerTest, ThrowingUndoFailsAndRecordingResumes)
+{
+    UndoManager um;
+    commitOne(um, "throws", new ThrowEditInfo());
+
+    EXPECT_FALSE(um.undo());
+    EXPECT_FALSE(um.isDisabled());
+    commitOne(um, "later", new CountEditInfo());
+    EXPECT_EQ(um.getUndoSize(), 1);
+    EXPECT_TRUE(um.undo());
+}
+
+// A rollback that cannot take its change back leaves the scene where the
+// old redo records do not apply: they go too, and recording resumes.
+TEST(UndoManagerTest, FailedRollbackDropsTheHistory)
+{
+    UndoManager um;
+    int changed = 0;
+    commitOne(um, "done", new CountEditInfo());
+    ASSERT_TRUE(um.undo());
+    ASSERT_EQ(um.getRedoSize(), 1);
+
+    um.startTxn("edit");
+    um.addEditInfo(new ChangeThenFailEditInfo(&changed));
+    um.rollbackTxn();
+
+    EXPECT_EQ(changed, 1);
+    EXPECT_FALSE(um.isInTxn());
+    EXPECT_EQ(um.getUndoSize(), 0);
+    EXPECT_EQ(um.getRedoSize(), 0);
+    EXPECT_TRUE(um.takeHistoryDropped());
+    commitOne(um, "later", new CountEditInfo());
+    EXPECT_EQ(um.getUndoSize(), 1);
 }

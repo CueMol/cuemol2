@@ -55,7 +55,7 @@ altloc の無い原子 (`CA`) を消すと、同じ名前の altloc 付きの原
 
 ## 4. 既知の制約
 
-- undo の途中で `EditInfo::undo` が失敗しても、`UndoManager::undo` はその txn を redo のスタックに移し、
-  利用者にも知らせない。txn の中の残りの記録も実行されない。上の 2 つの edit は、§2 の確認に当たらない限り失敗しない。
+- undo の途中で `EditInfo::undo` が失敗すると、undo / redo の履歴はすべて捨てられ、利用者に知らされる
+  ([undo-failure.md](undo-failure.md))。上の 2 つの edit は、§2 の確認に当たらない限り失敗しない。
 - topology から作られない結合 (mmCIF の `struct_conn` など) は記録しない。
   戻した後は `applyTopology` が作る結合だけになる。
