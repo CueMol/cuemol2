@@ -19,6 +19,7 @@ import { ColorArg, EnumOf, Or, SpecArg, StringArg } from '../cli/argTypes'
 import { chxCommand } from '../cli/command'
 import type { ChxCommand } from '../cli/command'
 import { ELEMENT_COLORS } from '../colorTables'
+import { splitColorArg } from '../colors'
 import { atomRenderers, cartoonRenderers, ensureOwned, ensurePaint, intersect, runOp, targetsOf } from '../display'
 import { warnIgnored } from './warn'
 
@@ -54,11 +55,14 @@ const color: ChxCommand = chxCommand({
   async run(ctx, args, cc): Promise<CmdOutcome> {
     warnIgnored(cc, 'color', args, ['what', 'transparency', 'halfbond'])
     if (args.color === '') return { ok: false, error: 'Error: color: give a colour, byhetero or byelement' }
+    // CueMol's paint has no alpha; a colour that states one is drawn opaque.
+    const { hex: colorValue, alpha } = SPECIAL.includes(args.color) ? { hex: args.color, alpha: null } : splitColorArg(args.color)
+    if (alpha !== null && alpha < 1) cc.warn('color: transparency in a colour is not supported yet; drawn opaque')
     // ChimeraX's default target, acsbpf: atoms (and bonds), cartoons, surfaces...
     const target = args.target === '' ? 'acsbpf' : args.target
     const atoms = /[ab]/.test(target)
     // A colour by element is for atoms only; the cartoon keeps its colour.
-    const cartoons = /[cr]/.test(target) && !SPECIAL.includes(args.color)
+    const cartoons = /[cr]/.test(target) && !SPECIAL.includes(colorValue)
     if (/s/.test(target) && args.target !== '') cc.warn('color: surfaces are not supported yet; ignored')
     const found = targetsOf(ctx, cc.sceneId, args.objects)
     if (!found.ok) return found
@@ -70,7 +74,7 @@ const color: ChxCommand = chxCommand({
       for (const id of rends) {
         const painted = await ensurePaint(ctx, cc, id)
         if (!painted.ok) return painted
-        for (const [selection, hex] of entriesFor(args.color, t.sel)) {
+        for (const [selection, hex] of entriesFor(colorValue, t.sel)) {
           const res = await runOp(ctx, cc, 'add_paint_at', { nodeId: id, nodeType: 'renderer', selection, color: hex, at: 1 })
           if (!res.ok) return res
         }
