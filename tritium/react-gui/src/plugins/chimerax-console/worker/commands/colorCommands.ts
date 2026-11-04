@@ -21,6 +21,7 @@ import type { ChxCommand } from '../cli/command'
 import { ELEMENT_COLORS } from '../colorTables'
 import { splitColorArg } from '../colors'
 import { atomRenderers, cartoonRenderers, ensureOwned, ensurePaint, intersect, runOp, targetsOf } from '../display'
+import { surfacesOn } from '../surface'
 import { warnIgnored } from './warn'
 
 /** The colourings by name ChimeraX has; the console does these two so far. */
@@ -51,7 +52,7 @@ const color: ChxCommand = chxCommand({
     { name: 'halfbond', type: StringArg, role: 'keyword', ignored: true },
   ],
   mutates: true,
-  summary: 'Colour atoms and cartoons: a colour name, #hex, byhetero or byelement.',
+  summary: 'Colour atoms, cartoons and surfaces: a colour name, #hex, byhetero or byelement.',
   async run(ctx, args, cc): Promise<CmdOutcome> {
     warnIgnored(cc, 'color', args, ['what', 'transparency', 'halfbond'])
     if (args.color === '') return { ok: false, error: 'Error: color: give a colour, byhetero or byelement' }
@@ -63,14 +64,19 @@ const color: ChxCommand = chxCommand({
     const atoms = /[ab]/.test(target)
     // A colour by element is for atoms only; the cartoon keeps its colour.
     const cartoons = /[cr]/.test(target) && !SPECIAL.includes(colorValue)
-    if (/s/.test(target) && args.target !== '') cc.warn('color: surfaces are not supported yet; ignored')
+    // Surfaces take the colour where they exist; colouring does not make one.
+    const surfaces = /s/.test(target)
     const found = targetsOf(ctx, cc.sceneId, args.objects)
     if (!found.ok) return found
     for (const t of found.targets) {
       const owned = await ensureOwned(ctx, cc, t.obj)
       if (!owned.ok) return owned
       const r = atomRenderers(owned.ids)
-      const rends = [...(atoms ? [r.stick, r.ball, r.sphere] : []), ...(cartoons ? cartoonRenderers(owned.ids).map((c) => c.id) : [])]
+      const rends = [
+        ...(atoms ? [r.stick, r.ball, r.sphere] : []),
+        ...(cartoons ? cartoonRenderers(owned.ids).map((c) => c.id) : []),
+        ...(surfaces ? surfacesOn(ctx, cc.sceneId, t.obj.uid).map((s) => s.id) : []),
+      ]
       for (const id of rends) {
         const painted = await ensurePaint(ctx, cc, id)
         if (!painted.ok) return painted
