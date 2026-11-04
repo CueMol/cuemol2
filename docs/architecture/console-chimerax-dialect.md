@@ -168,6 +168,23 @@ renderer で表し、**その selection と paint が表示の状態そのもの
   毎回切り替えると `color /A red; color /B blue` の 2 回目で A の赤が消える。
 - `byhetero` は炭素以外、`byelement` は炭素も、元素ごとの entry (Jmol の色) を入れる。atom の renderer だけに入れ、
   cartoon の色は変えない (ChimeraX と同じ)。entry を作る元素は生体分子と ligand に多いものに限る (`PAINTED_ELEMENTS`)。
+- **surface** (`surface.ts`): ChimeraX と同じく chain ごとに 1 つ、`dsurface` の `chx:surface:<chain>` を、surface に
+  触れたとき (`surface`、`show ... surfaces`) に作る。接している chain どうしをまとめて計算すると、chain の間の面が消える
+  ため。表面を作る原子 (`sel` = `(chain X) and (protein or nucleic)`) と表示する原子 (`showsel`。含まれない原子の頂点は
+  描かない) を分け、表示・非表示は `showsel` だけを `set_node_prop` で書く。`sel` は変えないので表面は計算し直さない。
+  新しく作った surface の `showsel` は `none` から始める (`showsel` が空だと全部を描く)。`surface enclose` は指定した
+  原子群を囲む別の renderer `chx:surface:enclose` にする。`surface close` は spec の触れる chain の surface (と enclose)
+  を `delete_node` する。patch の境界の細部は ChimeraX と違いうる。
+- **surface の色・透明度**: `color` の target `s` (既定の `acsbpf` も) は、**ある** `chx:surface:*` に atom と同じ paint
+  entry を入れる (色を付けるだけで surface は作らない)。surface の色付けは `colormode=molecule` で、その renderer の
+  paint を使う。最初の `color` で paint に切り替わるので、指定していない部分も paint の既定の色になる。透明度は renderer
+  の `alpha` (§6 `transparency`)。
+- **ラベル**: 残基ラベルは `chx:label:residues`、原子ラベルは `chx:label:atoms` (`*namelabel`)。種類ごとに renderer を
+  分けるのは、`label delete` で種類を省いたとき両方から、指定したときその種類からだけ外すため (1 つの renderer では、
+  残基ラベルを消すと同じ原子の原子ラベルまで消える)。CueMol のラベルは原子に付くので、残基ラベルは残基ごとの代表原子
+  (`CA`、無ければ `C4'`、どちらも無い ligand・水・イオンは残基の最初の原子) に `aid` の selection で付ける。原子を指す
+  spec (`/A:10@CB`) も先に残基に広げる (`byres`)。ChimeraX の既定の位置 (残基の中心) とは異なり、ラベルは代表原子の
+  位置に出る。
 - **制約**:
   - CueMol に原子ごとの表示フラグは無く、どの原子を描くかは renderer の selection だけで決まる。そのため**非表示の原子の
     style は保持しない**。`style :ALA sphere` -> `hide :ALA atoms` -> `show :ALA atoms` では ALA は stick で出る
@@ -184,10 +201,10 @@ renderer で表し、**その selection と paint が表示の状態そのもの
 | `open` | `names`、`name`、`format` (無視)、`fromDatabase` (無視) | `fetch_pdb`、`load_file`、`create_renderer`、`set_renderer_styles`、`set_renderer_selection` | 4 文字の PDB id (`pdb:1abc` も。ファイルとして無いとき) は mmCIF で fetch。`.cxc` は script として実行。`.qsc` は scene として開く (txn の外、行に単独)。molecule は ribbon (`chx:cartoon`) で読み、ligand を stick にする (ChimeraX の自動の style の簡易版)。molecule でないもの (map) は File > Open と同じに開く。`Opened <name> as #N` と言う |
 | `close` | `[models]` | `delete_node` | spec が無ければ全部 |
 | `delete` | `atoms`、`attachedHyds` (無視) | `delete_atoms` | |
-| `show` / `hide` | `[spec] [what]`、`target` | `set_renderer_selection`、`set_visible` | what: `atoms` `bonds` `cartoons` `ribbons` `models` (`surfaces` / `pseudobonds` は warn)。target の文字 `a b c r m s p` |
+| `show` / `hide` | `[spec] [what]`、`target` | `set_renderer_selection`、`set_visible`、`create_renderer`・`set_node_prop` (surface) | what: `atoms` `bonds` `cartoons` `ribbons` `surfaces` `models` (`pseudobonds` は warn)。target の文字 `a b c r m s p`。surface は §5 |
 | `cartoon` / `cartoon hide` | `[spec]`、`smooth` / `suppressBackboneDisplay` (無視) | `set_renderer_selection` | |
 | `style` | `[spec] stick\|ball\|sphere`、`dashes` / `ringFill` (無視) | `set_renderer_selection` | |
-| `color` | `[spec] [色 \| byhetero \| byelement]`、`target`、`transparency` / `halfbond` / `what` (無視) | `set_renderer_coloring`、`add_paint_at` | target の既定は ChimeraX と同じ `acsbpf`。色は名前、hex (`#rgb` から 16 桁まで、alpha 付きも)、`rgb()` `rgba()` `hsl()` `hsla()` `gray()` (数値は整数なら 0-255、小数点付きなら 0-1、`%`、色相は `deg` / `rad` / `grad` / `turn`)、`r,g,b[,a]` の百分率 (`colors.ts`)。CueMol の paint は alpha を持たないので、色が alpha を述べていれば warn して不透明で塗る |
+| `color` | `[spec] [色 \| byhetero \| byelement]`、`target`、`transparency` / `halfbond` / `what` (無視) | `set_renderer_coloring`、`add_paint_at` | target の既定は ChimeraX と同じ `acsbpf` (`s` はある surface に塗る)。色は名前、hex (`#rgb` から 16 桁まで、alpha 付きも)、`rgb()` `rgba()` `hsl()` `hsla()` `gray()` (数値は整数なら 0-255、小数点付きなら 0-1、`%`、色相は `deg` / `rad` / `grad` / `turn`)、`r,g,b[,a]` の百分率 (`colors.ts`)。CueMol の paint は alpha を持たないので、色が alpha を述べていれば warn して不透明で塗る |
 | `view` | `[spec]`、`frames` / `pad` (無視)、`view <名前>` | `set_view`、`apply_camera` | 下記。spec でない語は名前付き view として戻す |
 | `view name` / `view list` / `view delete` | `name` / `name\|all` | `save_camera`、`list_cameras`、`delete_camera` | ChimeraX の予約語 (`clip` `cofr` `delete` `list` `matrix` ...) を前方一致で含む名前は断る。CueMol のカメラは視点だけで、ChimeraX のように model の位置は戻さない |
 | `view matrix` | `camera M` (12 数値)、`models` / `coordinateSystem` は断る | `set_view` ×2、`set_projection` | 下記 |
@@ -203,6 +220,16 @@ renderer で表し、**その selection と paint が表示の状態そのもの
 | `name delete` / `name list`、`name frozen` | `name\|all` | `remove_selection` | `name frozen` は断る (今の原子の集合を固定する手段が無い) |
 | `info`、`info models` / `chains` / `residues` / `atoms` | `[spec]`、`attribute`、`saveFile` (無視) | (読み取り) | ChimeraX の書式 (`#1, 1crn, shown`、`chain id #1/A chain_id A`、`residue id #1/A:12 name ALA`、`atom id #1/A:12@CA`)。結合の数と IDATM 型 (`info atoms` の既定の attribute) は CueMol に無いので出さない。atom の attribute は name・element・bfactor・occupancy |
 | `alias` / `alias list` / `alias delete` / `~alias` | `name text`、`$1`-`$9`・`$*` | (中のコマンドの op) | 下記 |
+| `surface` | `[spec]`、`enclose`、`probeRadius`、`color`、`transparency`、`gridSpacing` `resolution` `visiblePatches` など (無視) | `create_renderer`、`set_node_prop` (`showsel` `proberad` `alpha`)、`add_paint_at` | spec の触れる chain ごとの surface に spec の patch を足す (§5) |
+| `surface hidePatches` / `~surface`、`surface close` | `[spec]` | `set_node_prop` (`showsel`) / `delete_node` | |
+| `transparency` | `[spec] percent [what]`、`target` (既定 `s`) | `set_node_prop` (`alpha`) | `alpha = 1 - percent/100`。target の a / b は 3 つの atom renderer、c / r は ribbon の 2 つ、s は surface。CueMol の透明度は renderer 単位で原子ごとではないので、spec が model の一部のときは断る |
+| `label` | `[spec] [atoms\|residues]` (既定 residues)、`text`、`attribute`、`color`、`size` (`font_size`)、`onTop` (`label_on_top`)、`height` `bgColor` `offset` `font` (無視) | `set_atom_labels`、`set_node_prop` | 書式は残基 `{resn} {resi}`、原子 `{name}`。`text` は文字どおり (`{` `}` は escape)。`attribute` は残基の `name` `number` `chain_id`、原子の `name` `element` `bfactor` `occupancy` `alt_loc`。実数は ChimeraX の `%.3g` に合わせて `{bfac:.3g}`。`pseudobonds` `bonds` `models` のラベルは断る |
+| `label delete` / `~label` | `[spec] [atoms\|residues]` | `set_atom_labels` (`format: null`) | 種類を省くと両方を消す (ChimeraX と同じ)。残基ラベルは spec の残基の全原子から外す (付いているのは代表原子だけ) |
+| `distance` | `objects` (ちょうど 2 原子)、`decimalPlaces` (既定 3)、`color` `dashes` `radius` など (無視) | `measure_geometry` | 最初の原子の molecule の `chx:distance` (`atomintr`) に描く。model をまたぐときは 2 つ目の object を uid で渡す (同名の model があるため)。`Distance between /A ARG 10 CA and /A GLY 20 CA: 15.598Å` (model が複数なら `#1/A ...`)。値は `measure_geometry` の `data.exactValue` (丸めない値) を `decimalPlaces` で整形する。3D のラベルは CueMol の書式のまま。原子が 3 つ以上 (ChimeraX は min/avg/max を出す) は断る |
+| `distance delete` / `~distance` | `[spec]` | `delete_node` / `list_interactions`・`remove_interaction` | 引数無しは全 molecule の `chx:distance` を消す。2 原子を指定すると、その対の測定だけを消す (`list_interactions` の原子の表記 `A ARG 10 CA` で照合) |
+| `align` | `atoms toAtoms atoms`、`move` (structures だけ)、`each` `matchChainIds` `cutoffDistance` などは断る | `superpose` (`LSQ`) | 原子を順に対にする最小二乗。両側がそれぞれ 1 model で、原子数が同じで 3 以上であることを先に確かめる。RMSD は重ねた後の座標から計算し、`RMSD between N atom pairs is x angstroms` と出す |
+| `matchmaker` / `mmaker` | `atoms to spec`、`pairing` `alg` `matrix` `cutoffDistance` `showAlignment` など (無視) | `superpose` (`USalign`) | 基準 (1 model) 以外の model ごとに重ねる。ChimeraX は配列アラインメントと遠い対の除外の繰り返しで、CueMol は US-align (構造アラインメント) なので、重なり方が違いうることを毎回 warn する。RMSD は出さない (US-align の対が分からない) |
+| `save` | `filename`、`format`、`models`、`width` `height` `transparentBackground`、`supersample` `pixelSize` `quality` (無視)、`selectedOnly` `displayedOnly` `relModel` `allCoordsets` は断る | `export_scene` / `save_scene` / `save_object` | `.png`: 片方の大きさだけなら view の縦横比で他方を決める。`.qsc`: 行に単独で txn の外 (`outsideTxn`)。`.pdb`: 1 model だけ、`link: false` (object の元のファイルを変えない)。`.cxs` は断って `.qsc` を案内する |
 | `undo` / `redo` | | (runtime) | 行に単独のとき txn の外で (`undoStack`) |
 | `usage` / `help` | `[command]` | | |
 
@@ -252,6 +279,12 @@ renderer で表し、**その selection と paint が表示の状態そのもの
   触らないこと、今の selection から始めること (undo / GUI の編集に追従)、style を変えても色が残り paint への切り替えは
   1 度だけであること
 - `models.test.ts`: 番号を詰めず、使い回さないこと
+- `commands/reprCommands.test.ts`: surface が chain ごとに polymer から作られ `showsel` に spec の patch だけが入ること、
+  `hide ... surfaces` が surface を消さず `showsel` を狭めること、`transparency` の target と renderer の対応と model の
+  一部を断ること、残基ラベルの代表原子の fallback
+- `commands/analysisCommands.test.ts`: `distance` がちょうど 2 原子だけを測ること、`matchmaker` が基準以外の model
+  ごとに重ねること
+- (`cli/syntax.test.ts` の前方一致に、`sel` `su` `tr` `tu` `sa` `la` `di` `mm` `al` の短縮形)
 
 dialect に依存しない基盤 (ダミーの文法の dialect で補完と実行が同じ文法を通ること、別 dialect の script を断る文言) は
 `runtime/dialectNeutral.test.ts`。
