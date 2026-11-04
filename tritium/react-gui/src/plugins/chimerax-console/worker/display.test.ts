@@ -71,8 +71,11 @@ vi.mock('@renderer/worker/server/services/props/read', () => ({
     entries: [{ key: 'sel', value: state.rends.find((r) => r.id === a.nodeId)?.sel }],
   }),
 }))
-vi.mock('@renderer/worker/server/services/coloring/panelList', () => ({
-  getRendererPaintInfo: (_ctx: unknown, a: { rendId: number }) => ({ canPaint: state.rends.find((r) => r.id === a.rendId)?.paint ?? false }),
+vi.mock('@renderer/worker/server/services/coloring/colorTargets', () => ({
+  getColoringClassName: (rend: { id: number }) => (state.rends.find((r) => r.id === rend.id)?.paint ? 'PaintColoring' : 'CPKColoring'),
+}))
+vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({
+  getSceneOrNull: () => ({ getRenderer: (id: number) => ({ id }) }),
 }))
 vi.mock('@renderer/worker/server/services/scene/listSceneObjects', () => ({
   listSceneObjects: () => ({ objects: [{ uid: 1, name: '1crn', className: 'MolCoord' }] }),

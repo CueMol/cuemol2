@@ -26,7 +26,7 @@ import { objectNodes, rendererNodesOf } from '@renderer/worker/server/catalog/re
 // Read-only helpers (op-catalog.md 3.1: reading a property or a paint state
 // is not an operation of its own).
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
-import { getRendererPaintInfo } from '@renderer/worker/server/services/coloring/panelList'
+import { getColoringClassName } from '@renderer/worker/server/services/coloring/colorTargets'
 import { simplifySel } from '@renderer/worker/server/services/helpers/simplifySel'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
@@ -277,6 +277,10 @@ export function cartoonRenderers(ids: Map<string, number>): { id: number; scope:
  * drop the entries an earlier `color` put there.
  */
 export async function ensurePaint(ctx: WorkerContext, cc: CmdContext, rendId: number): Promise<OpRun> {
-  if (getRendererPaintInfo(ctx, { sceneId: cc.sceneId, rendId }).canPaint) return { ok: true }
+  // The renderer's colouring class, not the GUI panel's `canPaint`: that is
+  // also false while the molecule has no selection, and switching then
+  // would wipe the table every time.
+  const rend = getSceneOrNull(ctx, cc.sceneId)?.getRenderer(rendId)
+  if (rend && getColoringClassName(rend as Parameters<typeof getColoringClassName>[0]) === 'PaintColoring') return { ok: true }
   return runOp(ctx, cc, 'set_renderer_coloring', { nodeId: rendId, nodeType: 'renderer', mode: 'paint-type-paint', styleName: null })
 }
