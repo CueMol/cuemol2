@@ -4,8 +4,8 @@
  *
  * `open` reads a file, a `.cxc` script, or a 4-character PDB id (fetched as
  * mmCIF from the RCSB, as ChimeraX does). A molecule opens with the
- * console's renderers: the ribbon for its protein and nucleic acid, its
- * ligands as sticks -- a simple stand-in for ChimeraX's automatic styling.
+ * console's renderers, styled as ChimeraX's automatic styling would style
+ * it (`autoStyle.ts`).
  * Anything else (a map) opens as File > Open would open it.
  *
  * `save` writes an image (`.png`), the scene (`.qsc`, CueMol's session) or
@@ -21,13 +21,14 @@ import { resolvePath } from '@plugins/console/worker/dialect-api'
 import { BoolArg, FileNameArg, IntArg, SpecArg, StringArg } from '../cli/argTypes'
 import { chxCommand } from '../cli/command'
 import type { ChxCommand } from '../cli/command'
-import { ATOM_STYLES, CARTOONS, emitContext, ensureOwned, runOp, targetsOf, writeSel } from '../display'
+import { CARTOONS, emitContext, runOp, targetsOf } from '../display'
 import { isMolecule, numberedObjects } from '../models'
 import type { NumberedObject } from '../models'
 import { emitFor, NONE } from '../spec/emit'
 import { parseSpec, SpecError } from '../spec/parse'
 import { isSelector, withSceneSelectors } from '../spec/selectors'
 import { readCamera } from '../camera'
+import { applyAutoStyle } from '../autoStyle'
 import { warnIgnored } from './warn'
 
 /** A PDB id, alone or as `pdb:1abc` (`likely_pdb_id`: 4 characters, a leading digit). */
@@ -36,25 +37,14 @@ const PDB_ID = /^(?:pdb:)?([0-9][A-Za-z0-9]{3})$/i
 /** The ribbon renderer a molecule is opened with, by the load itself. */
 const OPEN_CARTOON = { rendererType: 'ribbon', rendererName: CARTOONS[0].name, selection: CARTOONS[0].scope ?? 'protein' }
 
-/** Give a newly opened molecule the console's renderers, and say its number. */
+/** Style each newly opened molecule as ChimeraX would (`autoStyle.ts`), and say its number. */
 async function adopt(ctx: WorkerContext, cc: CmdContext, before: Set<number>): Promise<CmdOutcome> {
   const added = numberedObjects(ctx, cc.sceneId).filter((o) => !before.has(o.uid))
   for (const obj of added) {
     cc.print(`Opened ${obj.name} as #${obj.model}`)
     if (!isMolecule(obj)) continue
-    const owned = await ensureOwned(ctx, cc, obj)
-    if (!owned.ok) return owned
-    const cartoon = owned.ids.get(CARTOONS[0].name)
-    if (cartoon !== undefined) {
-      const styled = await runOp(ctx, cc, 'set_renderer_styles', { rendId: cartoon, styles: CARTOONS[0].styles })
-      if (!styled.ok) return styled
-    }
-    for (const [name, sel] of [[CARTOONS[1].name, CARTOONS[1].scope ?? 'nucleic'], [ATOM_STYLES.stick.name, 'ligand']]) {
-      const id = owned.ids.get(name)
-      if (id === undefined) continue
-      const w = await writeSel(ctx, cc, id, sel)
-      if (!w.ok) return w
-    }
+    const styled = await applyAutoStyle(ctx, cc, obj)
+    if (!styled.ok) return styled
   }
   return { ok: true }
 }

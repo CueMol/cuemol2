@@ -35,6 +35,7 @@ export const CHX_COMMANDS: readonly ChxCommand[] = [
   DISPLAY_COMMANDS.hide,
   VIEW_COMMANDS.move,
   FILE_COMMANDS.open,
+  COLOR_COMMANDS.rainbow,
   SELECT_COMMANDS.select,
   SELECT_COMMANDS.selectAdd,
   SELECT_COMMANDS.selectSubtract,
