@@ -38,6 +38,10 @@ describe('ChX syntax', () => {
     expect(resolve('c :1-5')).toBe('cartoon')
     expect(resolve('cartoon hide :1-5')).toBe('cartoon hide')
     expect(resolve('cartoon h')).toBe('cartoon hide')
+    // ChimeraX's short forms, which bundle order decides.
+    expect(['sel', 'su', 'tr', 'tu', 'sa', 'la', 'di', 'mm', 'al'].map(resolve)).toEqual(
+      ['select', 'surface', 'transparency', 'turn', 'save', 'label', 'distance', 'mmaker', 'alias'],
+    )
     expect(resolve('bogus')).toMatch(/unknown command/)
   })
 
