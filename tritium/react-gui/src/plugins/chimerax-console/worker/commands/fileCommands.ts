@@ -7,6 +7,9 @@
  * console's renderers: the ribbon for its protein and nucleic acid, its
  * ligands as sticks -- a simple stand-in for ChimeraX's automatic styling.
  * Anything else (a map) opens as File > Open would open it.
+ *
+ * `save` writes an image (`.png`), the scene (`.qsc`, CueMol's session) or
+ * one molecule (`.pdb`). A ChimeraX session (`.cxs`) cannot be written.
  */
 
 import * as fs from 'fs'
@@ -15,7 +18,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { getCompatibleRendererNames } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
 import type { CmdContext, CmdOutcome } from '@plugins/console/worker/dialect-api'
 import { resolvePath } from '@plugins/console/worker/dialect-api'
-import { FileNameArg, SpecArg, StringArg } from '../cli/argTypes'
+import { BoolArg, FileNameArg, IntArg, SpecArg, StringArg } from '../cli/argTypes'
 import { chxCommand } from '../cli/command'
 import type { ChxCommand } from '../cli/command'
 import { ATOM_STYLES, CARTOONS, emitContext, ensureOwned, runOp, targetsOf, writeSel } from '../display'
@@ -24,6 +27,7 @@ import type { NumberedObject } from '../models'
 import { emitFor, NONE } from '../spec/emit'
 import { parseSpec, SpecError } from '../spec/parse'
 import { isSelector, withSceneSelectors } from '../spec/selectors'
+import { readCamera } from '../camera'
 import { warnIgnored } from './warn'
 
 /** A PDB id, alone or as `pdb:1abc` (`likely_pdb_id`: 4 characters, a leading digit). */
@@ -150,4 +154,66 @@ const deleteAtoms = chxCommand({
   },
 })
 
-export const FILE_COMMANDS: Record<string, ChxCommand> = { open, close, delete: deleteAtoms }
+const SAVE_IGNORED = ['supersample', 'pixelSize', 'quality']
+const SAVE_REFUSED = ['selectedOnly', 'displayedOnly', 'relModel', 'allCoordsets']
+
+const save = chxCommand({
+  words: ['save'],
+  args: [
+    { name: 'filename', type: FileNameArg, role: 'required' },
+    { name: 'format', type: StringArg, role: 'keyword' },
+    { name: 'models', type: SpecArg, role: 'keyword' },
+    { name: 'width', type: IntArg, role: 'keyword' },
+    { name: 'height', type: IntArg, role: 'keyword' },
+    { name: 'transparentBackground', type: BoolArg, role: 'keyword' },
+    ...SAVE_IGNORED.map((name) => ({ name, type: StringArg, role: 'keyword' as const, ignored: true })),
+    ...SAVE_REFUSED.map((name) => ({ name, type: StringArg, role: 'keyword' as const })),
+  ],
+  mutates: false,
+  summary: 'Save an image (.png), the scene (.qsc) or a model (.pdb).',
+  completions: [{ source: 'files', description: 'file' }],
+  // Saving the scene resets the undo stack: it cannot run inside the submission's transaction.
+  outsideTxn: (args) => /\.qsc$/i.test(args.filename ?? '') || /^(qsc|session)$/i.test(args.format ?? ''),
+  async run(ctx, args, cc) {
+    warnIgnored(cc, 'save', args, SAVE_IGNORED)
+    const refused = SAVE_REFUSED.find((k) => args[k] !== '')
+    if (refused) return { ok: false, error: `Error: save: ${refused} is not supported` }
+    const path = resolvePath(cc.cwd, args.filename)
+    const ext = (args.format !== '' ? args.format : path.match(/\.([^./\\]+)$/)?.[1] ?? '').toLowerCase()
+    if (ext === 'cxs' || ext === 'session') {
+      return { ok: false, error: 'Error: save: a ChimeraX session (.cxs) cannot be written; save the scene as .qsc' }
+    }
+    if (ext === 'png') {
+      const size = imageSize(ctx, cc, args.width, args.height)
+      return runOp(ctx, cc, 'export_scene', {
+        path, format: 'png', width: size.width, height: size.height,
+        transparent: args.transparentBackground === '' ? null : args.transparentBackground === 'true', dpi: null,
+      })
+    }
+    if (ext === 'qsc') return runOp(ctx, cc, 'save_scene', { path })
+    if (ext === 'pdb') {
+      const found = objectsOf(ctx, cc.sceneId, args.models)
+      if (!found.ok) return found
+      const mols = found.objs.filter(isMolecule)
+      if (mols.length !== 1) return { ok: false, error: `Error: save: a .pdb file holds one model here; name it with models (${mols.length} given)` }
+      return runOp(ctx, cc, 'save_object', { objId: mols[0].uid, fileName: path, selection: null, format: null, link: false })
+    }
+    return { ok: false, error: `Error: save: "${ext}" files are not supported (png, qsc, pdb)` }
+  },
+})
+
+/**
+ * The image size: the view's when neither is given, the other side in the
+ * view's aspect ratio when one is (ChimeraX's rule).
+ */
+function imageSize(ctx: WorkerContext, cc: CmdContext, width: string, height: string): { width: number | null; height: number | null } {
+  if (width !== '' && height !== '') return { width: Number(width), height: Number(height) }
+  if (width === '' && height === '') return { width: null, height: null }
+  const view = readCamera(ctx, cc.viewId)
+  if (!view) return { width: width === '' ? null : Number(width), height: height === '' ? null : Number(height) }
+  return width !== ''
+    ? { width: Number(width), height: Math.round((Number(width) * view.height) / view.width) }
+    : { width: Math.round((Number(height) * view.width) / view.height), height: Number(height) }
+}
+
+export const FILE_COMMANDS: Record<string, ChxCommand> = { open, close, delete: deleteAtoms, save }

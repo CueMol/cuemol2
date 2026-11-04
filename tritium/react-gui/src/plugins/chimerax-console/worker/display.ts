@@ -87,6 +87,8 @@ function specError(text: string, e: SpecError): string {
 
 /** One atom, as `MolAtom` exposes it (read only). */
 export interface AtomView {
+  /** CueMol's atom id (`aid`). */
+  id: number
   name: string
   element: string
   bfac: number
@@ -95,6 +97,7 @@ export interface AtomView {
   /** The residue number with its insertion code (`10`, `10A`). */
   residIndex: string
   residName: string
+  pos: { x: number; y: number; z: number }
 }
 
 /** An atom iterator, as `AtomIterator` exposes it. */
@@ -182,7 +185,7 @@ export function targetsOf(ctx: WorkerContext, sceneId: number, spec: string): { 
 }
 
 /** The console's renderers on a molecule, by name, with their uids. */
-function ownedOn(ctx: WorkerContext, sceneId: number, objId: number): Map<string, number> {
+export function ownedOn(ctx: WorkerContext, sceneId: number, objId: number): Map<string, number> {
   const obj = objectNodes(ctx, sceneId).find((o) => o.id === objId)
   const out = new Map<string, number>()
   if (!obj) return out

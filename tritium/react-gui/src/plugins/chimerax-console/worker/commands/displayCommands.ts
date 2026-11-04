@@ -26,6 +26,7 @@ import {
   writeSel,
 } from '../display'
 import type { AtomStyle, Target } from '../display'
+import { hideSurfaces, showSurfaces } from '../surface'
 import { warnIgnored } from './warn'
 
 /** What `show` / `hide` can act on (cli.py `WhatArg`). */
@@ -59,11 +60,15 @@ function partsOf(what: string, target: string): { ok: true; parts: Set<Part> } |
 
 /** Show or hide `parts` of each target. */
 async function showHide(ctx: WorkerContext, cc: CmdContext, targets: readonly Target[], parts: Set<Part>, show: boolean): Promise<CmdOutcome> {
-  if (parts.has('surfaces')) cc.warn(`${show ? 'show' : 'hide'}: surfaces are not supported yet; ignored`)
   if (parts.has('pseudobonds')) cc.warn(`${show ? 'show' : 'hide'}: pseudobonds are not supported yet; ignored`)
   for (const t of targets) {
     if (parts.has('models')) {
       const res = await runOp(ctx, cc, 'set_visible', { nodeId: t.obj.uid, nodeType: 'object', visible: show })
+      if (!res.ok) return res
+    }
+    if (parts.has('surfaces')) {
+      // Show makes the surface of each chain reached; hide only edits the ones there are.
+      const res = show ? await showSurfaces(ctx, cc, t) : await hideSurfaces(ctx, cc, t)
       if (!res.ok) return res
     }
     if (!parts.has('atoms') && !parts.has('cartoons')) continue
@@ -104,7 +109,7 @@ function showHideCommand(show: boolean): ChxCommand {
       { name: 'target', type: StringArg, role: 'keyword' },
     ],
     mutates: true,
-    summary: show ? 'Show atoms, cartoons or models.' : 'Hide atoms, cartoons or models.',
+    summary: show ? 'Show atoms, cartoons, surfaces or models.' : 'Hide atoms, cartoons, surfaces or models.',
     async run(ctx, args, cc) {
       const parts = partsOf(args.what, args.target)
       if (!parts.ok) return parts

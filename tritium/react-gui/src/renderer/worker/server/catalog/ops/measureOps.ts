@@ -154,6 +154,8 @@ export const measureGeometry = defineOp({
         kind: mode,
         // Two decimals: the coordinates themselves are given to about that.
         value: Math.round(value * 100) / 100,
+        // Unrounded, for a caller that formats it to its own precision (ChimeraX's decimalPlaces).
+        exactValue: value,
         unit,
         atoms: specs.map(describe),
         drawn: args.draw,

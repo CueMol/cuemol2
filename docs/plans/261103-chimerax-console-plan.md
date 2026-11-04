@@ -28,7 +28,7 @@ ChX console (plugin `chimerax-console`) は、基盤と基本コマンドだけ�
 | PR 1 | (実装済み) atom spec の拡張、色の書き方の拡張 |
 | PR 2 | (実装済み) 視点のコマンド |
 | PR 3 | (実装済み) 選択・名前・info・alias |
-| PR 4 | 表現と解析: `surface` 一式、`transparency`、`label` 一式、`distance` 一式、`align`、`matchmaker`、`save` |
+| PR 4 | (実装済み) 表現と解析 |
 | PR 5 | 色の拡張 (`bychain` `bymodel` `random`、`rainbow`) と、`open` の auto style |
 
 各 PR の流れ: 実装 → `task build_tritium` / `task run_tritium` → `task run_tritium_cli -- --dialect chimerax -c '...'` で確認 →
@@ -51,22 +51,11 @@ selection の名前) は PR 3 で行う。
 `select` 一式、selector の `sel` と名前付き selection、`name` 一式、`info` 一式、`alias` 一式は実装した
 (`docs/architecture/console-chimerax-dialect.md` §3、§6)。
 
-## 5. PR 4: 表現と解析
+## 5. (PR 4 は実装済み)
 
-| コマンド | 実装 | 断る・warn するもの |
-|---|---|---|
-| `surface [spec]`、`enclose`、`probeRadius` | ChimeraX と同じく **chain ごとに** 1 つの `dsurface` renderer (`chx:surface:<chain>`) を、`surface` が触れたときに作る (`ensureOwned` の一括作成には入れない)。接している chain どうしをまとめて計算すると、chain の間の面が消えるため。表面を作る原子 (`sel`、その chain の溶媒・ligand・イオンを除いた原子) と表示する原子 (`showsel`、`DirectSurfRendererBase.qif`。含まれない原子の頂点は描かない) を分け、`showsel` に spec の原子を足す (patch の表示)。`enclose` は指定した原子群を囲む別の renderer (`chx:surface:enclose`) にする。`probeRadius` は renderer の property | patch の境界の細部は ChimeraX と違いうる (doc に書く)。`gridSpacing` `resolution` `visiblePatches` などは warn |
-| `surface hidePatches` (`~surface`)、`surface close` | 該当する `chx:surface:*` の `showsel` から spec の原子を引く (`set_node_prop`。`sel` は変えないので、表面は計算し直さない) / `delete_node` | |
-| 既存の `show` / `hide` / `color` の surface | 今は surface を warn して飛ばしている (`displayCommands.ts`、`colorCommands.ts`)。`show ... surfaces` / `target s` は、ある `chx:surface:*` の `showsel` に足す。表面がまだ無い chain では作る (ChimeraX の `show surfaces` と同じ)。`hide ... surfaces` は `showsel` から引く。`color ... target s` (既定の target `acsbpf` も) は `chx:surface:*` の paint に entry を入れる (`ensurePaint` / `add_paint_at`)。対象の renderer を解決する関数を 1 つにし、PR 5 の `bychain` / `rainbow` もそれを使う | |
-| `transparency spec percent [what] target` (既定 target `s`) | renderer の `alpha = 1 − percent/100` (`set_node_prop`)。target の a→3 つの atom renderer、c/r→ribbon、s→surface | spec が object の一部のときは断る (CueMol の透明度は renderer 単位で、原子ごとではない) |
-| `label spec [atoms\|residues]`、`text`、`attribute`、`height` `size` `color` | `set_atom_labels` (原子ラベルは `chx:label:atoms`、残基ラベルは `chx:label:residues`)。原子を含む spec の既定は residues。原子を指す spec (`/A:10@CB`) も、residues なら先に残基に広げる (`byres`)。残基ごとに代表原子を 1 つ選んで `{resn} {resi}` を付ける: `CA`、核酸は `C4'`、どちらも無い残基 (ligand・水・イオン) は残基の最初の原子。原子は `{name}`。`attribute` は書式 (`{bfac}` など) にできるものだけ。大きさと色は label renderer の property。ChimeraX の既定の位置 (残基の中心) とは異なり、ラベルは代表原子に付く (doc に書く) | `offset` `bgColor` `onTop` `font` は warn。`pseudobonds` `bonds` `models` は断る |
-| `label delete spec [atoms\|residues]` (`~label`) | 原子ラベルと残基ラベルを別の renderer (`chx:label:atoms` / `chx:label:residues`) に付けて区別する。種類を省いたときは両方を消す (ChimeraX と同じ)。原子ラベルは spec の原子のまま、残基ラベルは付けたときと同じ規則で代表原子に解決して、`set_atom_labels` の `format: null` を渡す。1 つの renderer で両方の selection を合わせて消すと、指定していない原子 (CA の原子ラベルなど) まで消えるため | |
-| `distance a b`、`decimalPlaces` (既定 3) | 2 つの spec がそれぞれ原子 1 つに解決するとき `measure_geometry` (`draw: true`)。`Distance between /A ALA 10 CA and ...: 3.123Å` と出す。`measure_geometry` は値を小数 2 桁に丸めて返すので、丸めない値を `data` に足し (`exactValue`。今の `value` は変えない)、ChX はそれを `decimalPlaces` で整形する。`decimalPlaces` は log の表示にだけ効く。3D の測定ラベルは CueMol の書式のまま (doc に書く) | 原子が 3 つ以上 (min/avg/max の報告) は断る。`color` `dashes` `radius` は warn |
-| `distance delete` (`~distance`) | 引数無しは測定の renderer を `delete_node`。対を指定したときは `remove_interaction` | |
-| `align atoms toAtoms atoms` | 原子を順に対にする最小二乗 = `superpose algo: LSQ`。両側がそれぞれ 1 object で原子数が同じことを先に確かめる。`RMSD between N atom pairs is x angstroms` | `move` は既定 (structures) だけ。`each` `matchChainIds` `cutoffDistance` は断る |
-| `matchmaker spec to spec` (`mmaker`) | mover ごとに `superpose algo: USalign` | ChimeraX は配列アラインメント + 繰り返しの除外で、CueMol は US-align (構造アラインメント)。重ね方が異なりうることを、毎回 warn で言う。`pairing` `alg` `matrix` `cutoffDistance` `showAlignment` は warn |
-| `save x.png` (`width` `height` `transparentBackground`) | `export_scene`。片方だけなら縦横比を保つ | `supersample` は warn (CueMol は常に supersample)。`pixelSize` `quality` は warn |
-| `save x.qsc`、`save x.pdb` (`models #1`) | `save_scene` (行に単独、txn の外)、`save_object` (`link: false`) | `.cxs` (session) は断って `.qsc` を案内。PDB の `selectedOnly` `displayedOnly` `relModel` は断る |
+`surface` 一式、`transparency`、`label` 一式、`distance` 一式、`align`、`matchmaker`、`save` と、`show` / `hide` / `color`
+の surface は実装した (`docs/architecture/console-chimerax-dialect.md` §5、§6)。PR 5 の `bychain` / `rainbow` は、surface に
+塗るとき `surface.ts` の `surfacesOn` を使う。
 
 ## 6. PR 5: 色の拡張と open の auto style
 
@@ -97,24 +86,12 @@ selection の名前) は PR 3 で行う。
 ## 7. 共通の変更
 
 - `commands/registry.ts`: ChimeraX の登録順で足す (std_commands の順、続けて label・surface・matchmaker・distance・info・save・name)。
-  よく打つ短縮形が ChimeraX と同じものに解決することをテストで固定する (`sel` `su` `tr` `tu` `sa` `la` `di` `mm`)。
 - `eslint.config.mjs` の ChX の許可リストに、読み取りに使う service を足す (`select/getSelHitCount`、`select/getMolStructure`、
   `select/getSelDefs` を予定)。
-- 新しい op は作らない予定。既存の op の変更は `measure_geometry` の `data.exactValue` だけ。実装中に足りない op が
-  見つかったら、catalog に足してから使う。
+- 新しい op は作らない予定。実装中に足りない op が見つかったら、catalog に足してから使う。
 
 ## 8. テスト (PR ごとの最小集合)
 
-- PR 4:
-  - `transparency` の target と renderer の対応。
-  - `surface` / `surface hidePatches` が `showsel` だけを変え、`sel` は変えないこと。
-  - `surface /A; surface /B` で chain ごとの renderer になり、A の `sel` と `showsel` が保たれること。
-  - `hide ... surfaces` と `color ... target s` が `chx:surface:*` に効くこと。
-  - `label` が CA の無い残基 (ligand) でも代表原子に付き、`label delete` が同じ原子から外すこと。
-  - `label delete /A:10@CB` (種類を省く) が、CB の原子ラベルと、残基 10 の残基ラベルの両方を消し、同じ残基の CA など
-    他の原子ラベルは残すこと。`label delete /A:10@CB atoms` は CB の原子ラベルだけを消すこと (ChimeraX の `label3d.py` と同じ)。
-  - `distance` が原子 1 つに解決しない spec を断ること。
-  - `matchmaker` が mover ごとに `superpose` を呼ぶこと。
 - PR 5:
   - `bychain` の entry。
   - `rainbow residues` の量子化と連続範囲のまとめ。
@@ -128,7 +105,6 @@ selection の名前) は PR 3 で行う。
    から、`task run_tritium` で起動マーカーを確認する。
 2. `task run_tritium_cli -- --dialect chimerax -c '...'` で PR の範囲のコマンドを流し、History pane の子行に op が並ぶこと、
    断るものが理由を言うことを確かめる。たとえば次のようなもの:
-   - PR 4: `surface; hide /A surfaces; show /A surfaces; color /A red target s; transparency 50; label :10; distance /A:10@CA /A:20@CA; save ~/Desktop/x.png width 400`
    - PR 5: `open 4hhb`、`color bychain`、`rainbow`
 3. ユーザーの目視確認の後に、テストを書き、`npm test`、`tsc` (web / node)、eslint を流す。
 

@@ -15,6 +15,8 @@ import { MISC_COMMANDS, setCommandList } from './miscCommands'
 import { VIEW_COMMANDS } from './viewCommands'
 import { ALIAS_COMMANDS, setAliasCommandList } from './aliasCommands'
 import { SELECT_COMMANDS } from './selectCommands'
+import { REPR_COMMANDS } from './reprCommands'
+import { ANALYSIS_COMMANDS } from './analysisCommands'
 
 /** Every command, in ChimeraX's registration order. */
 export const CHX_COMMANDS: readonly ChxCommand[] = [
@@ -22,6 +24,7 @@ export const CHX_COMMANDS: readonly ChxCommand[] = [
   ALIAS_COMMANDS.aliasList,
   ALIAS_COMMANDS.aliasDelete,
   ALIAS_COMMANDS.unalias,
+  ANALYSIS_COMMANDS.align,
   DISPLAY_COMMANDS.cartoon,
   DISPLAY_COMMANDS.cartoonHide,
   FILE_COMMANDS.close,
@@ -41,6 +44,7 @@ export const CHX_COMMANDS: readonly ChxCommand[] = [
   VIEW_COMMANDS.set,
   DISPLAY_COMMANDS.show,
   DISPLAY_COMMANDS.style,
+  REPR_COMMANDS.transparency,
   VIEW_COMMANDS.turn,
   MISC_COMMANDS.undo,
   MISC_COMMANDS.redo,
@@ -51,12 +55,26 @@ export const CHX_COMMANDS: readonly ChxCommand[] = [
   VIEW_COMMANDS.viewName,
   VIEW_COMMANDS.viewMatrix,
   VIEW_COMMANDS.zoom,
-  // Other bundles' commands, after std_commands (list_info, basic_actions).
+  // Other bundles' commands, after std_commands: label, surface,
+  // matchmaker, distance, list_info, save_command, basic_actions.
+  REPR_COMMANDS.label,
+  REPR_COMMANDS.labelDelete,
+  REPR_COMMANDS.unlabel,
+  REPR_COMMANDS.surface,
+  REPR_COMMANDS.surfaceHidePatches,
+  REPR_COMMANDS.surfaceClose,
+  REPR_COMMANDS.unsurface,
+  ANALYSIS_COMMANDS.matchmaker,
+  ANALYSIS_COMMANDS.mmaker,
+  ANALYSIS_COMMANDS.distance,
+  ANALYSIS_COMMANDS.distanceDelete,
+  ANALYSIS_COMMANDS.undistance,
   SELECT_COMMANDS.info,
   SELECT_COMMANDS.infoModels,
   SELECT_COMMANDS.infoChains,
   SELECT_COMMANDS.infoResidues,
   SELECT_COMMANDS.infoAtoms,
+  FILE_COMMANDS.save,
   SELECT_COMMANDS.name,
   SELECT_COMMANDS.nameFrozen,
   SELECT_COMMANDS.nameDelete,
