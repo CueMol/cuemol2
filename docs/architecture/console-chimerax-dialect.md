@@ -92,10 +92,39 @@ ChimeraX のソース (`~/ext/ChimeraX/src/bundles/`) のうち、写したも�
 
 - 残基番号か残基名かは `atomspec.py` の `_Part._parse_as_res_id` と同じ: 範囲の両端が `[-+]?数字[英字1つ]?` なら
   残基番号 (末尾の英字は insertion code)、そうでなければ残基名。数字は整数に直して書く (CueMol の `SEL_INSRES` は
-  `010A` を受け付けない)。
-- 未対応のもの (sub-model `#1.2`、`#!`、zone `@<5` など、属性 test `::name` / `@@bfactor>50` など、`[...]` と `?` の
-  wildcard、範囲の端の `start` / `end`、CueMol に無い selector (`sel`、`ions`、IDATM 型など)) は、文法としては読み、
-  caret 付きの「not supported yet」で断る。対応するときは emit だけを変えればよい。
+  `010A` を受け付けない)。範囲の端の `start` / `end` は `-99999` / `99999` にする (CueMol に開いた範囲は無い)。
+- **wildcard** (`*` `?` `[...]`、`[!...]`): chain・残基名・原子名で、CueMol の正規表現 (PCRE) にする。`@C*` は
+  `name /(?i)^C.*$/`。ChimeraX の名前の照合は大文字小文字を区別しないが、CueMol の正規表現は区別するので `(?i)` を付ける。
+  `/` は `\/` に逃がす。文字としての `*` を CueMol の名前にそのまま渡すと、何にも当たらない (CueMol の名前の照合は
+  完全一致) ので、必ず正規表現にする。
+- **zone** (`X @< 5`、`atomspec.py` の `_ZoneSelector`): ChimeraX と同じく全 model を探す。model m では
+  `(X_m) expand d` に、他の model k ごとの `(X_k) around d ["name_k"]` を足したもの (W とする) を使う。`expand` は
+  基準の原子も含む (ChimeraX の `<` と同じ)。
+
+  | ChimeraX | CueMol |
+  |---|---|
+  | `@< d` / `@> d` | `W` / `not (W)` |
+  | `:< d` / `:> d` | `byres (W)` / `not (byres (W))` |
+  | `/< d` / `/> d` | W に当たる原子の chain を worker で読んで `chain A,B` / その否定 |
+  | `#< d` / `#> d` | W が何かに当たれば `*`、でなければ `none` / その逆 |
+
+  境界は ChimeraX が `<=`、CueMol が `<` (距離がちょうど d の原子だけが違う)。model の名前が重なると、`around` の
+  対象が別の model になりうる。chain・model 単位の zone の読み取りは `display.ts` の `emitContext` (原子を数えるだけ)。
+- **属性 test** (`@@` 原子、`::` 残基、`//` chain、`##` model。`,` で並べたものは全部を満たすもの):
+
+  | ChimeraX | CueMol |
+  |---|---|
+  | `@@bfactor` / `@@occupancy` の `>` `<` `=` | `bfac > v` などそのまま |
+  | `>=` / `<=` / `!=` | `not (bfac < v)` / `not (bfac > v)` / `not (bfac = v)` (CueMol の比較は `=` `<` `>` だけ) |
+  | `@@name`、`@@element`、`::name`、`::chain_id`、`//chain_id` | `name`、`elem`、`resn`、`chain`。`=` は大文字小文字を区別しない wildcard の照合、`==` は区別する完全一致 (正規表現)、`!=` / `!==` はその否定 |
+  | `::number` の比較 | `resi` の範囲 (`>=100` は `resi 100:99999`) |
+  | `::polymer_type=0/1/2`、`::ss_type=0/1/2` | `not (protein or nucleic)` / `protein` / `nucleic`、`coil` / `helix` / `sheet` |
+  | `::is_helix`、`::is_strand` (`^` で否定) | `helix`、`sheet` |
+  | `##name=...` | object の名前を worker で照合して `*` / `none` |
+
+  CueMol に無い属性 (`serial_number`、`alt_loc`、`idatm_type`、`radius`、`insertion_code` など) は断る。
+- 未対応のもの (sub-model `#1.2`、`#!`、上の表に無い属性、引用符付きの名前、CueMol に無い selector (`sel`、`ions`、
+  IDATM 型など)) は、caret 付きの「not supported yet」で断る。
 
 ## 4. model 番号 (`models.ts`)
 
@@ -156,7 +185,7 @@ renderer で表し、**その selection と paint が表示の状態そのもの
 | `show` / `hide` | `[spec] [what]`、`target` | `set_renderer_selection`、`set_visible` | what: `atoms` `bonds` `cartoons` `ribbons` `models` (`surfaces` / `pseudobonds` は warn)。target の文字 `a b c r m s p` |
 | `cartoon` / `cartoon hide` | `[spec]`、`smooth` / `suppressBackboneDisplay` (無視) | `set_renderer_selection` | |
 | `style` | `[spec] stick\|ball\|sphere`、`dashes` / `ringFill` (無視) | `set_renderer_selection` | |
-| `color` | `[spec] [色 \| byhetero \| byelement]`、`target`、`transparency` / `halfbond` / `what` (無視) | `set_renderer_coloring`、`add_paint_at` | target の既定は ChimeraX と同じ `acsbpf` |
+| `color` | `[spec] [色 \| byhetero \| byelement]`、`target`、`transparency` / `halfbond` / `what` (無視) | `set_renderer_coloring`、`add_paint_at` | target の既定は ChimeraX と同じ `acsbpf`。色は名前、hex (`#rgb` から 16 桁まで、alpha 付きも)、`rgb()` `rgba()` `hsl()` `hsla()` `gray()` (数値は整数なら 0-255、小数点付きなら 0-1、`%`、色相は `deg` / `rad` / `grad` / `turn`)、`r,g,b[,a]` の百分率 (`colors.ts`)。CueMol の paint は alpha を持たないので、色が alpha を述べていれば warn して不透明で塗る |
 | `view` | `[spec]`、`frames` / `pad` (無視) | `set_view` | 下記 |
 | `undo` / `redo` | | (runtime) | 行に単独のとき txn の外で (`undoStack`) |
 | `usage` / `help` | `[command]` | | |
