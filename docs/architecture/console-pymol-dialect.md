@@ -17,11 +17,34 @@ runtime (1 submit = 1 txn、Stop、script、log)、引数パーサ、補完、he
 - パーサとコマンドは **TS で Web Worker に置く**。embedded Python は使わない (C++ に PyMOL 用の
   入口は無く、cuetty / pymod とは共有しない)。Python を要するものは理由付きで断る:
   `/` で始まる行 (`commaSyntax` の `pythonRefusal`)、`@x.py` / `@x.pym` (`refuseScript`)、`run x.py`、`log_open x.py`。
-- 各コマンドは既存の worker service を呼ぶ薄い adapter で、計算は service か C++ に置く。
+- 各コマンドは PyMOL の文法を読み、scene への書き込みを op catalog の op で行う薄い adapter で、計算は op の
+  先の service か C++ に置く (下の「op の使い方」)。
   PyMOL 固有の解釈 (引数の文法、PyMOL の名前と文言、selection 翻訳) はこの plugin の中に閉じる。console の内部は
   `@plugins/console/worker/dialect-api` からしか使わず、console はこの plugin を import しない。
 - PyMOL と**意味が一致するものだけ**を移す。近いもので代用して違う結果を出すより、理由を言って断る。
-- native dialect の生成コマンド (op) は使わない。例外は `ray` / `png ray=1` が呼ぶ `render_image` op。
+
+### op の使い方
+
+- 書き込みは `helpers.ts` の `runOp(ctx, cc, name, args)` で op を呼ぶ (console の `runOp`、tag `pym`。
+  ChimeraX dialect と同じ入口)。agent・MCP・native console と同じ定義を通るので、引数と selection の検査、
+  action log への記録、undo の label が揃う。worker service を直接呼ぶのは読み取りだけ
+  (renderer の作成可否、property の現在値、selection の原子数、object と renderer の一覧など)。
+- PyMOL の文言を保つため、読み取りでできる事前検査 (`cannot show`、`unknown setting`、`is read only`、
+  `has no default`、`matched no atoms`) は op の前に dialect が行う。op が失敗したときは
+  `Error: could not ...` か、op の error に `Error: ` を付けて出す。
+- 値は dialect が PyMOL の書き方から変換して、op の文字列の引数にする (`set` の真偽値の反転、
+  transparency -> alpha、`[r, g, b]` -> `#rrggbb`)。`unset` の `reset_prop` には、記録が別の session でも
+  同じ node を指すよう、名前で書いた path (`catalog/refs.ts` の `recordedPropPath`) を渡す。
+- 対応: `show` / `hide` / `as` -> `create_renderer` + `set_renderer_styles`、`set_renderer_selection`、
+  `set_visible`。`color` -> renderer ごとの `add_paint` と、元の selection に戻す `set_mol_selection`。
+  `spectrum` -> `set_renderer_coloring` + `set_coloring_prop`。`set_color` -> `define_color`
+  (style set `pym`)。`set` / `bg_color` -> `set_node_prop`、`unset` -> `reset_prop`。`select` ->
+  `set_mol_selection` + `define_selection` (scene の最初の書き込める style set、無ければ `default`)。
+  `label` -> `set_atom_labels`。`enable` / `disable` -> `set_visible`。`delete` / `set_name` ->
+  `delete_node` / `rename_node` / `remove_selection`。load の後の改名は `rename_node`。`ray` / `png ray=1`
+  -> `render_image`。
+- まだ service を直接呼んでいるもの (`load` / `fetch` / `save` / `png` / map / 計測 / view / movie) は、
+  [op 化の計画](../plans/261104-pymol-dialect-ops-plan.md) で移す。
 
 ### `ConsoleDialect` の PyMOL 固有の値 (`plugins/pymol-console/worker/index.ts`、meta は `shared/meta.ts`)
 
@@ -146,8 +169,8 @@ object でない名前は named selection の参照のまま渡す。
   - `mesh` `dots` `volume` `slice` `cell` `ellipsoids` は理由付きで断る (map は `isomesh` を使う)
 - `color color, selection`: 色は PyMOL の色名表 (`layer1/Color.cpp` 由来。PyMOL が再定義した CSS 名も
   PyMOL の値を優先、`greyNN` は計算、表に無い名前は `ColCompiler` に渡す)。対象の分子の `pym:` renderer に
-  paint を足す (paint coloring でなければ切り替える)。paint service は分子の選択を読むので一時的に書き換え、
-  終われば元に戻す。`pym:` renderer が無ければ `show a representation first`。
+  paint を足す (`add_paint`。paint coloring でなければ切り替える)。`add_paint` は分子の選択を書き換えて
+  そこから範囲を読むので、終われば元の選択に戻す。`pym:` renderer が無ければ `show a representation first`。
 
 ### selection (`selectCommands.ts`)
 
@@ -216,8 +239,7 @@ camera の操作は undo しない ([ADR-0025](../migration/adr/ADR-0025-view-pa
   label 書式 (`molstr/LabelFormat`、`{resn}{resi}` / `{bfac:.2f}`) に書き換えるだけで、値は C++ が評価する。
   分かる形は属性名、引用文字列、`+`、`str(x)`、`%` 書式 (`"%s-%s" % (resn, resi)`)。`{...}` を含む文字列は
   CueMol の書式としてそのまま渡す。それ以外は理由付きで断る。空の式は label を外す。1 回 2000 原子まで。
-- label は `setAtomLabels` service (`services/navi/atomLabels.ts`) を通し、分子ごとに 1 つの
-  `set_atom_labels` として記録する。label の追加・削除・書式の変更は C++ が undo に載せる
+- label は `set_atom_labels` op を通し、分子ごとに 1 つの `set_atom_labels` として記録する。label の追加・削除・書式の変更は C++ が undo に載せる
   (renderer の作成も)。label の書式は `.qsc` に保存される。
 - `show labels` / `hide labels` は label renderer の表示を切り替え、`hide labels, sel` はその原子の label を外す。
 

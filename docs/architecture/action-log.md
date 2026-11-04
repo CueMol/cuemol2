@@ -89,10 +89,11 @@ undo / redo、`clearUndoData`、scene の読み込み (`clearAllData`) など、
   - console でパターン (`hide *`) を書いた場合は、一致した node ごとに op を実行するので、記録も
     node ごとの具体的な path の op になる。パターンのままは残さない (再生の結果が記録時と同じになる)。
 
-### 2.2 GUI と PyMOL dialect: service が自分の op を記録する
+### 2.2 GUI: service が自分の op を記録する
 
 GUI (dialog・Inspector・scene tree) は op を通らず、worker の service を直接呼ぶ。PyMOL dialect
-も service 関数を直接 import して呼ぶ。そこで記録点を service 関数そのものに置き、同じ op で
+の一部のコマンド (`load` / `fetch` / `save` / map / 計測 / view / movie) も、まだ service を直接
+呼ぶ。そこで記録点を service 関数そのものに置き、同じ op で
 できる変更は、その op と引数で記録する (`actions/serviceOps.ts` の `recordOp` と、その上に作った
 helper)。
 
@@ -100,10 +101,11 @@ helper)。
   何も記録されない。
 - op の実行中は、service 側では記録しない。op を経由した呼び出しでは op 自体が記録されるので、
   二重にならない。
-- PyMOL のコマンドは、呼んだ service の分だけ native の op が並ぶ。たとえば `show sticks` は
-  `create_renderer ... name=pym:sticks, selection=...` と `set_renderer_styles` として、`isomesh` は
-  `create_renderer`・`recenter_map`・`siglevel` の `set_node_prop` として記録される。PyMOL の入力文字列は、
-  内部データにも qax にも持たない。行の `label` (`pym: ...`) に残るだけ。
+- PyMOL のコマンドは、呼んだ op (と、op 化前のコマンドでは service) の分だけ native の op が並ぶ。
+  たとえば `show sticks` は `create_renderer ... name=pym:sticks, selection=...` と `set_renderer_styles`
+  として、`color red, resn ALA` は renderer ごとの `add_paint` と、元の選択に戻す `set_mol_selection`
+  として記録される。PyMOL の入力文字列は、内部データにも qax にも持たない。行の `label` (`pym: ...`)
+  に残るだけ。
 
 対応している service:
 
