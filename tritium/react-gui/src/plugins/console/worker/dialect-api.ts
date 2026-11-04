@@ -23,6 +23,7 @@ export type {
   ArgCompletion,
   ArgMode,
   BindResult,
+  BindScene,
   CmdContext,
   CmdOutcome,
   CompletionItem,

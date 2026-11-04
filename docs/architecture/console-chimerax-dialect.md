@@ -87,6 +87,8 @@ ChimeraX のソース (`~/ext/ChimeraX/src/bundles/`) のうち、写したも�
 | `:ALA`、`:5HT` | `resn ALA`、`resn 5HT` |
 | `@CA,CB` | `name CA,CB` |
 | `all` / `protein` / `nucleic` / `ligand` / `solvent` / `helix` / `strand` / `coil` | `*` / `protein` / `nucleic` / `ligand` / `water` / `helix` / `sheet` / `coil` |
+| `sel` (今の選択) | 各分子の今の選択 (object の `sel`) の式。選択の無い分子では `none`。選択を書き換えるコマンド (`select sel ...`) でも、書き換える前の値から読む |
+| scene の名前付き selection の名前 (`name` で定義したもの) | その名前 (CueMol の参照)。行を読む直前に、runtime が `bind` に渡す scene から名前の一覧を読む (`names.ts`、`withSceneSelectors`) |
 | `backbone` / `mainchain`、`sidechain` / `sideonly` | 原子名で展開した式 |
 | 元素記号 (`C`、`Fe`) | `elem Fe` |
 
@@ -123,7 +125,7 @@ ChimeraX のソース (`~/ext/ChimeraX/src/bundles/`) のうち、写したも�
   | `##name=...` | object の名前を worker で照合して `*` / `none` |
 
   CueMol に無い属性 (`serial_number`、`alt_loc`、`idatm_type`、`radius`、`insertion_code` など) は断る。
-- 未対応のもの (sub-model `#1.2`、`#!`、上の表に無い属性、引用符付きの名前、CueMol に無い selector (`sel`、`ions`、
+- 未対応のもの (sub-model `#1.2`、`#!`、上の表に無い属性、引用符付きの名前、CueMol に無い selector (`ions`、
   IDATM 型など)) は、caret 付きの「not supported yet」で断る。
 
 ## 4. model 番号 (`models.ts`)
@@ -195,8 +197,24 @@ renderer で表し、**その selection と paint が表示の状態そのもの
 | `zoom` | `[factor] [frames]`、`pixelSize` | `set_view` (`zoom`) | CueMol の zoom は view の高さ (Å) なので `zoom / factor`。1 pixel = zoom / 高さ (px) Å。引数無しは `Pixel size at center of rotation is ...`。`frames` は warn (ChimeraX は倍率を frames 全体で達成するので掛けない) |
 | `set` | `bgColor`、`silhouettes` `silhouetteWidth` `silhouetteColor` | `set_node_prop` | 引数無しは背景色を出す。他の keyword は warn |
 | `graphics silhouettes` | `[true\|false]`、`width` `color`、`depthJump` (無視) | `set_node_prop` (`egtype` `eglinew` `egcolor`) | 下記 |
+| `select` | `[spec]`、`residues`、`minimumLength` などは warn | `set_mol_selection`、`count_selection` | 各分子の選択を置き換え、spec の届かない分子の選択は消す (ChimeraX の選択は全体で 1 つ)。`N atoms selected` と出す |
+| `select add` / `subtract` / `intersect` / `clear`、`~select` | `[spec]` (`intersect` は必須) | `set_mol_selection` | 今の選択と和・差・積を取って書く。spec が無ければ `add` は全部、`subtract` は全部を引く |
+| `name` | `name spec` / `name name` (定義を出す) | `define_selection` | spec の式が分子ごとに違う (model を指す、model をまたぐ zone) と断る。CueMol の名前付き selection は、使う分子ごとに評価する 1 つの式だから |
+| `name delete` / `name list`、`name frozen` | `name\|all` | `remove_selection` | `name frozen` は断る (今の原子の集合を固定する手段が無い) |
+| `info`、`info models` / `chains` / `residues` / `atoms` | `[spec]`、`attribute`、`saveFile` (無視) | (読み取り) | ChimeraX の書式 (`#1, 1crn, shown`、`chain id #1/A chain_id A`、`residue id #1/A:12 name ALA`、`atom id #1/A:12@CA`)。結合の数と IDATM 型 (`info atoms` の既定の attribute) は CueMol に無いので出さない。atom の attribute は name・element・bfactor・occupancy |
+| `alias` / `alias list` / `alias delete` / `~alias` | `name text`、`$1`-`$9`・`$*` | (中のコマンドの op) | 下記 |
 | `undo` / `redo` | | (runtime) | 行に単独のとき txn の外で (`undoStack`) |
 | `usage` / `help` | `[command]` | | |
+
+**alias** (`commands/aliasCommands.ts`): worker のメモリに表を持つ (ChimeraX と同じく session の間だけ、全 scene 共通)。
+
+- 定義は `;` を含めて行の残り全部 (alias.py の `WholeRestOfLine`)。`splitLines` は `alias` で始まる行を `;` で分けない。
+- 呼び出しは、その行を走らせる直前の `resolve` で表を引く (`resolveChx`)。runtime は submit や `.cxc` の全文を先に
+  分けるので、分ける段階で展開すると、同じスクリプトの前の行で定義した alias を使えない。
+- 呼び出しは 1 つのコマンドとして bind され、その `run` が `$1`-`$9` / `$*` を展開し、分けて、同じ txn の中で順に
+  解決・bind・実行する。alias は自分自身を展開しない。入れ子は 10 段まで。
+- txn の外で走るべきコマンド (`undoStack` か `outsideTxn` のもの) を含む alias は、何も実行せずに断る。子の `run` を
+  直接呼ぶと runtime の検査が抜け、txn の中で走ってしまうため。
 
 **カメラの向き**: CueMol の view は world の軸 = R(q) × 画面の軸 で、`forward_vec` は画面の +z (手前)。ChimeraX の camera
 も -z を向くので、軸は同じ向きで対応する (`camera.ts` の `readCamera`)。

@@ -13,9 +13,15 @@ import { DISPLAY_COMMANDS } from './displayCommands'
 import { FILE_COMMANDS } from './fileCommands'
 import { MISC_COMMANDS, setCommandList } from './miscCommands'
 import { VIEW_COMMANDS } from './viewCommands'
+import { ALIAS_COMMANDS, setAliasCommandList } from './aliasCommands'
+import { SELECT_COMMANDS } from './selectCommands'
 
 /** Every command, in ChimeraX's registration order. */
 export const CHX_COMMANDS: readonly ChxCommand[] = [
+  ALIAS_COMMANDS.alias,
+  ALIAS_COMMANDS.aliasList,
+  ALIAS_COMMANDS.aliasDelete,
+  ALIAS_COMMANDS.unalias,
   DISPLAY_COMMANDS.cartoon,
   DISPLAY_COMMANDS.cartoonHide,
   FILE_COMMANDS.close,
@@ -26,6 +32,12 @@ export const CHX_COMMANDS: readonly ChxCommand[] = [
   DISPLAY_COMMANDS.hide,
   VIEW_COMMANDS.move,
   FILE_COMMANDS.open,
+  SELECT_COMMANDS.select,
+  SELECT_COMMANDS.selectAdd,
+  SELECT_COMMANDS.selectSubtract,
+  SELECT_COMMANDS.selectIntersect,
+  SELECT_COMMANDS.selectClear,
+  SELECT_COMMANDS.unselect,
   VIEW_COMMANDS.set,
   DISPLAY_COMMANDS.show,
   DISPLAY_COMMANDS.style,
@@ -39,7 +51,18 @@ export const CHX_COMMANDS: readonly ChxCommand[] = [
   VIEW_COMMANDS.viewName,
   VIEW_COMMANDS.viewMatrix,
   VIEW_COMMANDS.zoom,
+  // Other bundles' commands, after std_commands (list_info, basic_actions).
+  SELECT_COMMANDS.info,
+  SELECT_COMMANDS.infoModels,
+  SELECT_COMMANDS.infoChains,
+  SELECT_COMMANDS.infoResidues,
+  SELECT_COMMANDS.infoAtoms,
+  SELECT_COMMANDS.name,
+  SELECT_COMMANDS.nameFrozen,
+  SELECT_COMMANDS.nameDelete,
+  SELECT_COMMANDS.nameList,
   MISC_COMMANDS.help,
 ]
 
 setCommandList(() => CHX_COMMANDS)
+setAliasCommandList(() => CHX_COMMANDS)

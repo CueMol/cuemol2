@@ -184,8 +184,10 @@ key `historyKey`・script ファイル `scripts: { ext, submit }[]`・`tritium_c
 
 **dialect の文法** (`runtime/types.ts` の `DialectSyntax`。どの dialect も必ず持つ): `split` (submit を行に分ける。
 script を走らせる行 (`@file`)、断る行 (PyMOL の `/python`)、echo と log に出す表記、scene コマンドの後の残りを
-送り直すための原文を持つ `DialectLine` を返す)、`resolve` (コマンド名)、`bind` (引数を param に。usage の要求と
-エラーもここ)、`complete` (Tab。書き戻しの文法も dialect)。runtime と completion service はこれを呼ぶだけで、
+送り直すための原文を持つ `DialectLine` を返す)、`resolve` (コマンド名。runtime は行ごとに、その行を走らせる直前に呼ぶ)、
+`bind` (引数を param に。usage の要求とエラーもここ。runtime は走らせる直前に、その行の scene (`BindScene` の
+`ctx` / `sceneId`) を任意の 3 番目の引数で渡す。scene によって文法が変わる dialect (ChimeraX は scene の名前付き
+selection を selector として読む) のため)、`complete` (Tab。書き戻しの文法も dialect)。runtime と completion service はこれを呼ぶだけで、
 どの dialect の文法も既定にしない。runtime がコマンドについて知るのは `ConsoleCommand` の flag だけ:
 `undoStack` (lone の undo / redo を txn の外で)、`unlogged` (log に書かない)、`scriptParam` (`run file` の
 引数。lone の qax なら action ごとに 1 txn で再生)。別の dialect の script (拡張子で `scriptOwner`) は、

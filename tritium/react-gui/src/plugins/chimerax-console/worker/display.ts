@@ -35,7 +35,8 @@ import { runOp as runConsoleOp } from '@plugins/console/worker/dialect-api'
 import { emitFor, NONE } from './spec/emit'
 import type { EmitContext } from './spec/emit'
 import { parseSpec, SpecError } from './spec/parse'
-import { isSelector } from './spec/selectors'
+import { isSelector, withSceneSelectors } from './spec/selectors'
+import { selectionNames } from './names'
 import { isMolecule, numberedObjects } from './models'
 import type { NumberedObject } from './models'
 
@@ -84,6 +85,18 @@ function specError(text: string, e: SpecError): string {
   return `${text}\n${' '.repeat(e.pos)}^ ${e.message}`
 }
 
+/** One atom, as `MolAtom` exposes it (read only). */
+export interface AtomView {
+  name: string
+  element: string
+  bfac: number
+  occ: number
+  chainName: string
+  /** The residue number with its insertion code (`10`, `10A`). */
+  residIndex: string
+  residName: string
+}
+
 /** An atom iterator, as `AtomIterator` exposes it. */
 interface AtomIter {
   target: unknown
@@ -91,7 +104,22 @@ interface AtomIter {
   first(): void
   next(): void
   hasMore(): boolean
-  get(): { chainName: string }
+  get(): AtomView
+}
+
+/**
+ * Visit the atoms `expr` matches in object `objUid`, in order; stop when
+ * `visit` returns false. Read only (compiling a selection and walking its
+ * atoms is no operation of its own).
+ */
+export function forEachAtom(ctx: WorkerContext, sceneId: number, objUid: number, expr: string, visit: (a: AtomView) => boolean | void): void {
+  const mol = getSceneOrNull(ctx, sceneId)?.getObject(objUid)
+  const sel = makeSel(ctx, expr, sceneId)
+  const iter = ctx.svc.createObj('AtomIterator') as unknown as AtomIter | null
+  if (!mol || !sel || !iter) return
+  iter.target = mol
+  iter.sel = sel
+  for (iter.first(); iter.hasMore(); iter.next()) if (visit(iter.get()) === false) return
 }
 
 /**
@@ -104,16 +132,19 @@ export function emitContext(ctx: WorkerContext, sceneId: number): EmitContext {
   /** Visit the atoms `expr` matches in model `model`; stop when `visit` says so. */
   const eachAtom = (model: number, expr: string, visit: (chain: string) => boolean): void => {
     const obj = mols.find((m) => m.model === model)
-    const mol = obj ? getSceneOrNull(ctx, sceneId)?.getObject(obj.uid) : null
-    const sel = makeSel(ctx, expr, sceneId)
-    const iter = ctx.svc.createObj('AtomIterator') as unknown as AtomIter | null
-    if (!mol || !sel || !iter) return
-    iter.target = mol
-    iter.sel = sel
-    for (iter.first(); iter.hasMore(); iter.next()) if (!visit(iter.get().chainName)) return
+    if (obj) forEachAtom(ctx, sceneId, obj.uid, expr, (a) => visit(a.chainName))
   }
   return {
     models: mols.map((m) => ({ model: m.model, name: m.name })),
+    namedSelections: selectionNames(ctx, sceneId),
+    currentSelection(model) {
+      const obj = mols.find((m) => m.model === model)
+      if (!obj) return NONE
+      const props = getGenericProps(ctx, { sceneId, nodeId: obj.uid, nodeType: 'object' })
+      const sel = props.ok ? props.entries.find((e) => e.key === 'sel')?.value : undefined
+      const text = sel === null || sel === undefined ? '' : String(sel).trim()
+      return text === '' ? NONE : text
+    },
     chainsHit(model, expr) {
       const chains = new Set<string>()
       eachAtom(model, expr, (c) => { chains.add(c); return true })
@@ -135,9 +166,9 @@ export function targetsOf(ctx: WorkerContext, sceneId: number, spec: string): { 
   const mols = numberedObjects(ctx, sceneId).filter(isMolecule)
   if (spec.trim() === '') return { ok: true, targets: mols.map((obj) => ({ obj, sel: '*' })) }
   try {
-    const read = parseSpec(spec, isSelector)
-    if (!read) return { ok: false, error: `Error: "${spec}" is not an atom specification` }
     const ec = emitContext(ctx, sceneId)
+    const read = withSceneSelectors(ec.namedSelections, () => parseSpec(spec, isSelector))
+    if (!read) return { ok: false, error: `Error: "${spec}" is not an atom specification` }
     const targets: Target[] = []
     for (const obj of mols) {
       const sel = emitFor(read.node, obj.model, ec)

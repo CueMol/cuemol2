@@ -23,7 +23,7 @@ import { isMolecule, numberedObjects } from '../models'
 import type { NumberedObject } from '../models'
 import { emitFor, NONE } from '../spec/emit'
 import { parseSpec, SpecError } from '../spec/parse'
-import { isSelector } from '../spec/selectors'
+import { isSelector, withSceneSelectors } from '../spec/selectors'
 import { warnIgnored } from './warn'
 
 /** A PDB id, alone or as `pdb:1abc` (`likely_pdb_id`: 4 characters, a leading digit). */
@@ -104,9 +104,9 @@ function objectsOf(ctx: WorkerContext, sceneId: number, spec: string): { ok: tru
   const all = numberedObjects(ctx, sceneId)
   if (spec.trim() === '') return { ok: true, objs: all }
   try {
-    const read = parseSpec(spec, isSelector)
-    if (!read) return { ok: false, error: `Error: "${spec}" is not a model specification` }
     const ec = emitContext(ctx, sceneId)
+    const read = withSceneSelectors(ec.namedSelections, () => parseSpec(spec, isSelector))
+    if (!read) return { ok: false, error: `Error: "${spec}" is not a model specification` }
     return { ok: true, objs: all.filter((o) => emitFor(read.node, o.model, ec) !== NONE) }
   } catch (e) {
     if (e instanceof SpecError) return { ok: false, error: `${spec}\n${' '.repeat(e.pos)}^ ${e.message}` }
