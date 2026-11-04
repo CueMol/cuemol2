@@ -21,7 +21,7 @@
 
 import { SpecError } from './parse'
 import type { AttrTest, ChainGroup, ModelRange, ResidueGroup, ResiduePart, SpecNode } from './parse'
-import { selectorExpr } from './selectors'
+import { CURRENT_SELECTION, selectorExpr } from './selectors'
 
 /** CueMol's expression for nothing. */
 export const NONE = 'none'
@@ -36,6 +36,10 @@ export interface EmitContext {
   chainsHit(model: number, expr: string): string[]
   /** Whether `expr` matches any atom in model `model`. */
   anyHit(model: number, expr: string): boolean
+  /** The current selection of model `model` as an expression (`none` when it has none), for `sel`. */
+  currentSelection(model: number): string
+  /** The scene's named selections, which the emitter writes as references. */
+  namedSelections: ReadonlySet<string>
 }
 
 /** A residue number, with an optional insertion code (`10`, `-5`, `10A`), as `_parse_as_res_id` reads it. */
@@ -315,9 +319,15 @@ export function emitFor(node: SpecNode, model: number, ec?: EmitContext): string
     case 'not':
       return not(emitFor(node.term, model, ec))
     case 'selector': {
+      if (node.name === CURRENT_SELECTION) {
+        if (!ec) throw new SpecError('"sel" needs the scene', node.pos)
+        return ec.currentSelection(model)
+      }
       const expr = selectorExpr(node.name)
-      if (expr === null) throw new SpecError(`the selector "${node.name}" is not supported yet`, node.pos)
-      return expr
+      if (expr !== null) return expr
+      // A named selection of the scene: CueMol reads the name as a reference.
+      if (ec?.namedSelections.has(node.name)) return node.name
+      throw new SpecError(`the selector "${node.name}" is not supported yet`, node.pos)
     }
     case 'zone':
       return zoneExpr(node, model, ec)

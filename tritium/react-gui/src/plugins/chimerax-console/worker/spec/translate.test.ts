@@ -14,19 +14,21 @@ import { describe, expect, it } from 'vitest'
 import { emitFor } from './emit'
 import type { EmitContext } from './emit'
 import { parseSpec, SpecError } from './parse'
-import { isSelector } from './selectors'
+import { isSelector, withSceneSelectors } from './selectors'
 
 /** Two molecules, #1 `1abc` and #2 `2xyz`; every expression hits chain A only. */
 const scene: EmitContext = {
   models: [{ model: 1, name: '1abc' }, { model: 2, name: '2xyz' }],
   chainsHit: () => ['A'],
   anyHit: () => true,
+  currentSelection: () => 'chain B',
+  namedSelections: new Set(['site']),
 }
 
 /** The expression in model `n`, or the error. */
 function inModel(spec: string, n = 1): string {
   try {
-    const read = parseSpec(spec, isSelector)
+    const read = withSceneSelectors(scene.namedSelections, () => parseSpec(spec, isSelector))
     return read ? emitFor(read.node, n, scene) : '(no spec)'
   } catch (e) {
     if (e instanceof SpecError) return `error: ${e.message}`
@@ -62,6 +64,9 @@ describe('atom specification translation', () => {
       ['ligand @> 5', 'not (((ligand) expand 5) or ((ligand) around 5 ["2xyz"]))'],
       ['ligand /< 5', 'chain A'],
       ['##name=2x*', 'none'],
+      // `sel` is the molecule's current selection, a name the scene's named selection.
+      ['sel & :CYS', '(chain B) and (resn CYS)'],
+      ['site | :CYS', '(site) or (resn CYS)'],
     ]
     for (const [spec, expr] of cases) expect([spec, inModel(spec)]).toEqual([spec, expr])
   })

@@ -290,7 +290,7 @@ async function runLines(sub: Submission, commands: DialectLine[], depth: number)
       return false
     }
 
-    const result = dialect.syntax.bind(spec, cmd.text)
+    const result = dialect.syntax.bind(spec, cmd.text, { ctx, sceneId: args.sceneId })
     if (result.kind === 'usage') {
       sink.push('output', result.usage)
       continue
@@ -383,7 +383,7 @@ async function runStandalone(
   }
 
   if (!spec.outsideTxn) return null
-  const result = dialect.syntax.bind(spec, cmd.text)
+  const result = dialect.syntax.bind(spec, cmd.text, { ctx, sceneId: args.sceneId })
   // Usage and argument errors are reported by the ordinary path.
   if (result.kind !== 'args') return null
   const bound = result.args

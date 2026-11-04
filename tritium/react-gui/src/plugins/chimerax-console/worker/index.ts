@@ -15,23 +15,29 @@
  * directory and its line in `plugins/index.ts`.
  */
 
-import type { ConsoleCommand, ConsoleDialect, DialectSyntax } from '@plugins/console/worker/dialect-api'
+import type { BindScene, ConsoleCommand, ConsoleDialect, DialectSyntax } from '@plugins/console/worker/dialect-api'
 import { CHIMERAX_META } from '../shared/meta'
 import { isChxCommand } from './cli/command'
 import { completeChx } from './cli/complete'
-import { bindLine, resolveWords, splitLines } from './cli/syntax'
+import { bindLine, splitLines } from './cli/syntax'
+import { resolveChx } from './commands/aliasCommands'
+import { withSceneSelectors } from './spec/selectors'
+import { selectionNames } from './names'
 import { CHX_COMMANDS } from './commands/registry'
 
 /** ChimeraX's command language (cli.py), as a console syntax. */
 const CHX_SYNTAX: DialectSyntax = {
   split: splitLines,
   resolve(text: string, commands: readonly ConsoleCommand[]) {
-    const r = resolveWords(text, commands.filter(isChxCommand))
+    // An alias is looked up here, line by line as the lines run (`aliasCommands.ts`).
+    const r = resolveChx(text, commands.filter(isChxCommand))
     return 'error' in r ? { kind: 'error', error: r.error } : { kind: 'found', spec: r.spec }
   },
-  bind(spec: ConsoleCommand, text: string) {
+  bind(spec: ConsoleCommand, text: string, scene?: BindScene) {
     if (!isChxCommand(spec)) return { kind: 'error', error: `Error: ${spec.name} is not a ChimeraX command` }
-    return bindLine(spec, text)
+    // The scene's named selections are selectors while the line is read.
+    if (!scene) return bindLine(spec, text)
+    return withSceneSelectors(selectionNames(scene.ctx, scene.sceneId), () => bindLine(spec, text))
   },
   complete: completeChx,
 }

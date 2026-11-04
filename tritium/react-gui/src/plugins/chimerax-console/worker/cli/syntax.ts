@@ -26,7 +26,14 @@ import { nextToken, splitOutsideQuotes } from './tokens'
 export function splitLines(text: string): DialectLine[] {
   const out: DialectLine[] = []
   for (const raw of text.split('\n')) {
-    for (const part of splitOutsideQuotes(raw.replace(/\r$/, ''), ';')) {
+    const line = raw.replace(/\r$/, '')
+    // An alias definition takes the rest of the line, `;` included (alias.py `WholeRestOfLine`).
+    if (/^\s*alias\s+(?!list\b|delete\b)\S+\s+\S/.test(line)) {
+      const t = line.trim()
+      out.push({ text: t, display: t, quiet: false, source: t })
+      continue
+    }
+    for (const part of splitOutsideQuotes(line, ';')) {
       const t = part.trim()
       // A comment where a command would start: the rest of the line too.
       if (t.startsWith('#')) break

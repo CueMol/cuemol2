@@ -232,13 +232,25 @@ export type BindResult =
  * completion service call these and never read a line themselves, so one
  * dialect's grammar is never another's default.
  */
+/** The scene a line is bound in (`DialectSyntax.bind`). */
+export interface BindScene {
+  ctx: WorkerContext
+  sceneId: number
+}
+
 export interface DialectSyntax {
   /** The commands of a submission (or a script's text), in order. */
   split(text: string): DialectLine[]
   /** The command a line names, or why none. */
   resolve(text: string, commands: readonly ConsoleCommand[]): { kind: 'found'; spec: ConsoleCommand } | { kind: 'error'; error: string }
-  /** The line's arguments, bound to `spec`'s parameters (defaults filled in). */
-  bind(spec: ConsoleCommand, text: string): BindResult
+  /**
+   * The line's arguments, bound to `spec`'s parameters (defaults filled in).
+   *
+   * @param scene - the scene the line runs in, given just before it runs,
+   *   for a grammar that depends on it (ChimeraX reads the scene's named
+   *   selections as selectors). Absent where no scene is at hand.
+   */
+  bind(spec: ConsoleCommand, text: string, scene?: BindScene): BindResult
   /**
    * Tab on `line`: the line rewritten, written back in this grammar (its
    * separators, how an argument is named, what needs quoting).

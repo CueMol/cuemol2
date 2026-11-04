@@ -36,18 +36,44 @@ const TRANSLATED: Readonly<Record<string, string>> = {
 
 /** Selectors ChimeraX has that the console cannot translate yet. */
 const KNOWN_ONLY = new Set([
-  'sel', 'ions', 'main', 'min-backbone', 'ribose', 'pbonds', 'pbondatoms', 'hbonds', 'hbondatoms',
+  'ions', 'main', 'min-backbone', 'ribose', 'pbonds', 'pbondatoms', 'hbonds', 'hbondatoms',
   'sel-residues', 'template-mismatch',
 ])
 
-/** Whether `name` is a selector (an element symbol included). */
+/**
+ * The current selection (`sel`): each molecule's own selection, which the
+ * emitter reads from the scene (`EmitContext.currentSelection`).
+ */
+export const CURRENT_SELECTION = 'sel'
+
+/**
+ * The scene's named selections, which are selectors too while a line is
+ * read (`withSceneSelectors`): a name `name` defined is used as `site`.
+ */
+let sceneNames: ReadonlySet<string> = new Set()
+
+/**
+ * Run `f` with the scene's named selections read as selectors. The
+ * grammar is read synchronously, so the set is in force only during `f`.
+ */
+export function withSceneSelectors<T>(names: ReadonlySet<string>, f: () => T): T {
+  const before = sceneNames
+  sceneNames = names
+  try {
+    return f()
+  } finally {
+    sceneNames = before
+  }
+}
+
+/** Whether `name` is a selector (an element symbol, `sel`, a named selection of the scene included). */
 export function isSelector(name: string): boolean {
-  return name in TRANSLATED || KNOWN_ONLY.has(name) || name in ELEMENT_COLORS
+  return name in TRANSLATED || KNOWN_ONLY.has(name) || name in ELEMENT_COLORS || name === CURRENT_SELECTION || sceneNames.has(name)
 }
 
 /** Every selector name, for Tab. */
 export function selectorNames(): string[] {
-  return [...Object.keys(TRANSLATED), ...Object.keys(ELEMENT_COLORS)]
+  return [...Object.keys(TRANSLATED), CURRENT_SELECTION, ...sceneNames, ...Object.keys(ELEMENT_COLORS)]
 }
 
 /** The CueMol expression of a selector, or null when it is not supported yet. */
