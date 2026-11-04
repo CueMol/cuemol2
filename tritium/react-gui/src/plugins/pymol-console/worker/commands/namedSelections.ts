@@ -3,16 +3,15 @@
  * @description The scene's named selections, for commands that take a name.
  *
  * `select` stores a named selection in a writable style set of the scene
- * (`saveSelDef`). PyMOL's `delete`, `enable`, `disable` and `set_name` accept
+ * (`define_selection`, into the set `selectionStyleSet` names). PyMOL's `delete`, `enable`, `disable` and `set_name` accept
  * a selection name as readily as an object name, so they look here once no
  * object or renderer answers to it.
  */
 
-import { applyMolSelString } from '@renderer/worker/server/services/select/applyMolSelString'
-import { saveSelDef } from '@renderer/worker/server/services/select/saveSelDef'
-import { getStyleSetContents, removeStyleSetSelection } from '@renderer/worker/server/services/style/styleSetEdit'
+import { getStyleSetContents } from '@renderer/worker/server/services/style/styleSetEdit'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { globToRegExp, isAllSelection, molecules } from './helpers'
+import type { CmdContext } from './types'
+import { globToRegExp, isAllSelection, molecules, runOp, setMolSelection } from './helpers'
 
 /** One named selection and the style set that holds it. */
 export interface NamedSelection {
@@ -20,28 +19,46 @@ export interface NamedSelection {
   /** The CueMol expression it stands for. */
   expr: string
   styleSetId: number
+  /** The name of that set, which the selection ops take. */
+  styleSetName: string
 }
 
 interface StyleSetEntry {
   uid?: number
+  name?: string
+  scene_id?: number
   readonly?: boolean
+}
+
+/** The scene's style sets, as `getStyleSetsJSON` lists them. */
+function styleSets(ctx: WorkerContext, sceneId: number): StyleSetEntry[] {
+  try {
+    return JSON.parse(ctx.styleMgr.getStyleSetsJSON(sceneId) || '[]') as StyleSetEntry[]
+  } catch {
+    return []
+  }
+}
+
+/**
+ * The style set `select` keeps a new name in: the scene's first writable
+ * set, as the selection builder's Save does (`saveSelDef`). Null when the
+ * scene has none; `define_selection` then makes one named `default`.
+ */
+export function selectionStyleSet(ctx: WorkerContext, sceneId: number): string | null {
+  const set = styleSets(ctx, sceneId).find((s) => s.scene_id === sceneId && s.readonly === false)
+  return set?.name ?? null
 }
 
 /** Every named selection the scene's own writable style sets hold. */
 export function namedSelections(ctx: WorkerContext, sceneId: number): NamedSelection[] {
-  let sets: StyleSetEntry[] = []
-  try {
-    sets = JSON.parse(ctx.styleMgr.getStyleSetsJSON(sceneId) || '[]') as StyleSetEntry[]
-  } catch {
-    sets = []
-  }
+  const sets = styleSets(ctx, sceneId)
   const out: NamedSelection[] = []
   for (const set of sets) {
     if (typeof set.uid !== 'number' || set.readonly === true) continue
     const contents = getStyleSetContents(ctx, { styleSetId: set.uid })
     if (!contents.ok) continue
     for (const sel of contents.selections) {
-      out.push({ name: sel.name, expr: sel.value, styleSetId: set.uid })
+      out.push({ name: sel.name, expr: sel.value, styleSetId: set.uid, styleSetName: set.name ?? '' })
     }
   }
   return out
@@ -58,28 +75,29 @@ export function matchNamedSelections(ctx: WorkerContext, sceneId: number, patter
   return all.filter((s) => re.test(s.name))
 }
 
-/** Forget a named selection. */
-export function removeNamedSelection(ctx: WorkerContext, sceneId: number, sel: NamedSelection): boolean {
-  return removeStyleSetSelection(ctx, { sceneId, styleSetId: sel.styleSetId, name: sel.name }).ok
+/** Forget a named selection (`remove_selection`). */
+export async function removeNamedSelection(ctx: WorkerContext, cc: CmdContext, sel: NamedSelection): Promise<boolean> {
+  return (await runOp(ctx, cc, 'remove_selection', { styleSet: sel.styleSetName, name: sel.name })).ok
 }
 
-/** Give a named selection another name. */
-export function renameNamedSelection(
+/** Give a named selection another name, in the set that holds it. */
+export async function renameNamedSelection(
   ctx: WorkerContext,
-  sceneId: number,
+  cc: CmdContext,
   sel: NamedSelection,
   newName: string,
-): boolean {
-  if (!saveSelDef(ctx, { sceneId, name: newName, expr: sel.expr }).ok) return false
-  return removeNamedSelection(ctx, sceneId, sel)
+): Promise<boolean> {
+  const defined = await runOp(ctx, cc, 'define_selection', { name: newName, selection: sel.expr, styleSet: sel.styleSetName })
+  if (!defined.ok) return false
+  return removeNamedSelection(ctx, cc, sel)
 }
 
 /**
  * Show or hide a named selection the way PyMOL's enable / disable do: its
  * atoms become (or stop being) the molecules' current selection.
  */
-export function showNamedSelection(ctx: WorkerContext, sceneId: number, sel: NamedSelection, show: boolean): void {
-  for (const mol of molecules(ctx, sceneId)) {
-    applyMolSelString(ctx, { sceneId, molId: mol.uid, selStr: show ? sel.expr : '' })
+export async function showNamedSelection(ctx: WorkerContext, cc: CmdContext, sel: NamedSelection, show: boolean): Promise<void> {
+  for (const mol of molecules(ctx, cc.sceneId)) {
+    await setMolSelection(ctx, cc, mol.uid, show ? sel.expr : '')
   }
 }

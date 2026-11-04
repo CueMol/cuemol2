@@ -19,7 +19,7 @@
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { SceneNodeEntry } from '@renderer/worker/server/catalog/refs'
-import { recordedPath, sceneNodes } from '@renderer/worker/server/catalog/refs'
+import { recordedPath, recordedPropPath, sceneNodes } from '@renderer/worker/server/catalog/refs'
 import type { FileOpenOptions, FormatOptions } from '@renderer/worker/shared/fileOpenTypes'
 import { insideOp, noteEntry, txnOpen } from './actionLog'
 
@@ -97,13 +97,6 @@ function valueText(value: unknown): string {
   return typeof value === 'string' ? value : String(value ?? '')
 }
 
-/** The property path `reset_prop` takes for a node's property. */
-function propPathOf(ctx: WorkerContext, sceneId: number, nodeType: PropNodeType, nodeId: number, prop: string): string {
-  if (nodeType === 'scene') return prop
-  if (nodeType === 'view') return `view.${prop}`
-  const path = recordedPath(nodesOf(ctx, sceneId), nodeId)
-  return `${path ?? `#${nodeId}`}.${prop}`
-}
 
 const PROP_NODE_TYPES: ReadonlySet<string> = new Set<PropNodeType>(['scene', 'view', 'object', 'renderer', 'rendGroup'])
 
@@ -115,7 +108,7 @@ export function recordPropWrite(
 ): void {
   if (!recording(sceneId) || !PROP_NODE_TYPES.has(w.nodeType)) return
   if (w.op === 'reset') {
-    recordOp(ctx, sceneId, 'reset_prop', { path: propPathOf(ctx, sceneId, w.nodeType as PropNodeType, w.nodeId, w.propName) })
+    recordOp(ctx, sceneId, 'reset_prop', { path: recordedPropPath(ctx, sceneId, w.nodeType as PropNodeType, w.nodeId, w.propName) })
     return
   }
   const own = w.nodeType === 'scene' || w.nodeType === 'view'

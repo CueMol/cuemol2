@@ -17,14 +17,13 @@
  */
 
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
-import { resetGenericProps, setGenericProp } from '@renderer/worker/server/services/props/write'
 import type { GenericPropEntry, PropTargetType } from '@renderer/worker/shared/genericProps'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CmdContext, PymCommand } from './types'
-import { isDefaulted, resolveObjects, resolveOneObject, resolveRenderers, toBoolean, toNumber } from './helpers'
+import { isDefaulted, resolveObjects, resolveOneObject, resolveRenderers, runOp, toBoolean, toNumber } from './helpers'
 import { parseRgb } from './colorCommands'
 import { toCueMolColor } from './pymolColors'
-import { REP_SETTINGS, getRepSetting, setRepSetting, unsetRepSetting } from './repSettings'
+import { REP_SETTINGS, getRepSetting, resetProp, setRepSetting, unsetRepSetting } from './repSettings'
 
 /** A PyMOL setting name that has an exact CueMol counterpart. */
 export interface SettingAlias {
@@ -51,7 +50,7 @@ export const SETTING_ALIASES: Readonly<Record<string, SettingAlias>> = {
 /** Where a `set` / `get` / `unset` reads or writes. */
 export interface Target {
   nodeId: number
-  nodeType: PropTargetType
+  nodeType: 'scene' | 'view' | 'object' | 'renderer'
 }
 
 export function resolveTarget(
@@ -151,7 +150,7 @@ const set: PymCommand = {
     { source: 'settingValue', description: 'value', suffix: ', ' },
     { source: 'names', description: 'name', suffix: ', ' },
   ],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     if (!isDefaulted(args.state, '0')) cc.warn('set: state is ignored (not supported)')
     const repSetting = REP_SETTINGS[args.name.trim()]
     if (repSetting) return setRepSetting(ctx, cc, args.name.trim(), repSetting, args.value, args.selection)
@@ -170,15 +169,13 @@ const set: PymCommand = {
       return { ok: false, error: `Error: "${args.value}" is not a valid ${entry.type}${allowed}` }
     }
 
-    const res = setGenericProp(ctx, {
-      sceneId: cc.sceneId,
-      nodeId: target.target.nodeId,
+    // Converted (and inverted) here; set_node_prop reads the text back by type.
+    const own = target.target.nodeType === 'scene' || target.target.nodeType === 'view'
+    const res = await runOp(ctx, cc, 'set_node_prop', {
       nodeType: target.target.nodeType,
-      propName,
-      op: 'set',
-      valueType: entry.type,
-      value,
-      mode: 'commit',
+      nodeId: own ? null : target.target.nodeId,
+      prop: propName,
+      value: String(value),
     })
     if (!res.ok) return { ok: false, error: `Error: could not set "${args.name}"` }
     return { ok: true }
@@ -234,7 +231,7 @@ const unset: PymCommand = {
     { source: 'settings', description: 'setting', suffix: ', ' },
     { source: 'names', description: 'name', suffix: ', ' },
   ],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     if (!isDefaulted(args.state, '0')) cc.warn('unset: state is ignored (not supported)')
     const repSetting = REP_SETTINGS[args.name.trim()]
     if (repSetting) return unsetRepSetting(ctx, cc, args.name.trim(), repSetting, args.selection)
@@ -247,13 +244,9 @@ const unset: PymCommand = {
     if (!entry) return { ok: false, error: `Error: unknown setting: "${args.name}"` }
     if (!entry.hasdefault) return { ok: false, error: `Error: "${args.name}" has no default` }
 
-    const res = resetGenericProps(ctx, {
-      sceneId: cc.sceneId,
-      nodeId: target.target.nodeId,
-      nodeType: target.target.nodeType,
-      propNames: [propName],
-    })
-    if (!res.ok) return { ok: false, error: `Error: could not unset "${args.name}"` }
+    if (!(await resetProp(ctx, cc, target.target.nodeType, target.target.nodeId, propName))) {
+      return { ok: false, error: `Error: could not unset "${args.name}"` }
+    }
     return { ok: true }
   },
 }
@@ -265,19 +258,10 @@ const bgColor: PymCommand = {
   mutates: true,
   summary: 'Set the background colour.',
   completions: [{ source: 'colors', description: 'color', suffix: '' }],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const color = toCueMolColor(args.color)
     if (color === null) return { ok: false, error: `Error: unknown color: "${args.color}"` }
-    const res = setGenericProp(ctx, {
-      sceneId: cc.sceneId,
-      nodeId: cc.sceneId,
-      nodeType: 'scene',
-      propName: 'bgcolor',
-      op: 'set',
-      valueType: 'object<AbstractColor>',
-      value: color,
-      mode: 'commit',
-    })
+    const res = await runOp(ctx, cc, 'set_node_prop', { nodeType: 'scene', nodeId: null, prop: 'bgcolor', value: color })
     if (!res.ok) return { ok: false, error: 'Error: could not set the background colour' }
     return { ok: true }
   },

@@ -8,19 +8,17 @@
  * CueMol label format (`{resn}{resi}`) that the renderer evaluates in C++;
  * the PyMOL expression is only rewritten into one (`labelExpr.ts`).
  *
- * The labels go through the `setAtomLabels` service, so each molecule's
- * change is one recorded `set_atom_labels` step (C++ records the label
- * edits for undo).
+ * The labels go through the `set_atom_labels` op, so each molecule's
+ * change is one recorded step (C++ records the label edits for undo).
  */
 
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
-import { selectionAtomIds, setAtomLabels } from '@renderer/worker/server/services/navi/atomLabels'
+import { selectionAtomIds } from '@renderer/worker/server/services/navi/atomLabels'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import type { PymCommand } from './types'
+import type { CmdContext, PymCommand } from './types'
 import { moleculeSelections } from './helpers'
 import type { MoleculeSelection } from './helpers'
-import { setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
-import { OWNED, renderersOf } from './helpers'
+import { OWNED, renderersOf, runOp, setVisible } from './helpers'
 import { pymolLabelFormat } from './labelExpr'
 import { applyRememberedSettings } from './repSettings'
 
@@ -52,7 +50,7 @@ const label: PymCommand = {
   mutates: true,
   summary: 'Label atoms, e.g. label name CA, "%s%s" % (resn, resi); an empty expression removes labels.',
   completions: [{ source: 'selections', description: 'selection', suffix: ', ' }],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const translatedFormat = pymolLabelFormat(args.expression)
     if (!translatedFormat.ok) return translatedFormat
     const format = translatedFormat.format
@@ -84,17 +82,17 @@ const label: PymCommand = {
       // Labelling again after `hide labels` brings them back, as in PyMOL.
       const existing = labelRendererId(ctx, cc.sceneId, t.obj.uid)
       if (!removing && existing !== null) {
-        setNodeVisible(ctx, { sceneId: cc.sceneId, nodeId: existing, nodeType: 'renderer', visible: true })
+        await setVisible(ctx, cc, existing, 'renderer', true)
       }
-      const res = setAtomLabels(ctx, {
-        sceneId: cc.sceneId,
+      const res = await runOp(ctx, cc, 'set_atom_labels', {
         objId: t.obj.uid,
         selection: t.selStr,
         format: removing ? null : format,
         rendererName: LABEL_RENDERER,
       })
-      if (!res.ok) return { ok: false, error: `Error: label: ${nativeReason(res.error)}` }
-      if (res.created && res.rendId !== null) applyRememberedSettings(ctx, cc.sceneId, 'labels', res.rendId)
+      if (!res.ok) return { ok: false, error: `Error: label: ${nativeReason(res.error.replace(/^Error: /, ''))}` }
+      const made = res.data as { rendId?: number | null; created?: boolean } | undefined
+      if (made?.created && typeof made.rendId === 'number') await applyRememberedSettings(ctx, cc, 'labels', made.rendId)
     }
     return { ok: true }
   },
@@ -104,27 +102,32 @@ const label: PymCommand = {
  * Show or hide the console's labels on each item's molecule (`show labels`
  * / `hide labels` over whole molecules).
  */
-export function setConsoleLabelsVisible(
+export async function setConsoleLabelsVisible(
   ctx: WorkerContext,
-  sceneId: number,
+  cc: CmdContext,
   items: readonly MoleculeSelection[],
   visible: boolean,
-): void {
+): Promise<void> {
   for (const item of items) {
-    const rend = renderersOf(ctx, sceneId, item.obj.uid).find((r) => r.name === LABEL_RENDERER)
-    if (rend) setNodeVisible(ctx, { sceneId, nodeId: rend.id, nodeType: 'renderer', visible })
+    const rend = renderersOf(ctx, cc.sceneId, item.obj.uid).find((r) => r.name === LABEL_RENDERER)
+    if (rend) await setVisible(ctx, cc, rend.id, 'renderer', visible)
   }
 }
 
 /** Take the console's labels off the atoms of each item (`hide labels, sel`). */
-export function removeConsoleLabels(
+export async function removeConsoleLabels(
   ctx: WorkerContext,
-  sceneId: number,
+  cc: CmdContext,
   items: readonly MoleculeSelection[],
-): boolean {
+): Promise<boolean> {
   for (const item of items) {
-    if (labelRendererId(ctx, sceneId, item.obj.uid) === null) continue
-    const res = setAtomLabels(ctx, { sceneId, objId: item.obj.uid, selection: item.selStr, format: null, rendererName: LABEL_RENDERER })
+    if (labelRendererId(ctx, cc.sceneId, item.obj.uid) === null) continue
+    const res = await runOp(ctx, cc, 'set_atom_labels', {
+      objId: item.obj.uid,
+      selection: item.selStr,
+      format: null,
+      rendererName: LABEL_RENDERER,
+    })
     if (!res.ok) return false
   }
   return true

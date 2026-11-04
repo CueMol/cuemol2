@@ -17,6 +17,8 @@ import { listSceneObjects } from '@renderer/worker/server/services/scene/listSce
 import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import { selectionNames, translateSelection } from '../sel/translate'
+import { runOp as runConsoleOp } from '@plugins/console/worker/dialect-api'
+import type { CmdContext, OpRun } from '@plugins/console/worker/dialect-api'
 
 /** PyMOL's name for every object at once. */
 export const ALL = 'all'
@@ -243,4 +245,29 @@ export const OWNED = 'pym:'
 export function renderersOf(ctx: WorkerContext, sceneId: number, objId: number): SceneTreeNode[] {
   const obj = objectNodes(ctx, sceneId).find((c) => c.id === objId)
   return obj ? rendererNodesOf(obj).filter((n) => n.type === 'renderer') : []
+}
+
+/**
+ * Run a catalog op as part of a PyMOL command. Every write to the scene goes
+ * through one (docs/architecture/console-pymol-dialect.md section 1), so it is
+ * checked, logged and undone the way the native console's is.
+ */
+export function runOp(ctx: WorkerContext, cc: CmdContext, name: string, args: Record<string, unknown>): Promise<OpRun> {
+  return runConsoleOp(ctx, cc, 'pym', name, args)
+}
+
+/** Show or hide one object or renderer (`set_visible`). */
+export async function setVisible(
+  ctx: WorkerContext,
+  cc: CmdContext,
+  nodeId: number,
+  nodeType: 'object' | 'renderer',
+  visible: boolean,
+): Promise<boolean> {
+  return (await runOp(ctx, cc, 'set_visible', { nodeId, nodeType, visible })).ok
+}
+
+/** Set (or with '' clear) a molecule's current selection (`set_mol_selection`). */
+export async function setMolSelection(ctx: WorkerContext, cc: CmdContext, objId: number, selection: string): Promise<boolean> {
+  return (await runOp(ctx, cc, 'set_mol_selection', { objId, selection })).ok
 }

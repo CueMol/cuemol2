@@ -22,15 +22,14 @@
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { findOp, invokeOp } from '@renderer/worker/server/catalog'
 import { objectNodes, rendererNodesOf } from '@renderer/worker/server/catalog/refs'
 // Read-only helpers (op-catalog.md 3.1: reading a property or a paint state
 // is not an operation of its own).
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import { getRendererPaintInfo } from '@renderer/worker/server/services/coloring/panelList'
 import { simplifySel } from '@renderer/worker/server/services/helpers/simplifySel'
-import type { CmdContext } from '@plugins/console/worker/dialect-api'
-import { opContextOf } from '@plugins/console/worker/dialect-api'
+import type { CmdContext, OpRun } from '@plugins/console/worker/dialect-api'
+import { runOp as runConsoleOp } from '@plugins/console/worker/dialect-api'
 import { emitFor, NONE } from './spec/emit'
 import { parseSpec, SpecError } from './spec/parse'
 import { isSelector } from './spec/selectors'
@@ -66,15 +65,9 @@ export const CARTOONS: readonly OwnedKind[] = [
 
 const ALL_KINDS: readonly OwnedKind[] = [...Object.values(ATOM_STYLES), ...CARTOONS]
 
-/** An op's outcome, data included. */
-type Ran = { ok: true; data?: unknown } | { ok: false; error: string }
-
-/** Run a catalog op as part of this command (`invokeOp`, as every caller of the catalog does). */
-export async function runOp(ctx: WorkerContext, cc: CmdContext, name: string, args: Record<string, unknown>): Promise<Ran> {
-  const op = findOp(name)
-  if (!op) return { ok: false, error: `Error: no operation ${name}` }
-  const res = await invokeOp(op, ctx, args, opContextOf(cc, 'chx'))
-  return res.ok ? { ok: true, data: res.data } : { ok: false, error: `Error: ${res.error}` }
+/** Run a catalog op as part of this command (the console's `runOp`, tagged `chx`). */
+export function runOp(ctx: WorkerContext, cc: CmdContext, name: string, args: Record<string, unknown>): Promise<OpRun> {
+  return runConsoleOp(ctx, cc, 'chx', name, args)
 }
 
 /** One molecule and the CueMol expression a specification means in it. */
@@ -177,7 +170,7 @@ export function intersect(a: string, b: string): string {
  * selection (union / minus / intersect), so it is simplified first: repeated
  * commands would otherwise nest it deeper every time.
  */
-export async function writeSel(ctx: WorkerContext, cc: CmdContext, rendId: number, next: string): Promise<Ran> {
+export async function writeSel(ctx: WorkerContext, cc: CmdContext, rendId: number, next: string): Promise<OpRun> {
   const selection = simplifySel(ctx, next, cc.sceneId)
   if (readSel(ctx, cc.sceneId, rendId) === selection) return { ok: true }
   return runOp(ctx, cc, 'set_renderer_selection', { rendId, selection })
@@ -202,7 +195,7 @@ export function cartoonRenderers(ids: Map<string, number>): { id: number; scope:
  * only when it is not one yet, since switching starts a new table and would
  * drop the entries an earlier `color` put there.
  */
-export async function ensurePaint(ctx: WorkerContext, cc: CmdContext, rendId: number): Promise<Ran> {
+export async function ensurePaint(ctx: WorkerContext, cc: CmdContext, rendId: number): Promise<OpRun> {
   if (getRendererPaintInfo(ctx, { sceneId: cc.sceneId, rendId }).canPaint) return { ok: true }
   return runOp(ctx, cc, 'set_renderer_coloring', { nodeId: rendId, nodeType: 'renderer', mode: 'paint-type-paint', styleName: null })
 }
