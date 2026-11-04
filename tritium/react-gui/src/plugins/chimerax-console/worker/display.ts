@@ -28,9 +28,12 @@ import { objectNodes, rendererNodesOf } from '@renderer/worker/server/catalog/re
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
 import { getRendererPaintInfo } from '@renderer/worker/server/services/coloring/panelList'
 import { simplifySel } from '@renderer/worker/server/services/helpers/simplifySel'
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import type { CmdContext, OpRun } from '@plugins/console/worker/dialect-api'
 import { runOp as runConsoleOp } from '@plugins/console/worker/dialect-api'
 import { emitFor, NONE } from './spec/emit'
+import type { EmitContext } from './spec/emit'
 import { parseSpec, SpecError } from './spec/parse'
 import { isSelector } from './spec/selectors'
 import { isMolecule, numberedObjects } from './models'
@@ -81,6 +84,49 @@ function specError(text: string, e: SpecError): string {
   return `${text}\n${' '.repeat(e.pos)}^ ${e.message}`
 }
 
+/** An atom iterator, as `AtomIterator` exposes it. */
+interface AtomIter {
+  target: unknown
+  sel: unknown
+  first(): void
+  next(): void
+  hasMore(): boolean
+  get(): { chainName: string }
+}
+
+/**
+ * The scene as the specification emitter sees it: the molecules (for a zone,
+ * which reaches across models) and a way to read which atoms an expression
+ * matches (for zones to whole chains or models). Reads only.
+ */
+export function emitContext(ctx: WorkerContext, sceneId: number): EmitContext {
+  const mols = numberedObjects(ctx, sceneId).filter(isMolecule)
+  /** Visit the atoms `expr` matches in model `model`; stop when `visit` says so. */
+  const eachAtom = (model: number, expr: string, visit: (chain: string) => boolean): void => {
+    const obj = mols.find((m) => m.model === model)
+    const mol = obj ? getSceneOrNull(ctx, sceneId)?.getObject(obj.uid) : null
+    const sel = makeSel(ctx, expr, sceneId)
+    const iter = ctx.svc.createObj('AtomIterator') as unknown as AtomIter | null
+    if (!mol || !sel || !iter) return
+    iter.target = mol
+    iter.sel = sel
+    for (iter.first(); iter.hasMore(); iter.next()) if (!visit(iter.get().chainName)) return
+  }
+  return {
+    models: mols.map((m) => ({ model: m.model, name: m.name })),
+    chainsHit(model, expr) {
+      const chains = new Set<string>()
+      eachAtom(model, expr, (c) => { chains.add(c); return true })
+      return [...chains].sort()
+    },
+    anyHit(model, expr) {
+      let hit = false
+      eachAtom(model, expr, () => { hit = true; return false })
+      return hit
+    },
+  }
+}
+
 /**
  * The molecules a specification reaches, each with what it means there.
  * An empty specification is every molecule, whole.
@@ -91,9 +137,10 @@ export function targetsOf(ctx: WorkerContext, sceneId: number, spec: string): { 
   try {
     const read = parseSpec(spec, isSelector)
     if (!read) return { ok: false, error: `Error: "${spec}" is not an atom specification` }
+    const ec = emitContext(ctx, sceneId)
     const targets: Target[] = []
     for (const obj of mols) {
-      const sel = emitFor(read.node, obj.model)
+      const sel = emitFor(read.node, obj.model, ec)
       if (sel !== NONE) targets.push({ obj, sel })
     }
     return { ok: true, targets }

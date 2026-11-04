@@ -13,7 +13,7 @@
  * nothing unescaped.
  */
 
-import { colorNames, readColor } from '../colors'
+import { colorArgValue, colorNames, readColor } from '../colors'
 import { parseSpec, SpecError } from '../spec/parse'
 import { isSelector, selectorNames } from '../spec/selectors'
 import { nextToken, unescape } from './tokens'
@@ -160,13 +160,14 @@ export const NoArg: ArgType = {
   },
 }
 
-/** A colour (`ColorArg`), as `#rrggbb`. */
+/** A colour (`ColorArg`), as `#rrggbb` (`#rrggbb@alpha` when it states one; `splitColorArg`). */
 export const ColorArg: ArgType = {
   name: 'a color',
   values: colorNames,
   parse(text) {
     const c = readColor(text)
-    return c ? { value: c.hex, rest: trimStart(c.rest) } : null
+    // An alpha the colour states travels with it, so the command can warn that it is dropped.
+    return c ? { value: colorArgValue(c), rest: trimStart(c.rest) } : null
   },
 }
 

@@ -18,7 +18,7 @@ import { resolvePath } from '@plugins/console/worker/dialect-api'
 import { FileNameArg, SpecArg, StringArg } from '../cli/argTypes'
 import { chxCommand } from '../cli/command'
 import type { ChxCommand } from '../cli/command'
-import { ATOM_STYLES, CARTOONS, ensureOwned, runOp, targetsOf, writeSel } from '../display'
+import { ATOM_STYLES, CARTOONS, emitContext, ensureOwned, runOp, targetsOf, writeSel } from '../display'
 import { isMolecule, numberedObjects } from '../models'
 import type { NumberedObject } from '../models'
 import { emitFor, NONE } from '../spec/emit'
@@ -106,7 +106,8 @@ function objectsOf(ctx: WorkerContext, sceneId: number, spec: string): { ok: tru
   try {
     const read = parseSpec(spec, isSelector)
     if (!read) return { ok: false, error: `Error: "${spec}" is not a model specification` }
-    return { ok: true, objs: all.filter((o) => emitFor(read.node, o.model) !== NONE) }
+    const ec = emitContext(ctx, sceneId)
+    return { ok: true, objs: all.filter((o) => emitFor(read.node, o.model, ec) !== NONE) }
   } catch (e) {
     if (e instanceof SpecError) return { ok: false, error: `${spec}\n${' '.repeat(e.pos)}^ ${e.message}` }
     throw e
