@@ -27,7 +27,7 @@ ChX console (plugin `chimerax-console`) は、基盤と基本コマンドだけ�
 |---|---|
 | PR 1 | (実装済み) atom spec の拡張、色の書き方の拡張 |
 | PR 2 | (実装済み) 視点のコマンド |
-| PR 3 | 選択と名前: `select` 一式、`name` 一式、`info` 一式、`alias` 一式 |
+| PR 3 | (実装済み) 選択・名前・info・alias |
 | PR 4 | 表現と解析: `surface` 一式、`transparency`、`label` 一式、`distance` 一式、`align`、`matchmaker`、`save` |
 | PR 5 | 色の拡張 (`bychain` `bymodel` `random`、`rainbow`) と、`open` の auto style |
 
@@ -46,47 +46,10 @@ selection の名前) は PR 3 で行う。
 `turn` `move` `cofr` `zoom`、名前付き view と `view matrix`、`set bgColor`、`graphics silhouettes` は実装した
 (`docs/architecture/console-chimerax-dialect.md` §6)。
 
-## 4. PR 3: 選択・名前・info・alias
+## 4. (PR 3 は実装済み)
 
-- **名前付き selection の名前を selector として読む**: scene の名前付き selection の名前 (`select/getSelDefs`) を
-  `isSelector` に加え、emit はその名前をそのまま書く (CueMol の名前の参照)。`name` で定義したものを spec で使うため。
-  `parseSpec` に渡す selector の判定を、scene ごとに作る形にする (`emitContext` と同じく `display.ts` で組み立てる)。
-- **selector `sel`** (今の選択): `KNOWN_ONLY` から外し、各 object の今の `sel` (`props/read`) を、その object での
-  式にする。選択が空の object では `none`。`select sel ...` のように選択を書き換えるコマンドでも、書き換える前の値から
-  読む。GUI で選んでから `show sel atoms`、`select /A:10-20; color sel red` が使えるようにするため。新しい状態は持たない。
-- **`select [spec]`** (`residues` keyword は `byres`): spec の object は `set_mol_selection`、それ以外の molecule は空にする
-  (ChimeraX は選択を置き換える)。spec が無ければ全部。
-  `select add` / `subtract` / `intersect` / `clear`、`~select` (= `select subtract`) は、今の object の `sel` を読んで
-  (`props/read`) `union` / `minus` / `intersect` (`display.ts`) で組み合わせて書く。`minimumLength` などは warn。
-- **`name N spec`**: `define_selection` (scene の最初の書き込める style set)。spec に model (`#`) を含むときは断る
-  (CueMol の名前付き selection は object ごとに評価する 1 つの式なので、model の区別を持てない)。
-  `name N` (定義を出す)、`name delete N|all` (`remove_selection`)、`name list` (`get_scene_state` か `select/getSelDefs`)。
-  `name frozen` は断る (今の原子の集合を固定する手段が無い)。
-- **`info`** (`list_info`): `info` / `info models` (`N models`、model ごとに `#N, name, shown|hidden` と原子・残基・chain の数)、
-  `info chains` (`chain id /A chain_id A`)、`info residues`、`info atoms` (`attribute` は name・number・bfactor・occupancy・
-  element だけ)。数は `count_selection` / `list_chains` / `list_residues` の読み取りの op か、許可リストの service で読む。
-  `saveFile` は warn。
-- **`alias name text`**: plugin の worker のメモリに表を持つ (ChimeraX の alias も session の中だけ)。
-  - **定義**: `text` は `;` を含めた行の残り全部 (ChimeraX の `WholeRestOfLine`)。そのため `splitLines`
-    (`cli/syntax.ts`) は、行の先頭が `alias` のときは `;` で分けない。`alias redcartoon cartoon; color red` は定義時に
-    何も実行せず、2 つのコマンドを持つ alias になる。
-  - **呼び出し**: alias の表を見て展開するのは、**そのコマンドを実行する直前**にする。runtime は submit や `.cxc` の
-    全文を、最初のコマンドの前に `split` するので、`split` の段階で展開すると、同じスクリプトの中で前の行が定義した
-    (または定義し直した) alias を使えない。
-    - `split` は、定義の本文の `;` を残す字句の分割だけにする。
-    - 展開した文字列はもう一度 `splitLines` にかけ、複数のコマンドとして同じ submit の txn の中で順に実行する。
-    - `$1`–`$9`、`$*` を置き換える。自分自身の展開は 1 段で止める。
-    - 実装の形: ChX の alias 呼び出しを 1 つのコマンド (`ConsoleCommand`) として bind し、その `run` が展開と、
-      展開した各コマンドの解決・bind・実行を行う。今の runtime は `resolve` に渡した元の文字列を `bind` にも渡すので、
-      runtime に展開の経路を足さずに済む。
-      runtime に手を入れる必要が出たら、dialect 中立の形 (`DialectSyntax` の hook) にする。
-    - **txn の外で走るべきコマンドは、alias の中では断る**。runtime が txn の中で断っている `outsideTxn` のコマンド
-      (`save x.qsc`、`open x.qsc` など) と `undoStack` のコマンド (`undo` / `redo`) を、子コマンドを実行する前に検査する。
-      見つかったら何も実行せずに `alias <name>: <cmd> cannot run inside an alias; run it on its own line` で断る。
-      子の `run` を直接呼ぶと、この検査が抜ける (`invokeOp` は検査しない)。たとえば `save_scene` は undo の履歴を消すので、
-      txn の中で走ると txn と履歴が食い違う。alias 経由でこれらを txn の外で走らせる機能は作らない。
-  - `alias name` (定義を出す)、`alias list`、`alias delete name|all`、`~alias`。
-  - 補完の候補とコマンド一覧 (`help`) に alias も出す。
+`select` 一式、selector の `sel` と名前付き selection、`name` 一式、`info` 一式、`alias` 一式は実装した
+(`docs/architecture/console-chimerax-dialect.md` §3、§6)。
 
 ## 5. PR 4: 表現と解析
 
@@ -142,14 +105,6 @@ selection の名前) は PR 3 で行う。
 
 ## 8. テスト (PR ごとの最小集合)
 
-- PR 3:
-  - `select add` / `subtract` / `intersect` の組み合わせ。
-  - `alias` の `$1` / `$*` の展開と、自分自身への展開を 1 段で止めること。
-  - `;` を含む alias の定義が定義時には実行されず、呼び出すと 2 つのコマンドが順に実行されること。
-    これを、同じ `.cxc` (または 1 つの submit) の中で定義してから呼び出す形で確かめる。
-  - `save x.qsc` や `undo` を含む alias を呼ぶと、何も実行せずに断ること。
-  - `name` が model を含む spec を断ること。
-  - selector `sel` が、書き換える前の各 object の選択に解決すること。
 - PR 4:
   - `transparency` の target と renderer の対応。
   - `surface` / `surface hidePatches` が `showsel` だけを変え、`sel` は変えないこと。
@@ -173,7 +128,6 @@ selection の名前) は PR 3 で行う。
    から、`task run_tritium` で起動マーカーを確認する。
 2. `task run_tritium_cli -- --dialect chimerax -c '...'` で PR の範囲のコマンドを流し、History pane の子行に op が並ぶこと、
    断るものが理由を言うことを確かめる。たとえば次のようなもの:
-   - PR 3: `select /A:1-10; select add :CYS; name site /A:20-25; info chains`
    - PR 4: `surface; hide /A surfaces; show /A surfaces; color /A red target s; transparency 50; label :10; distance /A:10@CA /A:20@CA; save ~/Desktop/x.png width 400`
    - PR 5: `open 4hhb`、`color bychain`、`rainbow`
 3. ユーザーの目視確認の後に、テストを書き、`npm test`、`tsc` (web / node)、eslint を流す。
