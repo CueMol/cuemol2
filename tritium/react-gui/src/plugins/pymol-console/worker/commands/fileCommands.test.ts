@@ -28,7 +28,6 @@ const { services, ops } = vi.hoisted(() => {
   return {
     services: {
       getCompatibleRendererNames: stub(() => ({ types: [], objType: '', readerName: 'mmcif' })),
-      loadObject: stub(() => ({ ok: true })),
       getSceneTree: stub(() => ({ ok: false })),
       listSceneObjects: stub(() => ({ objects: [] })),
     } satisfies Record<string, Stub>,
@@ -49,9 +48,6 @@ vi.mock('@renderer/worker/server/catalog', async (importOriginal) => ({
 vi.mock('fs', () => ({ existsSync: () => true }))
 vi.mock('@renderer/worker/server/services/file/getCompatibleRendererNames', () => ({
   getCompatibleRendererNames: (...a: unknown[]) => services.getCompatibleRendererNames(...a),
-}))
-vi.mock('@renderer/worker/server/services/file/loadObject', () => ({
-  loadObject: (...a: unknown[]) => services.loadObject(...a),
 }))
 vi.mock('@renderer/worker/server/services/file/headlessOpen', () => ({
   // Only the renderer half matters here; the real builder is exercised by
@@ -132,13 +128,6 @@ async function load(over: Record<string, string>): Promise<{ ok: boolean; error?
   return (await cmd.run(ctx, args, cc)) as { ok: boolean; error?: string }
 }
 
-/** The renderer options the load was given. */
-function rendererOptions(): { rendererName?: string; presetName?: string } | undefined {
-  const call = services.loadObject.mock.calls[0]
-  return (call?.[1] as { options?: { renderer?: { rendererName?: string; presetName?: string } } } | undefined)
-    ?.options?.renderer
-}
-
 /** The reader name handed to the lookup, if one was. */
 function askedReader(): string | undefined {
   const call = services.getCompatibleRendererNames.mock.calls[0]
@@ -152,7 +141,6 @@ beforeEach(() => {
     objType: '',
     readerName: 'mmcif',
   })
-  services.loadObject.mockReturnValue({ ok: true })
   ops.length = 0
   services.listSceneObjects.mockReturnValue({ objects: [] })
   services.getSceneTree.mockReturnValue({ ok: false })
@@ -181,7 +169,7 @@ describe('load with an explicit format', () => {
     expect(out.error).toContain('mmcifmap')
     // Internal readers are not offered as formats.
     expect(out.error).not.toContain('qdfmol')
-    expect(services.loadObject).not.toHaveBeenCalled()
+    expect(opArgs('load_file')).toEqual([])
   })
 })
 
@@ -207,7 +195,8 @@ describe('the renderer a load creates', () => {
     })
     await load({ filename: '1crn.pdb' })
     // The preset names its members prefix + type, so the prefix is the console's.
-    expect(rendererOptions()).toMatchObject({ presetName: 'DefaultPymRendPreset', rendererName: 'pym:' })
+    // The reader the lookup found is passed on, so load_file does not sniff again.
+    expect(opArgs('load_file')).toEqual([expect.objectContaining({ reader: 'mmcif', rendererName: 'pym:', rendererType: null })])
     const renamed = opArgs('rename_node').map((a) => [a.nodeId, a.name])
     // pym:nucl keeps its name: it is cartoon's companion, not a representation.
     expect(renamed).toEqual([[11, 'pym:cartoon'], [13, 'pym:sticks'], [14, 'pym:spheres'], [15, 'pym:lines']])

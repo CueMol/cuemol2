@@ -140,6 +140,34 @@ describe('viewXform.setViewXform', () => {
     })
 })
 
+describe('viewXform.setViewXform restoring a camera', () => {
+    it('writes the rotation, then the distance before the slab', () => {
+        // C++ View::setSlabDepth clamps the slab to twice the distance in
+        // force, so a far camera written slab first would lose part of it.
+        const order: string[] = []
+        const view = {
+            setRotQuat: (q: { a: number; x: number; y: number; z: number }) => order.push(`rot ${q.a} ${q.x} ${q.y} ${q.z}`),
+            set center(_v: unknown) { order.push('center') },
+            set distance(v: number) { order.push(`distance ${v}`) },
+            set slab(v: number) { order.push(`slab ${v}`) },
+            set zoom(v: number) { order.push(`zoom ${v}`) },
+        }
+        const ctx = {
+            sceMgr: { getView: vi.fn(() => view) },
+            svc: { createObj: vi.fn(() => ({})) },
+        } as unknown as WorkerContext
+        setViewXform(ctx, {
+            viewId: 7,
+            rotation: { a: 1, x: 0, y: 0, z: 0 },
+            center: { x: 1, y: 2, z: 3 },
+            slab: 1000,
+            distance: 800,
+            zoom: 10,
+        })
+        expect(order).toEqual(['rot 1 0 0 0', 'center', 'distance 800', 'slab 1000', 'zoom 10'])
+    })
+})
+
 describe('viewXform.rotateView', () => {
     it('forwards a relative rotation to view.rotateView', () => {
         const { view, rotateViewSpy } = makeView()

@@ -2,7 +2,7 @@
  * @file plugins/pymol-console/worker/commands/fitCommands.ts
  * @description `align`, `super` and `pair_fit`: moving one molecule onto another.
  *
- * CueMol's superpositions (`superposeMol`, the Superpose dialog's service)
+ * CueMol's superpositions (the `superpose` op, the Superpose dialog's service)
  * that find the structural correspondence themselves are US-align (the
  * default; proteins and nucleic acids) and SSM; the third is a least-squares
  * fit of atoms paired in order. PyMOL's `align` (sequence alignment, then
@@ -15,14 +15,13 @@
  */
 
 import type { MolAnlManager } from '@cuemol/core/src/wrappers/MolAnlManager'
-import { superposeMol } from '@renderer/worker/server/services/molops/superposeMol'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { SuperposeAlgo } from '@renderer/worker/shared/superposeTypes'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { isDefaulted, resolveMolSelection } from './helpers'
+import { isDefaulted, resolveMolSelection, runOp } from './helpers'
 import type { MolSelection } from './helpers'
 
 /** The molecule and native selection an RMSD call takes. */
@@ -54,26 +53,24 @@ function resolvePair(
   return { ok: true, mob: mob.target, ref: ref.target }
 }
 
-/** Run the superposition. The mobile molecule moves; the target stays. */
-function superpose(
+/** Run the superposition (`superpose`). The mobile molecule moves; the target stays. */
+async function superpose(
   ctx: WorkerContext,
   cc: CmdContext,
   algo: SuperposeAlgo,
   mob: MolSelection,
   ref: MolSelection,
-): CmdOutcome {
-  const res = superposeMol(ctx, {
-    sceneId: cc.sceneId,
-    viewId: cc.viewId,
-    algo,
-    refObjId: ref.obj.uid,
-    refSel: ref.selStr,
-    movObjId: mob.obj.uid,
+): Promise<CmdOutcome> {
+  const res = await runOp(ctx, cc, 'superpose', {
+    movId: mob.obj.uid,
+    refId: ref.obj.uid,
     movSel: mob.selStr,
-    useprop: false,
-    autoRecenter: false,
+    refSel: ref.selStr,
+    algo,
+    pivot: null,
+    keepAsProperty: false,
   })
-  if (!res.ok) return { ok: false, error: `Error: superposition failed: ${res.error ?? 'unknown reason'}` }
+  if (!res.ok) return { ok: false, error: `Error: superposition failed: ${res.error.replace(/^Error: /, '')}` }
   return { ok: true }
 }
 
@@ -122,7 +119,7 @@ function structCommand(name: 'align' | 'super'): PymCommand {
       { source: 'objects', description: 'object', suffix: ', ' },
       { source: 'objects', description: 'object', suffix: '' },
     ],
-    run(ctx, args, cc) {
+    async run(ctx, args, cc) {
       for (const [n, d] of tuningParams(name)) {
         if (!SILENT.has(n) && !isDefaulted(args[n], d)) cc.warn(`${name}: ${n} is ignored (US-align chooses its own)`)
       }
@@ -130,7 +127,7 @@ function structCommand(name: 'align' | 'super'): PymCommand {
       if (!pair.ok) return pair
       // transform=0: report the RMSD without moving anything.
       if (args.transform.trim() !== '0') {
-        const fitted = superpose(ctx, cc, 'USalign', pair.mob, pair.ref)
+        const fitted = await superpose(ctx, cc, 'USalign', pair.mob, pair.ref)
         if (!fitted.ok) return fitted
       }
 
@@ -166,7 +163,7 @@ const pairFit: PymCommand = {
     { source: 'selections', description: 'selection', suffix: ', ' },
     { source: 'selections', description: 'selection', suffix: '' },
   ],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const pair = resolvePair(ctx, cc, args.mobile, args.target)
     if (!pair.ok) return pair
 
@@ -180,7 +177,7 @@ const pairFit: PymCommand = {
       return { ok: false, error: `Error: atom counts differ (${nMob} vs ${nRef}); pair_fit needs matching atoms` }
     }
 
-    const fitted = superpose(ctx, cc, 'LSQ', pair.mob, pair.ref)
+    const fitted = await superpose(ctx, cc, 'LSQ', pair.mob, pair.ref)
     if (!fitted.ok) return fitted
 
     const mgr = ctx.svc.getService('MolAnlManager') as MolAnlManager | null

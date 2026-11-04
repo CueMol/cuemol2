@@ -9,7 +9,8 @@
  * accepts in any order, so the line does not depend on the positional order.
  */
 
-import type { AtomSpec, ParamMap } from './params'
+import type { AtomSpec, ParamKind, ParamMap } from './params'
+import { numberListSize } from './params'
 
 /** The semantic kinds whose value is a node uid. */
 const REF_SEMANTICS = new Set(['object', 'renderer', 'node'])
@@ -65,7 +66,7 @@ function argText(value: unknown, kind: string, ref: string | undefined, list: 'n
   if (kind === 'atoms' && Array.isArray(value)) {
     return atomList(value as AtomSpec[])
   }
-  if (kind === 'vec3' && Array.isArray(value)) return value.map(String).join(' ')
+  if (numberListSize(kind as ParamKind) !== null && Array.isArray(value)) return value.map(String).join(' ')
   return quoteArg(String(value))
 }
 

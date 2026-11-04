@@ -14,18 +14,10 @@
  * file, so it runs outside the submission's transaction (`outsideTxn`).
  */
 
-import { saveScene } from '@renderer/worker/server/services/scene/saveScene'
-import { exportScene, getSceneExportInfo } from '@renderer/worker/server/services/scene/exportImage'
 import { writePng } from './miscCommands'
-import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
-import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
-import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import type { CmdOutcome, PymCommand } from './types'
-import { isDefaulted, resolveMolSelection, resolvePath } from './helpers'
-
-/** Object writer categories, as the StreamManager numbers them. */
-const OBJ_WRITER_CATEGORY = 1
+import type { PymCommand } from './types'
+import { isDefaulted, resolveMolSelection, resolvePath, runOp } from './helpers'
 
 /** File formats this console can write, by the format name PyMOL uses. */
 const MOL_WRITERS: Readonly<Record<string, string>> = {
@@ -61,58 +53,6 @@ function formatOf(filePath: string, format: string): string {
   return ext === 'ent' ? 'pdb' : ext
 }
 
-interface ObjWriter {
-  setPath(path: string): void
-  sel: unknown
-  convToLink: boolean
-  attach(obj: unknown): void
-  write(): void
-  detach(): void
-}
-
-/** Write one molecule, or the part `selStr` covers, with `writerName`. */
-function writeMolecule(
-  ctx: WorkerContext,
-  sceneId: number,
-  objId: number,
-  selStr: string,
-  writerName: string,
-  filePath: string,
-): CmdOutcome {
-  const scene = getSceneOrNull(ctx, sceneId)
-  const obj = scene?.getObject(objId)
-  if (!obj) return { ok: false, error: 'Error: the molecule is gone' }
-
-  let writer: ObjWriter | null
-  try {
-    writer = ctx.strMgr.createHandler(writerName, OBJ_WRITER_CATEGORY) as unknown as ObjWriter | null
-  } catch {
-    writer = null
-  }
-  if (!writer) return { ok: false, error: `Error: no ${writerName} writer in this build` }
-
-  let attached = false
-  try {
-    writer.setPath(filePath)
-    if (selStr !== '*') {
-      const sel = makeSel(ctx, selStr, sceneId)
-      if (!sel) return { ok: false, error: 'Error: the selection did not compile' }
-      writer.sel = sel
-    }
-    writer.convToLink = false
-    writer.attach(obj)
-    attached = true
-    writer.write()
-  } catch (e) {
-    return { ok: false, error: `Error: cannot write ${filePath}: ${e instanceof Error ? e.message : String(e)}` }
-  } finally {
-    if (attached) {
-      try { writer.detach() } catch { /* already detached */ }
-    }
-  }
-  return { ok: true }
-}
-
 const save: PymCommand = {
   name: 'save',
   params: [
@@ -130,32 +70,31 @@ const save: PymCommand = {
   summary: 'Write a molecule (or part of one) to .pdb / .sdf / .pqr, the scene to .qsc, or the view to .png / .pov / .stl.',
   completions: [null, { source: 'selections', description: 'selection', suffix: ', ' }],
   outsideTxn: (args) => formatOf(args.filename ?? '', args.format ?? '') === 'qsc',
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const filePath = resolvePath(cc.cwd, args.filename.trim())
     const format = formatOf(filePath, args.format)
     if (!isDefaulted(args.state, '-1')) cc.warn('save: state is ignored (the current coordinates are written)')
 
     if (format === 'qsc') {
-      const res = saveScene(ctx, { sceneId: cc.sceneId, viewId: cc.viewId, filePath })
+      const res = await runOp(ctx, cc, 'save_scene', { path: filePath })
       if (!res.ok) return { ok: false, error: `Error: cannot save the scene to ${filePath}` }
       cc.print(` Save: wrote "${filePath}".`)
       return { ok: true }
     }
 
     if (format === 'png') {
-      return writePng(ctx, cc, { filename: filePath, width: '0', height: '0', dpi: '-1', ray: '0' })
+      return writePng(ctx, cc, { filename: filePath, width: '0', height: '0', dpi: '-1' })
     }
     const exporter = SCENE_EXPORTERS[format]
     if (exporter !== undefined) {
-      const info = getSceneExportInfo(ctx, { sceneId: cc.sceneId, viewId: cc.viewId })
-      if (!info.ok) return { ok: false, error: 'Error: no active view' }
-      const res = exportScene(ctx, {
-        sceneId: cc.sceneId,
-        viewId: cc.viewId,
-        filePath,
-        exporterName: exporter,
-        width: info.width,
-        height: info.height,
+      // The view's own size, as the Export dialog's default.
+      const res = await runOp(ctx, cc, 'export_scene', {
+        path: filePath,
+        format: exporter,
+        width: null,
+        height: null,
+        transparent: null,
+        dpi: null,
       })
       if (!res.ok) return { ok: false, error: `Error: cannot write ${filePath}` }
       cc.print(` Save: wrote "${filePath}".`)
@@ -181,8 +120,16 @@ const save: PymCommand = {
       if (hits.count === null) return { ok: false, error: 'Error: the selection did not compile' }
       if (hits.count === 0) return { ok: false, error: `Error: "${args.selection}" matched no atoms; nothing written` }
     }
-    const res = writeMolecule(ctx, cc.sceneId, target.target.obj.uid, target.target.selStr, writerName, filePath)
-    if (!res.ok) return res
+    // A save leaves the object's source as it is (link: false): PyMOL's save
+    // writes a copy, and a part is not the object anyway.
+    const res = await runOp(ctx, cc, 'save_object', {
+      objId: target.target.obj.uid,
+      fileName: filePath,
+      selection: target.target.selStr === '*' ? null : target.target.selStr,
+      format: writerName,
+      link: false,
+    })
+    if (!res.ok) return { ok: false, error: `Error: cannot write ${filePath}: ${res.error.replace(/^Error: /, '')}` }
     cc.print(` Save: wrote "${filePath}".`)
     return { ok: true }
   },

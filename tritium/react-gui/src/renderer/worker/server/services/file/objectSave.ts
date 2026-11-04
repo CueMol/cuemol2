@@ -22,6 +22,7 @@ import { parseSceneTreeJSON } from '@renderer/worker/shared/sceneTreeTypes';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { isHiddenObjWriter } from '@renderer/worker/server/services/helpers/readerFilter';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 
 // --- helpers ---
 
@@ -214,6 +215,13 @@ export interface SaveObjectToFileArgs {
     path: string;
     /** Writer name from `getObjectSaveInfo.filters[i].name`. */
     writerName: string;
+    /** Write only these atoms (a compiled-on-the-spot selection). Omitted writes the whole object. */
+    selection?: string;
+    /**
+     * Point the object's `src` at the written file (UXP's Save as). Default
+     * true; always false with a selection, since a part is not the object.
+     */
+    link?: boolean;
 }
 
 export interface SaveObjectToFileResult {
@@ -223,6 +231,7 @@ export interface SaveObjectToFileResult {
 interface ObjWriterLike {
     setPath(path: string): void;
     convToLink: boolean;
+    sel: unknown;
     attach(obj: CueMolObject): void;
     write(): void;
     detach(): CueMolObject | null;
@@ -250,10 +259,16 @@ export function saveObjectToFile(
     let attached = false;
     try {
         writer.setPath(args.path);
+        const partial = args.selection !== undefined && args.selection.trim() !== '' && args.selection.trim() !== '*';
+        if (partial) {
+            const sel = makeSel(ctx, args.selection as string, args.sceneId);
+            if (!sel) return { ok: false };
+            writer.sel = sel;
+        }
         // UXP sets convToLink=true so the in-memory object is rewritten to
-        // reference the new file as its `src`. Without it the obj remains
-        // detached from the file.
-        writer.convToLink = true;
+        // reference the new file as its `src`. A partial write must not: the
+        // object would then load back from a file holding only part of it.
+        writer.convToLink = !partial && args.link !== false;
         writer.attach(obj);
         attached = true;
         writer.write();

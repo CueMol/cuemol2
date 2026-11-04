@@ -4,13 +4,14 @@
  * by the op's parameter declarations.
  *
  * Writing: a node uid is written as its path (and the uid as a hint), a
- * `vec3` as `x y z`, a list of atoms as `<atom>` children, anything else as
+ * `vec3` / `quat` as `x y z` / `a x y z`, a list of atoms as `<atom>` children, anything else as
  * text; a null argument is left out. Reading gives the JSON shape
  * `readToolArgs` takes -- the same reader MCP and the agent use -- with node
  * paths resolved by the caller, which knows the scene.
  */
 
 import type { AtomSpec, Param, ParamMap } from '@renderer/worker/server/catalog/params'
+import { numberListSize } from '@renderer/worker/server/catalog/params'
 import type { QaxArg, QaxItem } from './model'
 
 /** The semantic kinds whose value is a node uid. */
@@ -40,7 +41,7 @@ export function opToQax(
       out.push({ name: argName, ...(refs[argName] !== undefined ? { path: refs[argName] } : {}), uid: v })
     } else if (p.kind === 'atoms' && Array.isArray(v)) {
       out.push({ name: argName, atoms: (v as AtomSpec[]).map((a) => ({ chain: a.chain, resid: a.resid, name: a.atomName })) })
-    } else if (p.kind === 'vec3' && Array.isArray(v)) {
+    } else if (numberListSize(p.kind) !== null && Array.isArray(v)) {
       out.push({ name: argName, text: v.map(String).join(' ') })
     } else {
       out.push({ name: argName, text: String(v) })
@@ -73,7 +74,7 @@ export function qaxToInput(
       input[a.name] = id
     } else if (a.atoms) {
       input[a.name] = a.atoms.map((t) => ({ chain: t.chain, resid: t.resid, atomName: t.name }))
-    } else if (p.kind === 'vec3') {
+    } else if (numberListSize(p.kind) !== null) {
       input[a.name] = (a.text ?? '').split(/\s+/).filter((w) => w !== '').map(Number)
     } else {
       input[a.name] = a.text ?? ''

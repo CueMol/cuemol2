@@ -8,6 +8,7 @@ import {
   unusedRendererName,
 } from '@renderer/worker/server/services/rend/getNewRendererOptions'
 import { createRendererOnObject } from '@renderer/worker/server/services/rend/createRendererOnObject'
+import type { MapCenterPolicy } from '@renderer/worker/shared/fileOpenTypes'
 import { changeRendererType as changeRendererTypeService } from '@renderer/worker/server/services/rend/changeRendererType'
 import { getRendererChangeTypes } from '@renderer/worker/server/services/rend/getRendererChangeTypes'
 import {
@@ -84,6 +85,7 @@ function rendererOptions(
   rendererName: string,
   sel: string | null,
   centerView = false,
+  mapCenterPolicy: MapCenterPolicy = 'auto',
 ): Record<string, unknown> {
   return {
     objectName,
@@ -92,7 +94,7 @@ function rendererOptions(
     selectionEnabled: sel !== null,
     selection: sel ?? '*',
     centerView,
-    mapCenterPolicy: 'auto',
+    mapCenterPolicy,
   }
 }
 
@@ -111,6 +113,12 @@ export const createRenderer = defineOp({
       selection('Draw only this selection. Null draws the whole object. Check it with count_selection first.'),
     ),
     centerView: optional(boolean(CENTER_VIEW_DESC)),
+    mapCenterPolicy: optional(
+      enumOf(
+        ['auto', 'setMapCenter', 'moveViewCenter'],
+        'For a map renderer: setMapCenter draws it around the view centre, moveViewCenter moves the view to the map. Null or auto picks by the map kind.',
+      ),
+    ),
   },
   mutates: true,
   describe: (a, n) => `Add ${a.rendererType}${a.name ? ` ${a.name}` : ''} to ${n('objId')}${a.selection ? ` (${a.selection})` : ''}`,
@@ -142,6 +150,7 @@ export const createRenderer = defineOp({
         name,
         args.selection,
         args.centerView ?? false,
+        args.mapCenterPolicy ?? 'auto',
       ) as never,
     })
     if (!result.ok) return { ok: false, error: 'The renderer could not be created.' }

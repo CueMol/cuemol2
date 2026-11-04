@@ -17,7 +17,7 @@
  */
 
 /** The `.qif` scalar types, plus the one structured kind ops need. */
-export type ParamKind = 'boolean' | 'integer' | 'real' | 'string' | 'enum' | 'vec3' | 'atoms'
+export type ParamKind = 'boolean' | 'integer' | 'real' | 'string' | 'enum' | 'vec3' | 'quat' | 'atoms'
 
 /**
  * What a value means beyond its type.
@@ -207,6 +207,16 @@ export function path(description: string, readerName?: string): Param<string> {
 /** A point or direction (`object<Vector>`): x, y, z. */
 export function vec3(description: string): Param<[number, number, number]> {
   return param('vec3', description)
+}
+
+/** A rotation (`object<Quat>`): a, x, y, z, with a the scalar part. */
+export function quat(description: string): Param<[number, number, number, number]> {
+  return param('quat', description)
+}
+
+/** How many numbers a fixed-length number list kind holds (`vec3`, `quat`), or null for any other kind. */
+export function numberListSize(kind: ParamKind): number | null {
+  return kind === 'vec3' ? 3 : kind === 'quat' ? 4 : null
 }
 
 /** An ordered list of atoms, each named by chain, residue and atom name. */

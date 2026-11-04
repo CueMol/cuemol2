@@ -5,6 +5,8 @@
  * None of these are undoable, matching both PyMOL and CueMol: camera
  * manipulation is transient view state, not a scene edit (ADR-0025). `view`
  * is the exception -- storing one creates a camera, which is a scene object.
+ * Each move is a camera op (`set_view`, `focus_selection`, `orient_view`, ...),
+ * so a line that also edits the scene keeps the move as a step to replay.
  *
  * CueMol has no "fit everything" primitive; `fitView` belongs to an object.
  * So `zoom` and `center` without an object fit the first one in the scene and
@@ -12,19 +14,10 @@
  */
 
 import type { GUIView } from '@cuemol/core/src/wrappers/GUIView'
-import type { Quat } from '@cuemol/core/src/wrappers/Quat'
-import {
-  applyCameraToView,
-  destroyCamera,
-  saveViewToCamera,
-} from '@renderer/worker/server/services/camera/cameraOps'
-import { focusOnNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
-import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
-import { rotateView, translateView } from '@renderer/worker/server/services/view/viewXform'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { ALL, formatNameList, isDefaulted, moleculeSelections, resolveObjects, toNumber } from './helpers'
+import { ALL, formatNameList, isDefaulted, moleculeSelections, resolveObjects, runOp, toNumber } from './helpers'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { camToPymol, formatViewMatrix, parseViewMatrix, pymolToCam } from './viewMatrix'
 import { interpretShortcut } from '@plugins/console/worker/dialect-api'
@@ -47,12 +40,12 @@ function toAxis(raw: string): Axis | null {
  * object), so that becomes the first object with a warning -- an honest
  * partial beats quietly framing one object and calling it "all".
  */
-function fitTo(
+async function fitTo(
   ctx: WorkerContext,
   cc: CmdContext,
   pattern: string,
   mode: 'zoom' | 'center',
-): CmdOutcome {
+): Promise<CmdOutcome> {
   const wanted = pattern.trim()
   const wantsAll = wanted === '' || wanted === ALL || wanted === '*'
   const named = wantsAll ? resolveObjects(ctx, cc.sceneId, 'all') : resolveObjects(ctx, cc.sceneId, wanted)
@@ -63,19 +56,13 @@ function fitTo(
     }
     // `center` moves the centre only; fitting would change the zoom too.
     if (mode === 'center') {
-      const mol = getSceneOrNull(ctx, cc.sceneId)?.getObject(named[0].uid) as unknown as FitMol | null
-      const view = ctx.sceMgr.getView(cc.viewId) as unknown as FitView | null
-      if (mol && view && typeof mol.getCenterPos === 'function') {
-        view.setViewCenter(mol.getCenterPos(false))
-        return { ok: true }
+      const mol = getSceneOrNull(ctx, cc.sceneId)?.getObject(named[0].uid) as unknown as CenteredObject | null
+      if (mol && typeof mol.getCenterPos === 'function') {
+        const c = mol.getCenterPos(false)
+        return moveCamera(ctx, cc, { center: [c.x, c.y, c.z] })
       }
     }
-    const res = focusOnNode(ctx, {
-      sceneId: cc.sceneId,
-      viewId: cc.viewId,
-      nodeId: named[0].uid,
-      nodeType: 'object',
-    })
+    const res = await runOp(ctx, cc, 'focus_node', { nodeId: named[0].uid, nodeType: 'object' })
     if (!res.ok) return { ok: false, error: `Error: cannot fit the view to "${named[0].name}"` }
     return { ok: true }
   }
@@ -92,71 +79,39 @@ function fitTo(
   if (hits.count === null) return { ok: false, error: `Error: "${wanted}" did not compile` }
   if (hits.count === 0) return { ok: false, error: `Error: "${wanted}" matched nothing` }
 
-  // The molecule's own selection is left alone: the GUI's zoom-to-selection
-  // services set it first, which here would leave the matched atoms
-  // highlighted after every zoom.
-  const mol = getSceneOrNull(ctx, cc.sceneId)?.getObject(obj.uid) as unknown as FitMol | null
-  const view = ctx.sceMgr.getView(cc.viewId) as unknown as FitView | null
-  if (!mol || !view) return { ok: false, error: 'Error: no active view' }
-  if (mode === 'zoom') {
-    const sel = makeSel(ctx, selStr, cc.sceneId)
-    if (!sel) return { ok: false, error: `Error: "${wanted}" did not compile` }
-    mol.fitView2(view, sel)
-    return { ok: true }
-  }
-  const center = selectionCenter(ctx, cc.sceneId, mol, selStr)
-  if (!center) return { ok: false, error: `Error: "${wanted}" matched nothing` }
-  view.setViewCenter(center)
-  return { ok: true }
+  // focus_selection leaves the molecule's own selection alone: the GUI's
+  // zoom-to-selection sets it first, which here would leave the matched
+  // atoms highlighted after every zoom.
+  const res = await runOp(ctx, cc, 'focus_selection', { objId: obj.uid, selection: selStr, zoom: mode === 'zoom' })
+  return res.ok ? { ok: true } : res
 }
 
-/** The members fitting and centring use, as the wrappers expose them. */
-interface FitMol {
-  fitView2(view: unknown, sel: unknown): void
-  getCenterPos(fsel: boolean): unknown
-}
-interface FitView {
-  setViewCenter(pos: unknown): void
+/** The member `center` reads an object's centre from, as the wrappers expose it. */
+interface CenteredObject {
+  getCenterPos(fsel: boolean): { x: number; y: number; z: number }
 }
 
-interface AtomIter {
-  target: unknown
-  sel: unknown
-  first(): void
-  next(): void
-  hasMore(): boolean
-  get(): { pos: { x: number; y: number; z: number } }
+/** The camera fields `set_view` takes; the rest are left as they are. */
+interface ViewChange {
+  center?: [number, number, number]
+  rotation?: [number, number, number, number]
+  distance?: number
+  slab?: number
+  zoom?: number
 }
 
-/**
- * The centre of the atoms `selStr` matches, as a CueMol Vector.
- *
- * MolCoord.getCenterPos(true) reads the molecule's own selection, which
- * would have to be changed first; the atoms are averaged here instead.
- */
-function selectionCenter(ctx: WorkerContext, sceneId: number, mol: unknown, selStr: string): unknown {
-  const sel = makeSel(ctx, selStr, sceneId)
-  const iter = ctx.svc.createObj('AtomIterator') as unknown as AtomIter | null
-  const out = ctx.svc.createObj('Vector') as unknown as { x: number; y: number; z: number } | null
-  if (!sel || !iter || !out) return null
-  iter.target = mol
-  iter.sel = sel
-  let n = 0
-  let x = 0
-  let y = 0
-  let z = 0
-  for (iter.first(); iter.hasMore(); iter.next()) {
-    const p = iter.get().pos
-    x += p.x
-    y += p.y
-    z += p.z
-    n += 1
-  }
-  if (n === 0) return null
-  out.x = x / n
-  out.y = y / n
-  out.z = z / n
-  return out
+/** Move the camera through `set_view`, every field not given left as it is. */
+async function moveCamera(ctx: WorkerContext, cc: CmdContext, change: ViewChange): Promise<CmdOutcome> {
+  const res = await runOp(ctx, cc, 'set_view', {
+    zoom: change.zoom ?? null,
+    slab: change.slab ?? null,
+    distance: change.distance ?? null,
+    center: change.center ?? null,
+    rotation: change.rotation ?? null,
+    fitSlab: null,
+    objId: null,
+  })
+  return res.ok ? { ok: true } : { ok: false, error: 'Error: no active view' }
 }
 
 const zoom: PymCommand = {
@@ -172,7 +127,7 @@ const zoom: PymCommand = {
   mutates: false,
   summary: 'Fit the view to an object or a selection.',
   completions: [{ source: 'selections', description: 'selection', suffix: '' }],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     for (const [name, def] of [
       ['buffer', '0.0'],
       ['state', '0'],
@@ -197,7 +152,7 @@ const center: PymCommand = {
   mutates: false,
   summary: 'Centre the view on an object or a selection.',
   completions: [{ source: 'selections', description: 'selection', suffix: '' }],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     for (const [name, def] of [
       ['state', '0'],
       ['origin', '1'],
@@ -225,7 +180,7 @@ const orient: PymCommand = {
   mutates: false,
   summary: 'Turn the view to the principal axes of a selection, then fit it.',
   completions: [{ source: 'selections', description: 'selection', suffix: '' }],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     for (const [name, def] of [
       ['state', '0'],
       ['animate', '0'],
@@ -242,19 +197,9 @@ const orient: PymCommand = {
     const hits = getSelHitCount(ctx, { sceneId: cc.sceneId, molId: obj.uid, selStr })
     if (hits.count === null) return { ok: false, error: `Error: "${args.selection}" did not compile` }
     if (hits.count === 0) return { ok: false, error: `Error: "${args.selection}" matched nothing` }
-    const mol = getSceneOrNull(ctx, cc.sceneId)?.getObject(obj.uid) as unknown as OrientMol | null
-    const view = ctx.sceMgr.getView(cc.viewId)
-    const sel = makeSel(ctx, selStr, cc.sceneId)
-    if (!mol || !view) return { ok: false, error: 'Error: no active view' }
-    if (!sel) return { ok: false, error: `Error: "${args.selection}" did not compile` }
-    mol.orientView(view, sel)
-    return { ok: true }
+    const res = await runOp(ctx, cc, 'orient_view', { objId: obj.uid, selection: selStr })
+    return res.ok ? { ok: true } : res
   },
-}
-
-/** The member `orient` uses, as the MolCoord wrapper exposes it. */
-interface OrientMol {
-  orientView(view: unknown, sel: unknown): void
 }
 
 const reset: PymCommand = {
@@ -263,16 +208,9 @@ const reset: PymCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Reset the camera rotation and fit the view.',
-  run(ctx, args, cc) {
-    const view = ctx.sceMgr.getView(cc.viewId) as GUIView | null
-    if (!view) return { ok: false, error: 'Error: no active view' }
-    const quat = ctx.svc.createObj('Quat') as unknown as Quat | null
-    if (!quat) return { ok: false, error: 'Error: could not reset the rotation' }
-    quat.a = 1
-    quat.x = 0
-    quat.y = 0
-    quat.z = 0
-    ;(view as unknown as { setRotQuat: (q: unknown) => void }).setRotQuat(quat)
+  async run(ctx, args, cc) {
+    const turned = await moveCamera(ctx, cc, { rotation: [1, 0, 0, 0] })
+    if (!turned.ok) return turned
     return fitTo(ctx, cc, args.object, 'zoom')
   },
 }
@@ -283,17 +221,12 @@ const turn: PymCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Rotate the camera about an axis, in degrees.',
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const axis = toAxis(args.axis)
     if (axis === null) return { ok: false, error: `Error: axis must be x, y or z: "${args.axis}"` }
     const angle = toNumber(args.angle)
     if (angle === null) return { ok: false, error: `Error: angle must be a number: "${args.angle}"` }
-    const res = rotateView(ctx, {
-      viewId: cc.viewId,
-      rotX: axis === 'x' ? angle : 0,
-      rotY: axis === 'y' ? angle : 0,
-      rotZ: axis === 'z' ? angle : 0,
-    })
+    const res = await runOp(ctx, cc, 'rotate_view', { axis, angle })
     return res.ok ? { ok: true } : { ok: false, error: 'Error: no active view' }
   },
 }
@@ -304,15 +237,14 @@ const move: PymCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Translate the camera along an axis.',
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const axis = toAxis(args.axis)
     if (axis === null) return { ok: false, error: `Error: axis must be x, y or z: "${args.axis}"` }
     const dist = toNumber(args.distance)
     if (dist === null) {
       return { ok: false, error: `Error: distance must be a number: "${args.distance}"` }
     }
-    const res = translateView(ctx, {
-      viewId: cc.viewId,
+    const res = await runOp(ctx, cc, 'pan_view', {
       dx: axis === 'x' ? dist : 0,
       dy: axis === 'y' ? dist : 0,
       dz: axis === 'z' ? dist : 0,
@@ -351,7 +283,7 @@ const view: PymCommand = {
     { source: 'cameras', description: 'view', suffix: '' },
     { source: 'viewActions', description: 'view action', suffix: '' },
   ],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     if (!isDefaulted(args.animate, '-1')) cc.warn('view: animate is ignored (not supported)')
     // PyMOL takes unique prefixes (`view v1, st`), as with command names.
     const asked = args.action.trim().toLowerCase()
@@ -365,9 +297,8 @@ const view: PymCommand = {
     if (key === '*') {
       if (action === 'clear') {
         for (const name of storedCameraNames(ctx, cc.sceneId)) {
-          destroyCamera(ctx, { sceneId: cc.sceneId, name })
+          await runOp(ctx, cc, 'delete_camera', { name })
         }
-        cc.markMutated()
         return { ok: true }
       }
       cc.print(' view: stored views:')
@@ -378,26 +309,22 @@ const view: PymCommand = {
     switch (action) {
       case 'store':
       case 'update': {
-        const res = saveViewToCamera(ctx, {
-          sceneId: cc.sceneId,
-          viewId: cc.viewId,
-          name: key,
-        })
+        const res = await runOp(ctx, cc, 'save_camera', { name: key, withVisibility: null })
         if (!res.ok) return { ok: false, error: `Error: could not store view "${key}"` }
-        cc.markMutated()
         cc.print(` view: "${key}" stored.`)
         return { ok: true }
       }
       case 'recall': {
-        const res = applyCameraToView(ctx, { sceneId: cc.sceneId, viewId: cc.viewId, name: key })
+        if (!storedCameraNames(ctx, cc.sceneId).includes(key)) return { ok: false, error: `Error: no view named "${key}"` }
+        const res = await runOp(ctx, cc, 'apply_camera', { name: key, withVisibility: null })
         if (!res.ok) return { ok: false, error: `Error: no view named "${key}"` }
         cc.print(` view: "${key}" recalled.`)
         return { ok: true }
       }
       case 'clear': {
-        const res = destroyCamera(ctx, { sceneId: cc.sceneId, name: key })
+        if (!storedCameraNames(ctx, cc.sceneId).includes(key)) return { ok: false, error: `Error: no view named "${key}"` }
+        const res = await runOp(ctx, cc, 'delete_camera', { name: key })
         if (!res.ok) return { ok: false, error: `Error: no view named "${key}"` }
-        cc.markMutated()
         return { ok: true }
       }
       default:
@@ -447,28 +374,21 @@ function readCam(ctx: WorkerContext, viewId: number): CamState | null {
   }
 }
 
-/** Put `cam` on the active view. */
-function writeCam(ctx: WorkerContext, viewId: number, cam: CamState): boolean {
-  const v = ctx.sceMgr.getView(viewId) as unknown as CamView | null
-  if (!v) return false
-  const q = ctx.svc.createObj('Quat') as unknown as CamView['rotation'] | null
-  const c = ctx.svc.createObj('Vector') as unknown as CamView['center'] | null
-  if (!q || !c) return false
-  q.a = cam.quat.a
-  q.x = cam.quat.x
-  q.y = cam.quat.y
-  q.z = cam.quat.z
-  v.setRotQuat(q)
-  c.x = cam.center[0]
-  c.y = cam.center[1]
-  c.z = cam.center[2]
-  v.center = c
-  // Distance first: the slab is clamped to twice the distance.
-  v.distance = cam.distance
-  v.slab = cam.slab
-  v.zoom = cam.zoom
-  v.perspective = cam.perspective
-  return true
+/**
+ * Put `cam` on the active view: `set_view` (rotation, centre, distance before
+ * slab, zoom) and `set_projection`.
+ */
+async function writeCam(ctx: WorkerContext, cc: CmdContext, cam: CamState): Promise<CmdOutcome> {
+  const placed = await moveCamera(ctx, cc, {
+    rotation: [cam.quat.a, cam.quat.x, cam.quat.y, cam.quat.z],
+    center: cam.center,
+    distance: cam.distance,
+    slab: cam.slab,
+    zoom: cam.zoom,
+  })
+  if (!placed.ok) return placed
+  const projected = await runOp(ctx, cc, 'set_projection', { perspective: cam.perspective })
+  return projected.ok ? { ok: true } : { ok: false, error: 'Error: no active view' }
 }
 
 const getView: PymCommand = {
@@ -496,7 +416,7 @@ const setView: PymCommand = {
   mode: 'strict',
   mutates: false,
   summary: 'Set the camera from the 18 numbers get_view prints.',
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const v = parseViewMatrix(args.view)
     if (!v) return { ok: false, error: 'Error: set_view needs 18 numbers, as get_view prints them' }
     if (!isDefaulted(args.animate, '0')) cc.warn('set_view: animate is ignored')
@@ -504,8 +424,7 @@ const setView: PymCommand = {
     if (Math.abs(v[9]) > 1e-6 || Math.abs(v[10]) > 1e-6) {
       cc.warn('the view is off-centre; it is shown the same, but turns about the screen centre')
     }
-    if (!writeCam(ctx, cc.viewId, pymolToCam(v))) return { ok: false, error: 'Error: no active view' }
-    return { ok: true }
+    return writeCam(ctx, cc, pymolToCam(v))
   },
 }
 

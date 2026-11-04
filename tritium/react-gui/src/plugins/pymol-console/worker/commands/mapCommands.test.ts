@@ -16,7 +16,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 /** A stub taking whatever the service takes. */
 type Stub = ReturnType<typeof vi.fn<(...args: unknown[]) => unknown>>
 
-const { services } = vi.hoisted(() => {
+const { services, ops } = vi.hoisted(() => {
   const stub = (impl?: (...args: unknown[]) => unknown) =>
     vi.fn<(...args: unknown[]) => unknown>(impl ?? (() => undefined))
   return {
@@ -24,13 +24,20 @@ const { services } = vi.hoisted(() => {
       listSceneObjects: stub(),
       listMapRenderers: stub(() => ({ items: [] })),
       getNewRendererOptions: stub(() => ({ ok: true, rendererTypes: ['contour', 'isosurf'] })),
-      createRendererOnObject: stub(() => ({ ok: true, newRendId: 99 })),
-      setMapRendererProp: stub(() => ({ ok: true })),
-      setGenericProp: stub(() => ({ ok: true, entries: [] })),
-      redrawMapCenter: stub(() => ({ ok: true, moved: true })),
     } satisfies Record<string, Stub>,
+    /** Every op the commands ran: the scene writes. */
+    ops: [] as { name: string; args: Record<string, unknown> }[],
   }
 })
+
+vi.mock('@renderer/worker/server/catalog', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  findOp: (name: string) => ({ name }),
+  invokeOp: async (op: { name: string }, _ctx: unknown, args: Record<string, unknown>) => {
+    ops.push({ name: op.name, args })
+    return { ok: true, data: op.name === 'create_renderer' ? { rendererId: 99 } : undefined }
+  },
+}))
 
 vi.mock('@renderer/worker/server/services/scene/listSceneObjects', () => ({
   listSceneObjects: (...a: unknown[]) => services.listSceneObjects(...a),
@@ -41,22 +48,10 @@ vi.mock('@renderer/worker/server/services/map/renderers', () => ({
 vi.mock('@renderer/worker/server/services/map/state', () => ({
   getMapRendererState: () => ({ state: null }),
 }))
-vi.mock('@renderer/worker/server/services/map/props', () => ({
-  setMapRendererProp: (...a: unknown[]) => services.setMapRendererProp(...a),
-  redrawMapCenter: (...a: unknown[]) => services.redrawMapCenter(...a),
-}))
 vi.mock('@renderer/worker/server/services/rend/getNewRendererOptions', () => ({
   getNewRendererOptions: (...a: unknown[]) => services.getNewRendererOptions(...a),
   getRendPresetTypes: vi.fn(),
   collectRendPresetTypes: vi.fn(),
-}))
-vi.mock('@renderer/worker/server/services/rend/createRendererOnObject', () => ({
-  createRendererOnObject: (...a: unknown[]) => services.createRendererOnObject(...a),
-}))
-vi.mock('@renderer/worker/server/services/props/write', () => ({
-  setGenericProp: (...a: unknown[]) => services.setGenericProp(...a),
-  setGenericProps: vi.fn(),
-  resetGenericProps: vi.fn(),
 }))
 vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({
   getSceneOrNull: () => ({ getObject: () => ({ map_type_resolved: 'xtal' }), getRenderer: () => ({}) }),
@@ -74,10 +69,13 @@ const cc = {
   warn: vi.fn(),
   markMutated: vi.fn(),
   setCwd: vi.fn(),
+  streamId: (tag: string) => tag,
+  noteStream: vi.fn(),
+  stopped: () => false,
 } as unknown as CmdContext
 
-/** Run `isomesh` synchronously with the arguments that matter. */
-function isomesh(over: Record<string, string>): { ok: boolean } {
+/** Run `isomesh` with the arguments that matter. */
+async function isomesh(over: Record<string, string>): Promise<{ ok: boolean }> {
   const cmd = MAP_COMMANDS.find((c) => c.name === 'isomesh')
   if (!cmd) throw new Error('no isomesh')
   const args = {
@@ -92,15 +90,12 @@ function isomesh(over: Record<string, string>): { ok: boolean } {
     quiet: '1',
     ...over,
   }
-  return cmd.run(ctx, args, cc) as { ok: boolean }
+  return (await cmd.run(ctx, args, cc)) as { ok: boolean }
 }
 
-/** The value written to one boundary property, if it was written. */
-function written(propName: string): string | number | undefined {
-  const call = services.setGenericProp.mock.calls.find(
-    (c) => (c[1] as { propName?: string } | undefined)?.propName === propName,
-  )
-  return (call?.[1] as { value?: string | number } | undefined)?.value
+/** The value written to one boundary property (`set_node_prop`, as text), if it was written. */
+function written(propName: string): unknown {
+  return ops.find((o) => o.name === 'set_node_prop' && o.args.prop === propName)?.args.value
 }
 
 /** A scene holding a map and the named molecules. */
@@ -120,55 +115,53 @@ beforeEach(() => {
     ok: true,
     rendererTypes: ['contour', 'isosurf'],
   })
-  services.createRendererOnObject.mockReturnValue({ ok: true, newRendId: 99 })
-  services.setGenericProp.mockReturnValue({ ok: true, entries: [] })
-  services.setMapRendererProp.mockReturnValue({ ok: true })
+  ops.length = 0
 })
 
 describe('carving a contour against a selection', () => {
-  it('writes the molecule, the translated selection and the radius', () => {
+  it('writes the molecule, the translated selection and the radius', async () => {
     sceneWith(['1crn'])
-    expect(isomesh({ selection: 'resi 1-10', carve: '1.6' })).toEqual({ ok: true })
+    expect(await isomesh({ selection: 'resi 1-10', carve: '1.6' })).toEqual({ ok: true })
     expect(written('bndry_molname')).toBe('1crn')
     expect(written('bndry_sel')).toBe('resi 1:10')
-    expect(written('bndry_rng')).toBe(1.6)
+    expect(written('bndry_rng')).toBe('1.6')
   })
 
-  it('carves against the molecule the selection names', () => {
+  it('carves against the molecule the selection names', async () => {
     // PyMOL would carve against both; CueMol's boundary names one, so the
     // one the user wrote has to win over the first in the scene.
     sceneWith(['1crn', '4ins'])
-    isomesh({ selection: '4ins and resi 5', carve: '2.0' })
+    await isomesh({ selection: '4ins and resi 5', carve: '2.0' })
     expect(written('bndry_molname')).toBe('4ins')
     expect(cc.warn).not.toHaveBeenCalled()
   })
 
-  it('falls back to the first molecule, and says so', () => {
+  it('falls back to the first molecule, and says so', async () => {
     sceneWith(['1crn', '4ins'])
-    isomesh({ selection: 'resi 5', carve: '2.0' })
+    await isomesh({ selection: 'resi 5', carve: '2.0' })
     expect(written('bndry_molname')).toBe('1crn')
     expect(cc.warn).toHaveBeenCalledWith(expect.stringContaining('1crn'))
   })
 
-  it('takes the buffer as the range when no carve is given', () => {
+  it('takes the buffer as the range when no carve is given', async () => {
     // PyMOL sizes the box with buffer and carves with carve; one range does
     // both here, so buffer has to reach it rather than be dropped.
     sceneWith(['1crn'])
-    isomesh({ selection: 'resi 5', buffer: '3.0' })
-    expect(written('bndry_rng')).toBe(3.0)
+    await isomesh({ selection: 'resi 5', buffer: '3.0' })
+    expect(written('bndry_rng')).toBe('3')
   })
 
-  it('prefers carve over buffer when both are given', () => {
+  it('prefers carve over buffer when both are given', async () => {
     sceneWith(['1crn'])
-    isomesh({ selection: 'resi 5', buffer: '3.0', carve: '1.6' })
-    expect(written('bndry_rng')).toBe(1.6)
+    await isomesh({ selection: 'resi 5', buffer: '3.0', carve: '1.6' })
+    expect(written('bndry_rng')).toBe('1.6')
   })
 
-  it('leaves the boundary alone without a selection', () => {
+  it('leaves the boundary alone without a selection', async () => {
     sceneWith(['1crn'])
-    isomesh({})
+    await isomesh({})
     expect(written('bndry_molname')).toBeUndefined()
     // A boxed region is the only one that needs a centre.
-    expect(services.redrawMapCenter).toHaveBeenCalled()
+    expect(ops.map((o) => o.name)).toContain('recenter_map')
   })
 })

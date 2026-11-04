@@ -12,12 +12,14 @@ import {
   setViewXform,
 } from '@renderer/worker/server/services/view/viewXform'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 import { listSceneObjects } from '@renderer/worker/server/services/scene/listSceneObjects'
+import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { VIEW_UNREADABLE } from '../errors'
+import { NO_OBJECT, VIEW_UNREADABLE } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
-import { boolean, enumOf, objectId, optional, real, vec3 } from '../params'
+import { boolean, enumOf, objectId, optional, quat, real, selection, vec3 } from '../params'
 
 export const rotateView = defineOp({
   name: 'rotate_view',
@@ -135,14 +137,15 @@ export const setView = defineOp({
     slab: optional(real('New slab depth in angstroms. Null leaves it.')),
     distance: optional(real('New eye-to-centre distance in angstroms. Null leaves it.')),
     center: optional(vec3('New centre [x, y, z] in angstroms. Null leaves it.')),
+    rotation: optional(quat('New camera rotation as a quaternion [a, x, y, z] (a the scalar part; [1, 0, 0, 0] faces the default way). Null leaves it.')),
     fitSlab: optional(boolean('True fits the slab to the MolCoord objects. Do not also give slab.')),
     objId: optional(objectId('With fitSlab: fit to this object only. Null fits every MolCoord object.')),
   },
   // The camera is not part of the undo history, as with the mouse.
   mutates: false,
-  describe: (a) => `Set the view (${[a.zoom !== null && 'zoom', a.slab !== null && 'slab', a.distance !== null && 'distance', a.center !== null && 'center', a.fitSlab && 'fit slab'].filter(Boolean).join(', ')})`,
+  describe: (a) => `Set the view (${[a.zoom !== null && 'zoom', a.slab !== null && 'slab', a.distance !== null && 'distance', a.center !== null && 'center', a.rotation !== null && 'rotation', a.fitSlab && 'fit slab'].filter(Boolean).join(', ')})`,
   // With nothing given it only reads.
-  replay: (args) => ['zoom', 'slab', 'distance', 'center'].some((k) => args[k] !== null && args[k] !== undefined) || args.fitSlab === true,
+  replay: (args) => ['zoom', 'slab', 'distance', 'center', 'rotation'].some((k) => args[k] !== null && args[k] !== undefined) || args.fitSlab === true,
   expose: { tool: 'core', console: true },
   group: 'viewing',
   aliases: [
@@ -164,10 +167,12 @@ export const setView = defineOp({
       if (typeof fitted === 'string') return { ok: false, error: fitted }
       slab = fitted
     }
-    const anything = args.zoom !== null || slab !== null || args.distance !== null || args.center !== null
+    const anything = args.zoom !== null || slab !== null || args.distance !== null || args.center !== null || args.rotation !== null
     if (anything) {
+      const r = args.rotation
       const res = setViewXform(ctx, {
         viewId: oc.viewId,
+        ...(r !== null ? { rotation: { a: r[0], x: r[1], y: r[2], z: r[3] } } : {}),
         ...(args.zoom !== null ? { zoom: args.zoom } : {}),
         ...(slab !== null ? { slab } : {}),
         ...(args.distance !== null ? { distance: args.distance } : {}),
@@ -179,4 +184,115 @@ export const setView = defineOp({
   },
 })
 
-export const VIEW_OPS = [rotateView, setView]
+/** The MolCoord members that frame the view on a selection. */
+interface FramingMol {
+  fitView2(view: unknown, sel: unknown): void
+  orientView(view: unknown, sel: unknown): void
+}
+
+/** An atom iterator, as `AtomIterator` exposes it. */
+interface AtomIter {
+  target: unknown
+  sel: unknown
+  first(): void
+  next(): void
+  hasMore(): boolean
+  get(): { pos: XYZ }
+}
+
+/**
+ * The object, view and compiled selection a framing op works on, after
+ * checking the selection matches some atoms.
+ */
+function framingTarget(
+  ctx: WorkerContext,
+  sceneId: number,
+  viewId: number,
+  objId: number,
+  selStr: string,
+): { mol: FramingMol; view: unknown; sel: unknown } | { error: string } {
+  const mol = getSceneOrNull(ctx, sceneId)?.getObject(objId) as unknown as FramingMol | null
+  if (!mol) return { error: NO_OBJECT }
+  const view = ctx.sceMgr.getView(viewId)
+  if (!view) return { error: VIEW_UNREADABLE }
+  const hits = getSelHitCount(ctx, { sceneId, molId: objId, selStr })
+  if (hits.count === null) return { error: 'The selection did not compile.' }
+  if (hits.count === 0) return { error: 'The selection matches no atoms.' }
+  const sel = makeSel(ctx, selStr, sceneId)
+  if (!sel) return { error: 'The selection did not compile.' }
+  return { mol, view, sel }
+}
+
+/** The mean position of the atoms `sel` matches in `mol`, or null when none. */
+function selectionCentroid(ctx: WorkerContext, mol: unknown, sel: unknown): XYZ | null {
+  const iter = ctx.svc.createObj('AtomIterator') as unknown as AtomIter | null
+  if (!iter) return null
+  iter.target = mol
+  iter.sel = sel
+  let n = 0
+  const sum = { x: 0, y: 0, z: 0 }
+  for (iter.first(); iter.hasMore(); iter.next()) {
+    const p = iter.get().pos
+    sum.x += p.x
+    sum.y += p.y
+    sum.z += p.z
+    n += 1
+  }
+  return n === 0 ? null : { x: sum.x / n, y: sum.y / n, z: sum.z / n }
+}
+
+export const focusSelection = defineOp({
+  name: 'focus_selection',
+  description:
+    'Move the camera to the atoms a selection matches in one MolCoord object, without changing ' +
+    "the object's current selection (center_view sets it). zoom true (the default) fits the " +
+    'view to them; false only moves the centre to their mean position.',
+  params: {
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
+    selection: selection('The atoms to frame.'),
+    zoom: optional(boolean('True (or null) fits the zoom too; false only centres.')),
+  },
+  mutates: false,
+  describe: (a, n) => `${a.zoom === false ? 'Centre' : 'Fit'} the view on ${a.selection} in ${n('objId')}`,
+  replay: true,
+  // center_view already moves the camera to a selection for the model.
+  expose: { tool: 'view', console: true },
+  group: 'viewing',
+  run(ctx, args, oc) {
+    const t = framingTarget(ctx, oc.sceneId, oc.viewId, args.objId, args.selection)
+    if ('error' in t) return { ok: false, error: t.error }
+    if (args.zoom !== false) {
+      t.mol.fitView2(t.view, t.sel)
+      return { ok: true }
+    }
+    const c = selectionCentroid(ctx, t.mol, t.sel)
+    if (!c) return { ok: false, error: 'The selection matches no atoms.' }
+    const res = setViewXform(ctx, { viewId: oc.viewId, center: c })
+    return res.ok ? { ok: true } : { ok: false, error: VIEW_UNREADABLE }
+  },
+})
+
+export const orientView = defineOp({
+  name: 'orient_view',
+  description:
+    'Turn the camera so the principal axes of the atoms a selection matches lie along the ' +
+    "screen axes, then fit the view to them. The object's current selection is left as it is.",
+  params: {
+    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
+    selection: selection('The atoms to orient on; "*" for the whole object.'),
+  },
+  mutates: false,
+  describe: (a, n) => `Orient the view on ${a.selection} in ${n('objId')}`,
+  replay: true,
+  // center_view already moves the camera to a selection for the model.
+  expose: { tool: 'view', console: true },
+  group: 'viewing',
+  run(ctx, args, oc) {
+    const t = framingTarget(ctx, oc.sceneId, oc.viewId, args.objId, args.selection)
+    if ('error' in t) return { ok: false, error: t.error }
+    t.mol.orientView(t.view, t.sel)
+    return { ok: true }
+  },
+})
+
+export const VIEW_OPS = [rotateView, setView, focusSelection, orientView]

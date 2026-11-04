@@ -32,6 +32,8 @@ interface ViewXformAccess {
     translateView(x: number, y: number, z: number): void;
     /** Camera-relative pan, firing a transient drag event (mid-drag frames). */
     translateViewDrag(x: number, y: number, z: number): void;
+    /** Absolute camera rotation. */
+    setRotQuat(q: unknown): void;
 }
 
 export interface GetViewXformArgs {
@@ -58,6 +60,8 @@ export interface SetViewXformArgs {
     distance?: number;
     /** Absolute world-space view center. */
     center?: { x: number; y: number; z: number };
+    /** Absolute camera rotation, as a quaternion (a the scalar part). */
+    rotation?: { a: number; x: number; y: number; z: number };
 }
 
 export interface SetViewXformResult {
@@ -133,9 +137,14 @@ export function getViewXform(ctx: WorkerContext, args: GetViewXformArgs): ViewXf
 export function setViewXform(ctx: WorkerContext, args: SetViewXformArgs): SetViewXformResult {
     const view = getViewAccess(ctx, args.viewId);
     if (!view) return { ok: false };
-    if (args.zoom !== undefined) view.zoom = Math.max(ZOOM_MIN, args.zoom);
-    if (args.slab !== undefined) view.slab = Math.max(0, args.slab);
-    if (args.distance !== undefined) view.distance = Math.max(0, args.distance);
+    if (args.rotation !== undefined) {
+        const q = ctx.svc.createObj('Quat') as unknown as { a: number; x: number; y: number; z: number };
+        q.a = args.rotation.a;
+        q.x = args.rotation.x;
+        q.y = args.rotation.y;
+        q.z = args.rotation.z;
+        view.setRotQuat(q);
+    }
     if (args.center !== undefined) {
         const vec = ctx.svc.createObj('Vector') as unknown as { x: number; y: number; z: number };
         vec.x = args.center.x;
@@ -143,6 +152,12 @@ export function setViewXform(ctx: WorkerContext, args: SetViewXformArgs): SetVie
         vec.z = args.center.z;
         view.center = vec as unknown as Vector;
     }
+    // Distance before slab: C++ View::setSlabDepth clamps the slab to twice
+    // the distance in force at the time, so a far camera written the other
+    // way round would lose part of its slab.
+    if (args.distance !== undefined) view.distance = Math.max(0, args.distance);
+    if (args.slab !== undefined) view.slab = Math.max(0, args.slab);
+    if (args.zoom !== undefined) view.zoom = Math.max(ZOOM_MIN, args.zoom);
     return { ok: true };
 }
 

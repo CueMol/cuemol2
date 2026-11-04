@@ -13,18 +13,12 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { getCompatibleRendererNames } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
 import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/file/headlessOpen'
-import { loadObject } from '@renderer/worker/server/services/file/loadObject'
-import { streamLoadFromUrl } from '@renderer/worker/server/services/file/streamLoadFromUrl'
 import { OBJREADER_CATEGORY, pickReaderName } from '@renderer/worker/server/services/helpers/pickReaderName'
 import { isHiddenObjReader } from '@renderer/worker/server/services/helpers/readerFilter'
-import { pickCoordUrl, pickMapUrl } from '@renderer/worker/shared/pdbUrls'
-import { streamLoadDensityMap } from '@renderer/worker/server/services/map/streamLoad'
-import { fetchEmdbMap } from '@renderer/worker/server/services/map/fetchEmdbMap'
-import { deleteMolAtoms } from '@renderer/worker/server/services/molops/deleteMolAtoms'
+import { pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
 import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
 import type { CoordServerType } from '@renderer/worker/shared/pdbUrls'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
 import {
   matchNamedSelections,
@@ -78,17 +72,10 @@ const FETCH_IGNORED: ReadonlyArray<[string, string]> = [
  * representation name once they exist. Anything else draws one renderer,
  * named after its representation (`pym:<rep>`).
  */
-function consoleRendererOptions(options: FileOpenOptions, zoom: string): FileOpenOptions {
+function consoleRendererArgs(options: FileOpenOptions, zoom: string): { rendererName: string | null; centerView: boolean } {
   const rep = repOfRendererType(options.renderer.rendererType)
   const rendererName = options.renderer.presetName ? OWNED : rep !== null ? `${OWNED}${rep}` : null
-  return {
-    ...options,
-    renderer: {
-      ...options.renderer,
-      ...(rendererName !== null ? { rendererName } : {}),
-      centerView: zoom.trim() !== '0',
-    },
-  }
+  return { rendererName, centerView: zoom.trim() !== '0' }
 }
 
 /**
@@ -205,17 +192,23 @@ async function loadUrl(ctx: WorkerContext, args: Record<string, string>, cc: Cmd
     return { ok: false, error: `Error: no reader for ${leaf}; give format=<reader>` }
   }
   const objectName = args.object !== '' ? args.object : fileStem(leaf)
-  const options = consoleRendererOptions(buildHeadlessFileOpenOptions(ctx, {
+  const rend = consoleRendererArgs(buildHeadlessFileOpenOptions(ctx, {
     readerName,
     objectName,
     rendererType: null,
     selection: null,
   }), args.zoom)
-  const reqId = cc.streamId('load-url')
-  cc.noteStream(reqId)
-  const res = await streamLoadFromUrl(ctx, { reqId, url, readerName, objectName, sceneId: cc.sceneId, options })
-  const norm = normalizeServiceResult(res, `Error: could not load ${url}`)
-  if (!norm.ok) return norm
+  // fetch_url registers the download with the run, so Stop cancels it.
+  const res = await runOp(ctx, cc, 'fetch_url', {
+    url,
+    reader: readerName,
+    name: objectName,
+    rendererType: null,
+    selection: null,
+    preset: null,
+    ...rend,
+  })
+  if (!res.ok) return res
   await adoptPresetRenderers(ctx, cc, objectName)
   await applyRememberedToObject(ctx, cc, objectName)
   cc.print(` load: "${url}" loaded as "${objectName}".`)
@@ -288,7 +281,7 @@ const load: PymCommand = {
       return { ok: false, error: `Error: no reader handles ${path.basename(filePath)}` }
     }
     const objectName = args.object !== '' ? args.object : fileStem(filePath)
-    const options = consoleRendererOptions(buildHeadlessFileOpenOptions(ctx, {
+    const rend = consoleRendererArgs(buildHeadlessFileOpenOptions(ctx, {
       readerName: compat.readerName,
       objectName,
       // Not chosen: a molecule gets the PyMOL-like preset, as PyMOL's
@@ -297,15 +290,19 @@ const load: PymCommand = {
       filePath,
       selection: null,
     }), args.zoom)
-    const res = loadObject(ctx, {
-      filePath,
-      sceneId: cc.sceneId,
-      options,
-      contentFirst: false,
-      readerName: compat.readerName,
+    // The reader found here is passed on, so load_file reads with it rather
+    // than sniffing again.
+    const res = await runOp(ctx, cc, 'load_file', {
+      path: filePath,
+      rendererType: null,
+      selection: null,
+      name: objectName,
+      reader: compat.readerName,
+      preset: null,
+      mapCenterPolicy: null,
+      ...rend,
     })
-    const norm = normalizeServiceResult(res, `Error: could not load ${filePath}`)
-    if (!norm.ok) return norm
+    if (!res.ok) return { ok: false, error: `Error: could not load ${filePath}: ${res.error.replace(/^Error: /, '')}` }
     await adoptPresetRenderers(ctx, cc, objectName)
     await applyRememberedToObject(ctx, cc, objectName)
     cc.print(` load: "${filePath}" loaded as "${objectName}".`)
@@ -365,20 +362,10 @@ async function fetchEmdbCode(ctx: WorkerContext, cc: CmdContext, code: string, n
   const num = prefixed ?? (/^\d{4,}$/.test(code) ? code : null)
   if (num === null) return { ok: false, error: `Error: "${code}" is not an EMDB code` }
   const objectName = name !== '' ? name : prefixed !== null ? code : `emd_${num}`
-  const reqId = cc.streamId(`fetch-emd-${num}`)
-  cc.noteStream(reqId)
-  const res = await fetchEmdbMap(ctx, {
-    reqId,
-    emdbId: num,
-    server: 'WWPDB',
-    objectName,
-    sceneId: cc.sceneId,
-    viewId: cc.viewId,
-  })
-  const norm = normalizeServiceResult(res, `Error: could not fetch EMD-${num}`)
-  if (!norm.ok) {
-    if (/\b404\b|not found/.test(norm.error)) return { ok: false, error: `Error: EMDB has no entry EMD-${num}` }
-    return norm
+  const res = await runOp(ctx, cc, 'fetch_emdb', { id: `EMD-${num}`, name: objectName, source: 'WWPDB', level: null })
+  if (!res.ok) {
+    if (/\b404\b|not found/.test(res.error)) return { ok: false, error: `Error: EMDB has no entry EMD-${num}` }
+    return res
   }
   cc.print(` fetch: "${objectName}" fetched.`)
   return { ok: true }
@@ -389,14 +376,14 @@ async function fetchEmdbCode(ctx: WorkerContext, cc: CmdContext, code: string, n
  * fetch does (it removes the rest, and fails when the chain is not there,
  * keeping what it loaded).
  */
-function keepChain(ctx: WorkerContext, cc: CmdContext, objectName: string, chain: string): CmdOutcome {
+async function keepChain(ctx: WorkerContext, cc: CmdContext, objectName: string, chain: string): Promise<CmdOutcome> {
   // The newest object of that name is the one just loaded.
   const mol = molecules(ctx, cc.sceneId, objectName).at(-1)
   if (!mol) return { ok: false, error: `Error: "${objectName}" is not a molecule` }
   const selStr = `chain ${chain}`
   const hits = getSelHitCount(ctx, { sceneId: cc.sceneId, molId: mol.uid, selStr })
   if (!hits.count) return { ok: false, error: `Error: no such chain: ${chain}` }
-  const res = deleteMolAtoms(ctx, { sceneId: cc.sceneId, objId: mol.uid, selStr: `not (${selStr})` })
+  const res = await runOp(ctx, cc, 'delete_atoms', { objId: mol.uid, selection: `not (${selStr})` })
   if (!res.ok) return { ok: false, error: `Error: could not remove the other chains of "${objectName}"` }
   return { ok: true }
 }
@@ -454,33 +441,19 @@ const fetch: PymCommand = {
       if (chain !== '' && kind.kind === 'map') {
         return { ok: false, error: `Error: a map cannot be fetched for one chain: ${code}` }
       }
-      // Registered with the run, so Stop cancels the download rather than
-      // waiting for it to finish.
-      const reqId = cc.streamId(`fetch-${pdbId}`)
-      cc.noteStream(reqId)
-
+      // The fetch ops register the download with the run, so Stop cancels
+      // it rather than waiting for it to finish.
       if (kind.kind === 'map') {
         // The Get PDB dialog's path; PyMOL names the map object the same way.
-        const spec = pickMapUrl(pdbId, 'RCSB_CIF', kind.mapType)
         const objectName = args.name !== '' ? args.name : `${pdbId}_${kind.mapType}`
-        const res = await streamLoadDensityMap(ctx, {
-          reqId,
-          url: spec.url,
-          readerName: spec.readerName,
-          gzip: spec.gzip,
-          mapType: kind.mapType,
-          objectName,
-          sceneId: cc.sceneId,
-          viewId: cc.viewId,
-        })
-        const norm = normalizeServiceResult(res, `Error: could not fetch the ${kind.mapType} map of ${pdbId}`)
-        if (!norm.ok) {
+        const res = await runOp(ctx, cc, 'fetch_map', { pdbId, mapType: kind.mapType, name: objectName, source: 'RCSB_CIF' })
+        if (!res.ok) {
           // RCSB publishes map coefficients only for entries deposited with
           // structure factors; older ones (1crn, 4hhb) have none.
-          if (/\b404\b/.test(norm.error)) {
+          if (/\b404\b/.test(res.error)) {
             return { ok: false, error: `Error: RCSB has no ${kind.mapType} map for ${pdbId} (no structure factors were deposited)` }
           }
-          return norm
+          return res
         }
         cc.print(` fetch: "${objectName}" fetched.`)
         continue
@@ -491,25 +464,22 @@ const fetch: PymCommand = {
         : { url: `https://files.rcsb.org/download/${pdbId}.pdb${kind.n}`, readerName: 'pdb' }
       // PyMOL names a one-chain fetch after the code as typed (1abcA).
       const objectName = args.name !== '' ? args.name : chain !== '' ? code : pdbId
-      const options = consoleRendererOptions(buildHeadlessFileOpenOptions(ctx, {
+      const rend = consoleRendererArgs(buildHeadlessFileOpenOptions(ctx, {
         readerName: spec.readerName,
         objectName,
         rendererType: null,
         selection: null,
       }), args.zoom)
-      const res = await streamLoadFromUrl(ctx, {
-        reqId,
-        url: spec.url,
-        readerName: spec.readerName,
-        objectName,
-        sceneId: cc.sceneId,
-        options,
-      })
-      const norm = normalizeServiceResult(res, `Error: could not fetch ${pdbId}`)
-      if (!norm.ok) return norm
+      // An entry is fetch_pdb; an assembly has no op of its own, so it is
+      // the URL picked here.
+      const common = { name: objectName, rendererType: null, selection: null, preset: null, ...rend }
+      const res = kind.kind === 'coord'
+        ? await runOp(ctx, cc, 'fetch_pdb', { pdbId, format: kind.server === 'RCSB_PDB' ? 'pdb' : 'mmcif', ...common })
+        : await runOp(ctx, cc, 'fetch_url', { url: spec.url, reader: spec.readerName, ...common })
+      if (!res.ok) return { ok: false, error: `Error: could not fetch ${pdbId}: ${res.error.replace(/^Error: /, '')}` }
       await adoptPresetRenderers(ctx, cc, objectName)
       if (chain !== '') {
-        const kept = keepChain(ctx, cc, objectName, chain)
+        const kept = await keepChain(ctx, cc, objectName, chain)
         if (!kept.ok) return kept
       }
       await applyRememberedToObject(ctx, cc, objectName)

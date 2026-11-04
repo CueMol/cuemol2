@@ -17,6 +17,7 @@
 import { invokeOp } from '@renderer/worker/server/catalog'
 import type { AnyOp, OpOutcome, OpAlias, OpTable } from '@renderer/worker/server/catalog'
 import type { AtomSpec, Param, ParamMap } from '@renderer/worker/server/catalog/params'
+import { numberListSize } from '@renderer/worker/server/catalog/params'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { readPathList, resolvePath, splitPathWords } from '../../runtime/paths'
 import type { PathWord } from '../../runtime/paths'
@@ -114,7 +115,7 @@ function readArg(
     p.kind === 'boolean' ? parseBoolText(text)
     : p.kind === 'integer' || p.kind === 'real' ? parseNumberText(text)
     // Written `x y z`: a comma would end the argument.
-    : p.kind === 'vec3' ? text.split(/\s+/).filter((w) => w !== '').map(Number)
+    : numberListSize(p.kind) !== null ? text.split(/\s+/).filter((w) => w !== '').map(Number)
     : text
   const bad = checkArg(name, p, parsed)
   if (bad) return `${bad.slice(0, -1)}, not "${text}"`
