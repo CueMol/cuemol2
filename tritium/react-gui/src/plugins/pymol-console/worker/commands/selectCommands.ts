@@ -15,30 +15,28 @@
  * name will therefore answer per molecule, not once.
  */
 
-import { applyMolSelString } from '@renderer/worker/server/services/select/applyMolSelString'
 import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
-import { saveSelDef } from '@renderer/worker/server/services/select/saveSelDef'
 import { getMolChains } from '@renderer/worker/server/services/select/getMolStructure'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { isDefaulted, moleculeSelections, molecules, resolveOneObject } from './helpers'
+import { isDefaulted, moleculeSelections, molecules, resolveOneObject, runOp, setMolSelection } from './helpers'
+import { selectionStyleSet } from './namedSelections'
 import type { MoleculeSelection } from './helpers'
 
 /**
  * Show a PyMOL selection on the molecules it covers, and clear it on the
  * others: `select s, 1abc and chain A` leaves nothing selected elsewhere.
  */
-function applyItems(
+async function applyItems(
   ctx: WorkerContext,
   cc: CmdContext,
   items: readonly MoleculeSelection[],
-): CmdOutcome {
+): Promise<CmdOutcome> {
   const mols = molecules(ctx, cc.sceneId)
   if (mols.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
   for (const mol of mols) {
     const selStr = items.find((i) => i.obj.uid === mol.uid)?.selStr ?? ''
-    const res = applyMolSelString(ctx, { sceneId: cc.sceneId, molId: mol.uid, selStr })
-    if (!res.ok) {
+    if (!(await setMolSelection(ctx, cc, mol.uid, selStr))) {
       return { ok: false, error: `Error: could not apply the selection to "${mol.name}"` }
     }
   }
@@ -61,7 +59,7 @@ const select: PymCommand = {
   mutates: true,
   summary: 'Name a selection expression, and show what it matches.',
   completions: [null, { source: 'selections', description: 'selection', suffix: '' }],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     for (const [name, def] of [
       ['enable', '-1'],
       ['merge', '0'],
@@ -80,7 +78,7 @@ const select: PymCommand = {
 
     // Applying it is the visible half: a CueMol named selection on its own
     // changes nothing on screen.
-    const applied = applyItems(ctx, cc, sels.items)
+    const applied = await applyItems(ctx, cc, sels.items)
     if (!applied.ok) return applied
 
     // A CueMol named selection is one expression, evaluated inside whichever
@@ -91,7 +89,11 @@ const select: PymCommand = {
       return { ok: true }
     }
     const expr = sels.items[0]?.selStr ?? '*'
-    const saved = saveSelDef(ctx, { sceneId: cc.sceneId, name, expr })
+    const saved = await runOp(ctx, cc, 'define_selection', {
+      name,
+      selection: expr,
+      styleSet: selectionStyleSet(ctx, cc.sceneId),
+    })
     if (!saved.ok) return { ok: false, error: `Error: could not define "${name}"` }
     cc.print(` select: "${name}" defined as ${expr}`)
     return { ok: true }
@@ -105,7 +107,7 @@ const indicate: PymCommand = {
   mutates: true,
   summary: 'Show what an expression matches, without naming it.',
   completions: [{ source: 'selections', description: 'selection', suffix: '' }],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const sels = moleculeSelections(ctx, cc.sceneId, args.selection)
     if (!sels.ok) return sels
     return applyItems(ctx, cc, sels.items)
@@ -118,11 +120,11 @@ const deselect: PymCommand = {
   mode: 'strict',
   mutates: true,
   summary: 'Clear the selection on every molecule.',
-  run(ctx, _args, cc) {
-    // An empty expression is how the service clears a molecule's selection.
+  async run(ctx, _args, cc) {
+    // An empty expression is how set_mol_selection clears a molecule's selection.
     const mols = molecules(ctx, cc.sceneId)
     for (const mol of mols) {
-      applyMolSelString(ctx, { sceneId: cc.sceneId, molId: mol.uid, selStr: '' })
+      await setMolSelection(ctx, cc, mol.uid, '')
     }
     return { ok: true }
   },

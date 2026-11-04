@@ -22,23 +22,14 @@
  * rewrote their selection would be worse than one that does nothing.
  */
 
-import { createRendererOnObject } from '@renderer/worker/server/services/rend/createRendererOnObject'
 import { getNewRendererOptions } from '@renderer/worker/server/services/rend/getNewRendererOptions'
-import { applyRendererStyleList } from '@renderer/worker/server/services/rend/rendererStyle'
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
-import { setGenericProp } from '@renderer/worker/server/services/props/write'
-import { setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
-import { renameNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
-import { applyMolSelString } from '@renderer/worker/server/services/select/applyMolSelString'
 import { simplifySel } from '@renderer/worker/server/services/helpers/simplifySel'
-import { setRendererColoring } from '@renderer/worker/server/services/coloring/applyColoring'
-import { getRendererPaintInfo } from '@renderer/worker/server/services/coloring/panelList'
-import { paintRendererSelection } from '@renderer/worker/server/services/coloring/paintCrud'
 import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { OWNED, isAllSelection, moleculeSelections, molecules, renderersOf } from './helpers'
+import { OWNED, isAllSelection, moleculeSelections, molecules, renderersOf, runOp, setMolSelection, setVisible } from './helpers'
 import type { MoleculeSelection } from './helpers'
 import { removeConsoleLabels, setConsoleLabelsVisible } from './labelCommands'
 import { interpretShortcut } from '@plugins/console/worker/dialect-api'
@@ -147,25 +138,9 @@ function readMolSelection(ctx: WorkerContext, sceneId: number, molId: number): s
   return value === null || value === undefined ? '' : String(value)
 }
 
-/** Write a renderer's selection expression. */
-function writeSelection(
-  ctx: WorkerContext,
-  sceneId: number,
-  rendId: number,
-  selStr: string,
-): boolean {
-  // `setRendererSelection` only takes six canned kinds, so an arbitrary
-  // expression goes through the generic property bridge.
-  return setGenericProp(ctx, {
-    sceneId,
-    nodeId: rendId,
-    nodeType: 'renderer',
-    propName: 'sel',
-    op: 'set',
-    valueType: 'object<MolSelection>',
-    value: selStr,
-    mode: 'commit',
-  }).ok
+/** Write a renderer's selection expression (`set_renderer_selection`). */
+async function writeSelection(ctx: WorkerContext, cc: CmdContext, rendId: number, selStr: string): Promise<boolean> {
+  return (await runOp(ctx, cc, 'set_renderer_selection', { rendId, selection: selStr })).ok
 }
 
 /** The console's renderer of this type on this object, if it made one. */
@@ -178,15 +153,16 @@ function ownedRenderer(
   return renderersOf(ctx, sceneId, objId).find((r) => r.name === `${OWNED}${rep}`) ?? null
 }
 
-/** Make the console's renderer for this representation. */
-function createOwned(
+/** Make the console's renderer for this representation (`create_renderer`, then its styles). */
+async function createOwned(
   ctx: WorkerContext,
   cc: CmdContext,
   obj: SceneObjectEntry,
   rep: string,
   rendererType: string,
   selStr: string,
-): { ok: true; rendId: number } | { ok: false; error: string } {
+): Promise<CmdOutcome> {
+  // Read first, so a type the object cannot draw is refused in PyMOL's words.
   const options = getNewRendererOptions(ctx, {
     sceneId: cc.sceneId,
     sourceNodeId: obj.uid,
@@ -195,26 +171,24 @@ function createOwned(
   if (!options.ok || !options.rendererTypes.includes(rendererType)) {
     return { ok: false, error: `Error: "${obj.name}" cannot show ${rep}` }
   }
-  const created = createRendererOnObject(ctx, {
-    sceneId: cc.sceneId,
+  const created = await runOp(ctx, cc, 'create_renderer', {
     objId: obj.uid,
-    rendOpts: {
-      objectName: obj.name,
-      rendererType,
-      rendererName: `${OWNED}${rep}`,
-      selectionEnabled: true,
-      selection: selStr,
-      centerView: false,
-      mapCenterPolicy: 'auto',
-    },
+    rendererType,
+    name: `${OWNED}${rep}`,
+    selection: selStr,
+    centerView: false,
   })
-  if (!created.ok || created.newRendId === undefined) {
+  const rendId = created.ok ? (created.data as { rendererId?: number } | undefined)?.rendererId : undefined
+  if (rendId === undefined) {
     return { ok: false, error: `Error: could not create ${rep} on "${obj.name}"` }
   }
   const style = REP_STYLES[rep]
-  if (style) applyRendererStyleList(ctx, { sceneId: cc.sceneId, rendId: created.newRendId, styleNames: style.split(',') })
-  applyRememberedSettings(ctx, cc.sceneId, rep, created.newRendId)
-  return { ok: true, rendId: created.newRendId }
+  if (style) {
+    const styled = await runOp(ctx, cc, 'set_renderer_styles', { rendId, styles: style })
+    if (!styled.ok) return styled
+  }
+  await applyRememberedSettings(ctx, cc, rep, rendId)
+  return { ok: true }
 }
 
 /**
@@ -284,29 +258,29 @@ function readReps(raw: string): { ok: true; req: RepRequest } | { ok: false; err
 }
 
 /** Hide a console renderer and empty its selection, so a later show starts afresh. */
-function hideOwned(ctx: WorkerContext, sceneId: number, rendId: number): void {
+async function hideOwned(ctx: WorkerContext, cc: CmdContext, rendId: number): Promise<void> {
   // Emptied as well as hidden: `show rep, sel` unions with what the renderer
   // already draws, and without this the atoms hidden here would come back.
-  writeSelection(ctx, sceneId, rendId, 'none')
-  setNodeVisible(ctx, { sceneId, nodeId: rendId, nodeType: 'renderer', visible: false })
+  await writeSelection(ctx, cc, rendId, 'none')
+  await setVisible(ctx, cc, rendId, 'renderer', false)
 }
 
 /** Apply one representation of a show / hide / as to one molecule. */
-function applyRep(
+async function applyRep(
   ctx: WorkerContext,
   cc: CmdContext,
   name: 'show' | 'hide' | 'as',
   item: MoleculeSelection,
   rep: string,
   whole: boolean,
-): CmdOutcome {
+): Promise<CmdOutcome> {
   const { obj, selStr } = item
   const scopes: string[] = []
   for (const companion of COMPANIONS[rep] ?? []) {
     const other = ownedRenderer(ctx, cc.sceneId, obj.uid, companion.rep)
     if (!other) continue
     scopes.push(companion.scope)
-    const res = updateOwned(ctx, cc, name, item, other, rep, whole, companion.scope)
+    const res = await updateOwned(ctx, cc, name, item, other, rep, whole, companion.scope)
     if (!res.ok) return res
   }
   const scope = scopes.length > 0 ? `not (${scopes.join(' or ')})` : undefined
@@ -324,7 +298,7 @@ function scoped(selStr: string, scope: string | undefined): string {
 }
 
 /** Apply a show / hide / as to a console renderer that already exists. */
-function updateOwned(
+async function updateOwned(
   ctx: WorkerContext,
   cc: CmdContext,
   name: 'show' | 'hide' | 'as',
@@ -333,12 +307,12 @@ function updateOwned(
   rep: string,
   whole: boolean,
   scope?: string,
-): CmdOutcome {
+): Promise<CmdOutcome> {
   const { obj } = item
   // A hide only narrows what is drawn, so it never leaves the scope.
   const selStr = name === 'hide' ? item.selStr : scoped(item.selStr, scope)
   if (name === 'hide' && whole) {
-    hideOwned(ctx, cc.sceneId, existing.id)
+    await hideOwned(ctx, cc, existing.id)
     return { ok: true }
   }
   // It is there: combine with what it already draws, which is what makes
@@ -356,10 +330,10 @@ function updateOwned(
           name === 'show' ? `(${current}) or (${selStr})` : `(${current}) and not (${selStr})`,
           cc.sceneId,
         )
-  if (!writeSelection(ctx, cc.sceneId, existing.id, next)) {
+  if (!(await writeSelection(ctx, cc, existing.id, next))) {
     return { ok: false, error: `Error: could not change ${rep} on "${obj.name}"` }
   }
-  setNodeVisible(ctx, { sceneId: cc.sceneId, nodeId: existing.id, nodeType: 'renderer', visible: true })
+  await setVisible(ctx, cc, existing.id, 'renderer', true)
   return { ok: true }
 }
 
@@ -392,7 +366,7 @@ function repCommand(name: 'show' | 'hide' | 'as', alias?: string): PymCommand {
       { source: 'representations', description: 'representation', suffix: ', ' },
       { source: 'selections', description: 'selection', suffix: '' },
     ],
-    run(ctx, args, cc): CmdOutcome {
+    async run(ctx, args, cc): Promise<CmdOutcome> {
       let repArg = args.representation.trim()
       let selArg = args.selection.trim()
       if (selArg === '' && (repArg === '' || repArg === 'all' || repArg.includes('(') || repArg.includes('/'))) {
@@ -414,12 +388,12 @@ function repCommand(name: 'show' | 'hide' | 'as', alias?: string): PymCommand {
           for (const other of renderersOf(ctx, cc.sceneId, item.obj.uid)) {
             const otherRep = other.name.slice(OWNED.length)
             if (other.name.startsWith(OWNED) && !kept.includes(otherRep) && otherRep !== 'labels') {
-              hideOwned(ctx, cc.sceneId, other.id)
+              await hideOwned(ctx, cc, other.id)
             }
           }
         }
         for (const rep of req.reps) {
-          const res = applyRep(ctx, cc, name, item, rep, whole)
+          const res = await applyRep(ctx, cc, name, item, rep, whole)
           if (!res.ok) return res
         }
       }
@@ -428,11 +402,11 @@ function repCommand(name: 'show' | 'hide' | 'as', alias?: string): PymCommand {
         // Labels have their text; only showing, hiding, or taking them off
         // part of the molecule means anything here.
         if (name === 'hide' && !whole) {
-          if (!removeConsoleLabels(ctx, cc.sceneId, sels.items)) {
+          if (!(await removeConsoleLabels(ctx, cc, sels.items))) {
             return { ok: false, error: `Error: "${selArg}" did not compile` }
           }
         } else {
-          setConsoleLabelsVisible(ctx, cc.sceneId, sels.items, name !== 'hide')
+          await setConsoleLabelsVisible(ctx, cc, sels.items, name !== 'hide')
           if (name !== 'hide' && !whole) cc.warn('labels: shown whole; add labels with label <selection>, <expression>')
         }
       }
@@ -456,7 +430,7 @@ const color: PymCommand = {
     { source: 'colors', description: 'color', suffix: ', ' },
     { source: 'selections', description: 'selection', suffix: '' },
   ],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const colour = toCueMolColor(args.color)
     if (colour === null) return { ok: false, error: `Error: unknown color: "${args.color}"` }
 
@@ -465,40 +439,24 @@ const color: PymCommand = {
 
     let painted = 0
     for (const { obj, selStr } of sels.items) {
-      // The paint service reads its region from the molecule's selection;
-      // what the user had selected is put back afterwards.
+      // add_paint reads its region from the molecule's selection, which it
+      // sets; what the user had selected is put back afterwards.
       const before = readMolSelection(ctx, cc.sceneId, obj.uid)
-      // The paint service reads the region from the MOLECULE's selection
-      // rather than taking it as an argument, so it is set first. The user
-      // sees the selection change, as they would having made it by hand.
-      const applied = applyMolSelString(ctx, {
-        sceneId: cc.sceneId,
-        molId: obj.uid,
-        selStr,
-      })
-      if (!applied.ok) continue
-
+      let attempted = false
       for (const rend of renderersOf(ctx, cc.sceneId, obj.uid)) {
         if (!rend.name.startsWith(OWNED)) continue
-        // Painting needs a PaintColoring to insert into. Switching costs the
-        // renderer's previous colouring, so it is only done when needed.
-        if (!getRendererPaintInfo(ctx, { sceneId: cc.sceneId, rendId: rend.id }).canPaint) {
-          setRendererColoring(ctx, {
-            sceneId: cc.sceneId,
-            rendId: rend.id,
-            coloringId: 'paint-type-paint',
-            targetKind: 'renderer',
-          })
-        }
-        if (paintRendererSelection(ctx, {
-          sceneId: cc.sceneId,
-          rendId: rend.id,
-          colorValue: colour,
-        }).ok) {
-          painted += 1
-        }
+        attempted = true
+        // add_paint switches the renderer to paint colouring only when it is
+        // not one already, so earlier colours stay.
+        const res = await runOp(ctx, cc, 'add_paint', {
+          nodeId: rend.id,
+          nodeType: 'renderer',
+          selection: selStr,
+          color: colour,
+        })
+        if (res.ok) painted += 1
       }
-      applyMolSelString(ctx, { sceneId: cc.sceneId, molId: obj.uid, selStr: before })
+      if (attempted) await setMolSelection(ctx, cc, obj.uid, before)
     }
     if (painted === 0) {
       return {
@@ -528,13 +486,13 @@ export function repOfRendererType(type: string): string | null {
  * `hide sticks` or `set stick_radius` reach them. The newest object of that
  * name is the one just loaded.
  */
-export function adoptPresetRenderers(ctx: WorkerContext, sceneId: number, objectName: string): void {
-  const mol = molecules(ctx, sceneId, objectName).at(-1)
+export async function adoptPresetRenderers(ctx: WorkerContext, cc: CmdContext, objectName: string): Promise<void> {
+  const mol = molecules(ctx, cc.sceneId, objectName).at(-1)
   if (!mol) return
-  for (const rend of renderersOf(ctx, sceneId, mol.uid)) {
+  for (const rend of renderersOf(ctx, cc.sceneId, mol.uid)) {
     const rep = PRESET_MEMBER_REPS[rend.name.slice(OWNED.length)]
     if (!rend.name.startsWith(OWNED) || rep === undefined) continue
-    renameNode(ctx, { sceneId, nodeId: rend.id, nodeType: 'renderer', newName: `${OWNED}${rep}` })
+    await runOp(ctx, cc, 'rename_node', { nodeId: rend.id, nodeType: 'renderer', name: `${OWNED}${rep}` })
   }
 }
 

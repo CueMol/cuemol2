@@ -24,7 +24,7 @@ plugin console/worker/
          dialects/native/ op catalog から生成するコマンド + console 自前の builtin
          dialects/registry.ts  plugin が登録した dialect
          dialect-api.ts   dialect を足す plugin に公開する唯一の入口
-plugin pymol-console/worker/     PyMOL 語彙のコマンド、selection 翻訳 (sel/)
+plugin pymol-console/worker/     PyMOL 語彙のコマンド (書き込みは op を runOp で呼ぶ)、selection 翻訳 (sel/)
 plugin chimerax-console/worker/  ChimeraX 語彙のコマンド (op を invokeOp で呼ぶ)、atom spec 翻訳 (spec/)
 ```
 
@@ -272,8 +272,9 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
 **PyMOL dialect** (prompt `PyM>`): 従来の pymconsole のコマンド。PyMOL の名前・引数・選択式
 (CueMol 式へ翻訳) と `pym:<rep>` 規約はこの dialect の中に閉じる (詳細は
 [console-pymol-dialect.md](console-pymol-dialect.md))。
-`load` / `fetch` / `png` のように native と同じ名前のコマンドも、native の生成コマンドは再利用せず
-service を直接呼ぶ。引数と文言が PyMOL 固有で、置き換えると PyMOL との互換が崩れるため。
+コマンドは PyMOL の引数と文言のまま、書き込みを op で行う (`runOp`、ChimeraX dialect と共通の入口。
+native の生成コマンドは通らない)。`load` / `fetch` / `save` / map / 計測 / view / movie はまだ
+service を直接呼ぶ ([op 化の計画](../plans/261104-pymol-dialect-ops-plan.md))。
 `ray` は native の `render_image` で一時ファイルに描き、undo 位置とカメラを署名として覚える。
 直後の `png` (幅・高さ指定なし) は、署名が変わっていなければその画像を書き出す。`png ..., ray=1`
 はその場で ray tracing する。

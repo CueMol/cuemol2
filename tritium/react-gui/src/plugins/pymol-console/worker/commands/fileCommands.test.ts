@@ -22,20 +22,29 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 /** A stub taking whatever the service takes. */
 type Stub = ReturnType<typeof vi.fn<(...args: unknown[]) => unknown>>
 
-const { services } = vi.hoisted(() => {
+const { services, ops } = vi.hoisted(() => {
   const stub = (impl?: (...args: unknown[]) => unknown) =>
     vi.fn<(...args: unknown[]) => unknown>(impl ?? (() => undefined))
   return {
     services: {
       getCompatibleRendererNames: stub(() => ({ types: [], objType: '', readerName: 'mmcif' })),
       loadObject: stub(() => ({ ok: true })),
-      deleteNode: stub(() => ({ ok: true })),
-      renameNode: stub(() => ({ ok: true })),
       getSceneTree: stub(() => ({ ok: false })),
       listSceneObjects: stub(() => ({ objects: [] })),
     } satisfies Record<string, Stub>,
+    /** Every op the commands ran: the scene writes. */
+    ops: [] as { name: string; args: Record<string, unknown> }[],
   }
 })
+
+vi.mock('@renderer/worker/server/catalog', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  findOp: (name: string) => ({ name }),
+  invokeOp: async (op: { name: string }, _ctx: unknown, args: Record<string, unknown>) => {
+    ops.push({ name: op.name, args })
+    return { ok: true }
+  },
+}))
 
 vi.mock('fs', () => ({ existsSync: () => true }))
 vi.mock('@renderer/worker/server/services/file/getCompatibleRendererNames', () => ({
@@ -56,10 +65,6 @@ vi.mock('@renderer/worker/server/services/file/headlessOpen', () => ({
 }))
 vi.mock('@renderer/worker/server/services/file/streamLoadFromUrl', () => ({
   streamLoadFromUrl: vi.fn(),
-}))
-vi.mock('@renderer/worker/server/services/sceneTree/sceneOps', () => ({
-  deleteNode: (...a: unknown[]) => services.deleteNode(...a),
-  renameNode: (...a: unknown[]) => services.renameNode(...a),
 }))
 vi.mock('@renderer/worker/server/services/sceneTree/sceneTree', () => ({
   getSceneTree: (...a: unknown[]) => services.getSceneTree(...a),
@@ -97,7 +102,15 @@ const cc = {
   warn: vi.fn(),
   markMutated: vi.fn(),
   setCwd: vi.fn(),
+  streamId: (tag: string) => tag,
+  noteStream: vi.fn(),
+  stopped: () => false,
 } as unknown as CmdContext
+
+/** The args of every op of this name that ran. */
+function opArgs(name: string): Record<string, unknown>[] {
+  return ops.filter((o) => o.name === name).map((o) => o.args)
+}
 
 /** Run `load` synchronously with the arguments that matter. */
 async function load(over: Record<string, string>): Promise<{ ok: boolean; error?: string }> {
@@ -140,7 +153,7 @@ beforeEach(() => {
     readerName: 'mmcif',
   })
   services.loadObject.mockReturnValue({ ok: true })
-  services.deleteNode.mockReturnValue({ ok: true })
+  ops.length = 0
   services.listSceneObjects.mockReturnValue({ objects: [] })
   services.getSceneTree.mockReturnValue({ ok: false })
 })
@@ -195,10 +208,7 @@ describe('the renderer a load creates', () => {
     await load({ filename: '1crn.pdb' })
     // The preset names its members prefix + type, so the prefix is the console's.
     expect(rendererOptions()).toMatchObject({ presetName: 'DefaultPymRendPreset', rendererName: 'pym:' })
-    const renamed = services.renameNode.mock.calls.map((c) => {
-      const a = c[1] as { nodeId: number; newName: string }
-      return [a.nodeId, a.newName]
-    })
+    const renamed = opArgs('rename_node').map((a) => [a.nodeId, a.name])
     // pym:nucl keeps its name: it is cartoon's companion, not a representation.
     expect(renamed).toEqual([[11, 'pym:cartoon'], [13, 'pym:sticks'], [14, 'pym:spheres'], [15, 'pym:lines']])
   })
@@ -228,36 +238,30 @@ describe('delete', () => {
     })
   }
 
-  function del(name: string): { ok: boolean } {
+  async function del(name: string): Promise<{ ok: boolean }> {
     const cmd = FILE_COMMANDS.find((c) => c.name === 'delete')
     if (!cmd) throw new Error('no delete')
-    return cmd.run(ctx, { name }, cc) as { ok: boolean }
+    return (await cmd.run(ctx, { name }, cc)) as { ok: boolean }
   }
 
   it('removes a renderer that isomesh named', async () => {
     // PyMOL's isomesh makes an object, so `delete msh` works there; here it
     // made a renderer, and the name is the only handle the user was given.
     sceneWithMesh()
-    expect(del('msh')).toEqual({ ok: true })
-    expect(services.deleteNode).toHaveBeenCalledWith(
-      ctx,
-      expect.objectContaining({ nodeId: 20, nodeType: 'renderer' }),
-    )
+    expect(await del('msh')).toEqual({ ok: true })
+    expect(opArgs('delete_node')).toEqual([{ nodeId: 20, nodeType: 'renderer' }])
   })
 
   it('prefers an object over a renderer of the same name', async () => {
     sceneWithMesh()
-    del('2fofc')
-    expect(services.deleteNode).toHaveBeenCalledWith(
-      ctx,
-      expect.objectContaining({ nodeId: 5, nodeType: 'object' }),
-    )
+    await del('2fofc')
+    expect(opArgs('delete_node')).toEqual([{ nodeId: 5, nodeType: 'object' }])
   })
 
   it('reports a name that matches neither', async () => {
     sceneWithMesh()
-    expect(del('nope').ok).toBe(false)
-    expect(services.deleteNode).not.toHaveBeenCalled()
+    expect((await del('nope')).ok).toBe(false)
+    expect(opArgs('delete_node')).toEqual([])
   })
 })
 

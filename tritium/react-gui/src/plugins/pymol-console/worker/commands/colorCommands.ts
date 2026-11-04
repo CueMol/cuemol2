@@ -15,15 +15,9 @@
  * that would look different.
  */
 
-import { createStyleSet } from '@renderer/worker/server/services/style/styleOps'
-import { setStyleSetColor } from '@renderer/worker/server/services/style/styleSetEdit'
-import {
-  setColoringProp,
-  setRendererColoring,
-} from '@renderer/worker/server/services/coloring/applyColoring'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CmdContext, CmdOutcome, PymCommand } from './types'
-import { isAllSelection, isDefaulted, molecules, toNumber } from './helpers'
+import { isAllSelection, isDefaulted, molecules, runOp, toNumber } from './helpers'
 import { OWNED, renderersOf } from './helpers'
 import { PYMOL_COLORS, toCueMolColor } from './pymolColors'
 
@@ -56,21 +50,13 @@ export function parseRgb(raw: string): string | null {
   return `#${values.map((v) => hex2(v / scale)).join('')}`
 }
 
-/** The uid of the scene's `pym` style set, made if it does not exist yet. */
-function pymStyleSet(ctx: WorkerContext, sceneId: number): number | null {
-  const existing = ctx.styleMgr.hasStyleSet(PYM_STYLE_SET, sceneId)
-  if (existing > 0) return existing
-  const made = createStyleSet(ctx, { sceneId, name: PYM_STYLE_SET })
-  return made.ok ? made.newId : null
-}
-
 const setColor: PymCommand = {
   name: 'set_color',
   params: [{ name: 'name' }, { name: 'rgb' }, { name: 'mode', default: '0' }],
   mode: 'strict',
   mutates: true,
   summary: 'Define a named colour, e.g. set_color mycol, [1.0, 0.5, 0.0].',
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const name = args.name.trim()
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
       return { ok: false, error: `Error: "${name}" is not a usable colour name (letters, digits and _ only)` }
@@ -86,15 +72,8 @@ const setColor: PymCommand = {
       cc.warn(`"${name}" is a built-in PyMOL colour; color keeps using the built-in value`)
     }
 
-    const styleSetId = pymStyleSet(ctx, cc.sceneId)
-    if (styleSetId === null) return { ok: false, error: 'Error: cannot create the "pym" style set' }
-    const res = setStyleSetColor(ctx, {
-      sceneId: cc.sceneId,
-      styleSetId,
-      scopeId: cc.sceneId,
-      name,
-      colorStr: colour,
-    })
+    // define_color makes the scene's `pym` set when it has none.
+    const res = await runOp(ctx, cc, 'define_color', { name, color: colour, styleSet: PYM_STYLE_SET })
     if (!res.ok) return { ok: false, error: `Error: cannot define colour "${name}"` }
     cc.print(` Color: "${name}" defined as ${colour}.`)
     return { ok: true }
@@ -149,32 +128,35 @@ export function planSpectrum(expression: string, palette: string): SpectrumPlan 
   return { error: `Error: unknown spectrum expression "${expression}" (one of b, q, count, resi)` }
 }
 
-/** Put `plan` on one renderer. */
-function applySpectrum(
+/** Put `plan` on one renderer (`set_renderer_coloring`, then `set_coloring_prop` per property). */
+async function applySpectrum(
   ctx: WorkerContext,
-  sceneId: number,
+  cc: CmdContext,
   rendId: number,
   plan: SpectrumPlan,
   range: { min: number | null; max: number | null },
-): boolean {
-  const coloringId = plan.kind === 'bfac' ? 'paint-type-bfac' : 'paint-type-rainbow'
-  if (!setRendererColoring(ctx, { sceneId, rendId, coloringId, targetKind: 'renderer' }).ok) return false
-  const set = (propName: string, propValue: string | number): boolean =>
-    setColoringProp(ctx, { sceneId, rendId, targetKind: 'renderer', propName, propValue }).ok
-
+): Promise<boolean> {
+  const mode = plan.kind === 'bfac' ? 'paint-type-bfac' : 'paint-type-rainbow'
+  const target = { nodeId: rendId, nodeType: 'renderer' }
+  if (!(await runOp(ctx, cc, 'set_renderer_coloring', { ...target, mode, styleName: null })).ok) return false
+  const props: [string, string | number][] = []
   if (plan.kind === 'rainbow') {
-    return set('incr_mode', 'resid') && set('start_hue', plan.startHue) && set('end_hue', plan.endHue)
-  }
-  let ok = set('mode', plan.mode) && set('lowcol', plan.low) && set('highcol', plan.high)
-  if (range.min !== null || range.max !== null) {
-    // An explicit range fixes the ends; otherwise the molecule's own range.
-    ok = ok && set('auto', 'none')
-    if (range.min !== null) ok = ok && set('lowpar', range.min)
-    if (range.max !== null) ok = ok && set('highpar', range.max)
+    props.push(['incr_mode', 'resid'], ['start_hue', plan.startHue], ['end_hue', plan.endHue])
   } else {
-    ok = ok && set('auto', 'mol')
+    props.push(['mode', plan.mode], ['lowcol', plan.low], ['highcol', plan.high])
+    if (range.min !== null || range.max !== null) {
+      // An explicit range fixes the ends; otherwise the molecule's own range.
+      props.push(['auto', 'none'])
+      if (range.min !== null) props.push(['lowpar', range.min])
+      if (range.max !== null) props.push(['highpar', range.max])
+    } else {
+      props.push(['auto', 'mol'])
+    }
   }
-  return ok
+  for (const [prop, value] of props) {
+    if (!(await runOp(ctx, cc, 'set_coloring_prop', { ...target, prop, value: String(value) })).ok) return false
+  }
+  return true
 }
 
 const spectrum: PymCommand = {
@@ -193,7 +175,7 @@ const spectrum: PymCommand = {
   mutates: true,
   summary: 'Colour what the console draws by B-factor, occupancy or residue number.',
   completions: [null, null, { source: 'selections', description: 'selection', suffix: '' }],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const plan = planSpectrum(args.expression, args.palette)
     if ('error' in plan) return { ok: false, error: plan.error }
 
@@ -210,7 +192,7 @@ const spectrum: PymCommand = {
     if (!isDefaulted(args.byres, '0')) cc.warn('spectrum: byres is ignored (colouring is per renderer)')
 
     return colourOwnedRenderers(ctx, cc, args.selection, (rendId) =>
-      applySpectrum(ctx, cc.sceneId, rendId, plan, range))
+      applySpectrum(ctx, cc, rendId, plan, range))
   },
 }
 
@@ -220,12 +202,12 @@ const spectrum: PymCommand = {
  * cannot narrow a whole-renderer colouring, so it is refused with that
  * reason rather than quietly colouring more than was asked for.
  */
-function colourOwnedRenderers(
+async function colourOwnedRenderers(
   ctx: WorkerContext,
   cc: CmdContext,
   selection: string,
-  paint: (rendId: number) => boolean,
-): CmdOutcome {
+  paint: (rendId: number) => Promise<boolean>,
+): Promise<CmdOutcome> {
   const all = molecules(ctx, cc.sceneId)
   if (all.length === 0) return { ok: false, error: 'Error: no molecule in the scene' }
   let targets = all
@@ -242,7 +224,7 @@ function colourOwnedRenderers(
   for (const obj of targets) {
     for (const rend of renderersOf(ctx, cc.sceneId, obj.uid)) {
       if (!rend.name.startsWith(OWNED)) continue
-      if (paint(rend.id)) coloured += 1
+      if (await paint(rend.id)) coloured += 1
     }
   }
   if (coloured === 0) return { ok: false, error: 'Error: nothing to colour -- show a representation first' }

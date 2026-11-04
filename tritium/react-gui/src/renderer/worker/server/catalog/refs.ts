@@ -116,6 +116,30 @@ export function recordedPath(nodes: SceneNodeEntry[], id: number): string | null
   return nodes.filter((n) => typedPath(n) === typed).length === 1 ? typed : `${typed}#${id}`
 }
 
+/**
+ * The property path `reset_prop` / `set_prop` takes for a node's property, as
+ * a recording keeps it: `obj/rend.prop` (`recordedPath`), a bare name on the
+ * scene, `view.prop` on the view. Never a bare uid where a path finds the
+ * node, since a uid does not survive into another session.
+ */
+export function recordedPropPath(
+  ctx: WorkerContext,
+  sceneId: number,
+  nodeType: 'scene' | 'view' | 'object' | 'renderer' | 'rendGroup',
+  nodeId: number,
+  prop: string,
+): string {
+  if (nodeType === 'scene') return prop
+  if (nodeType === 'view') return `view.${prop}`
+  let nodes: SceneNodeEntry[] = []
+  try {
+    nodes = sceneNodes(ctx, sceneId)
+  } catch {
+    nodes = []
+  }
+  return `${recordedPath(nodes, nodeId) ?? `#${nodeId}`}.${prop}`
+}
+
 /** The nodes `text` names by name, or by `name@type` when none has the whole text as its name. */
 function named(text: string, candidates: SceneNodeEntry[]): SceneNodeEntry[] {
   const exact = candidates.filter((n) => n.name === text)

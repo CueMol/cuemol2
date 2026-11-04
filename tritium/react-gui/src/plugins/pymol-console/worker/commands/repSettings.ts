@@ -23,10 +23,10 @@
  */
 
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
-import { resetGenericProps, setGenericProp } from '@renderer/worker/server/services/props/write'
+import { recordedPropPath } from '@renderer/worker/server/catalog/refs'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CmdContext, CmdOutcome } from './types'
-import { OWNED, molecules, renderersOf, toNumber } from './helpers'
+import { OWNED, molecules, renderersOf, runOp, toNumber } from './helpers'
 import { parseRgb } from './colorCommands'
 import { toCueMolColor } from './pymolColors'
 
@@ -99,27 +99,22 @@ function fromPropValue(setting: RepSetting, value: unknown): string {
   return String(value)
 }
 
-/** The property's C++ type on a renderer, for the write. */
-function propType(ctx: WorkerContext, sceneId: number, rendId: number, prop: string): string | null {
-  const props = getGenericProps(ctx, { sceneId, nodeId: rendId, nodeType: 'renderer' })
-  if (!props.ok) return null
-  return props.entries.find((e) => e.key === prop)?.type ?? null
+/** Write a value to one renderer (`set_node_prop`, which converts it by the property's type). */
+async function writeProp(ctx: WorkerContext, cc: CmdContext, rendId: number, prop: string, value: PropValue): Promise<boolean> {
+  const res = await runOp(ctx, cc, 'set_node_prop', { nodeType: 'renderer', nodeId: rendId, prop, value: String(value) })
+  return res.ok
 }
 
-/** Write a value to one renderer. */
-function writeProp(ctx: WorkerContext, sceneId: number, rendId: number, prop: string, value: PropValue): boolean {
-  const type = propType(ctx, sceneId, rendId, prop)
-  if (type === null) return false
-  return setGenericProp(ctx, {
-    sceneId,
-    nodeId: rendId,
-    nodeType: 'renderer',
-    propName: prop,
-    op: 'set',
-    valueType: type,
-    value,
-    mode: 'commit',
-  }).ok
+/** Put one renderer property back to its default (`reset_prop`, by a path a replay finds again). */
+export async function resetProp(
+  ctx: WorkerContext,
+  cc: CmdContext,
+  nodeType: 'scene' | 'view' | 'object' | 'renderer',
+  nodeId: number,
+  prop: string,
+): Promise<boolean> {
+  const res = await runOp(ctx, cc, 'reset_prop', { path: recordedPropPath(ctx, cc.sceneId, nodeType, nodeId, prop) })
+  return res.ok
 }
 
 /** The console renderers of `rep` on the named objects, or on all of them. */
@@ -144,21 +139,21 @@ function consoleRenderers(
  * `set` of a representation setting: every matching console renderer now,
  * and, without an object name, the ones made later in this scene too.
  */
-export function setRepSetting(
+export async function setRepSetting(
   ctx: WorkerContext,
   cc: CmdContext,
   name: string,
   setting: RepSetting,
   raw: string,
   objectName: string,
-): CmdOutcome {
+): Promise<CmdOutcome> {
   const value = toPropValue(setting, raw)
   if (value === null) return { ok: false, error: `Error: "${raw}" is not a valid value for ${name}` }
   const found = consoleRenderers(ctx, cc, setting.rep, objectName)
   if (!found.ok) return found
   for (const id of found.rendIds) {
     for (const prop of propsOf(setting)) {
-      if (!writeProp(ctx, cc.sceneId, id, prop, value)) {
+      if (!(await writeProp(ctx, cc, id, prop, value))) {
         return { ok: false, error: `Error: could not set "${name}"` }
       }
     }
@@ -198,45 +193,41 @@ export function getRepSetting(
 }
 
 /** `unset` of a representation setting: back to the renderer default. */
-export function unsetRepSetting(
+export async function unsetRepSetting(
   ctx: WorkerContext,
   cc: CmdContext,
   name: string,
   setting: RepSetting,
   objectName: string,
-): CmdOutcome {
+): Promise<CmdOutcome> {
   const found = consoleRenderers(ctx, cc, setting.rep, objectName)
   if (!found.ok) return found
   for (const id of found.rendIds) {
-    const res = resetGenericProps(ctx, {
-      sceneId: cc.sceneId,
-      nodeId: id,
-      nodeType: 'renderer',
-      propNames: propsOf(setting),
-    })
-    if (!res.ok) return { ok: false, error: `Error: could not unset "${name}"` }
+    for (const prop of propsOf(setting)) {
+      if (!(await resetProp(ctx, cc, 'renderer', id, prop))) return { ok: false, error: `Error: could not unset "${name}"` }
+    }
   }
   if (objectName.trim() === '') remembered.get(cc.sceneId)?.delete(name)
   return { ok: true }
 }
 
 /** Give a console renderer just made the global values set for its representation. */
-export function applyRememberedSettings(ctx: WorkerContext, sceneId: number, rep: string, rendId: number): void {
-  const values = remembered.get(sceneId)
+export async function applyRememberedSettings(ctx: WorkerContext, cc: CmdContext, rep: string, rendId: number): Promise<void> {
+  const values = remembered.get(cc.sceneId)
   if (!values) return
   for (const [name, value] of values) {
     const setting = REP_SETTINGS[name]
     if (setting?.rep !== rep) continue
-    for (const prop of propsOf(setting)) writeProp(ctx, sceneId, rendId, prop, value)
+    for (const prop of propsOf(setting)) await writeProp(ctx, cc, rendId, prop, value)
   }
 }
 
 /** Give the console renderers of a freshly loaded object the global values set. */
-export function applyRememberedToObject(ctx: WorkerContext, sceneId: number, objectName: string): void {
-  if (!remembered.get(sceneId)?.size) return
-  for (const obj of molecules(ctx, sceneId, objectName)) {
-    for (const r of renderersOf(ctx, sceneId, obj.uid)) {
-      if (r.name.startsWith(OWNED)) applyRememberedSettings(ctx, sceneId, r.name.slice(OWNED.length), r.id)
+export async function applyRememberedToObject(ctx: WorkerContext, cc: CmdContext, objectName: string): Promise<void> {
+  if (!remembered.get(cc.sceneId)?.size) return
+  for (const obj of molecules(ctx, cc.sceneId, objectName)) {
+    for (const r of renderersOf(ctx, cc.sceneId, obj.uid)) {
+      if (r.name.startsWith(OWNED)) await applyRememberedSettings(ctx, cc, r.name.slice(OWNED.length), r.id)
     }
   }
 }

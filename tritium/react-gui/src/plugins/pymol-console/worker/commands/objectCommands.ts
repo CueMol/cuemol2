@@ -8,10 +8,10 @@
  * part of this phase.
  */
 
-import { getSceneTree, setNodeVisible } from '@renderer/worker/server/services/sceneTree/sceneTree'
+import { getSceneTree } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import { getSelDefs } from '@renderer/worker/server/services/select/getSelDefs'
 import type { PymCommand } from './types'
-import { formatNameList, isDefaulted, resolveObjects, resolveRenderers, toBoolean } from './helpers'
+import { formatNameList, isDefaulted, resolveObjects, resolveRenderers, setVisible, toBoolean } from './helpers'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { matchNamedSelections, showNamedSelection } from './namedSelections'
 
@@ -29,7 +29,7 @@ function visibilityCommand(name: string, visible: boolean): PymCommand {
       ? 'Show objects or renderers, or show a named selection.'
       : 'Hide objects or renderers, or hide a named selection.',
     completions: [{ source: 'objects', description: 'object', suffix: ' ' }],
-    run(ctx, args, cc) {
+    async run(ctx, args, cc) {
       if (visible && !isDefaulted(args.parents, '0')) {
         cc.warn(`${name}: parents is ignored (not supported)`)
       }
@@ -39,22 +39,16 @@ function visibilityCommand(name: string, visible: boolean): PymCommand {
         // then a named selection, whose atoms PyMOL shows or hides.
         const rends = resolveRenderers(ctx, cc.sceneId, args.name)
         for (const rend of rends) {
-          setNodeVisible(ctx, { sceneId: cc.sceneId, nodeId: rend.rendId, nodeType: 'renderer', visible })
+          await setVisible(ctx, cc, rend.rendId, 'renderer', visible)
         }
         if (rends.length > 0) return { ok: true }
         const sels = matchNamedSelections(ctx, cc.sceneId, args.name)
-        for (const sel of sels) showNamedSelection(ctx, cc.sceneId, sel, visible)
+        for (const sel of sels) await showNamedSelection(ctx, cc, sel, visible)
         if (sels.length > 0) return { ok: true }
         return { ok: false, error: `Error: nothing named "${args.name}" in the scene` }
       }
       for (const obj of hits) {
-        const res = setNodeVisible(ctx, {
-          sceneId: cc.sceneId,
-          nodeId: obj.uid,
-          nodeType: 'object',
-          visible,
-        })
-        if (!res.ok) return { ok: false, error: `Error: could not ${name} "${obj.name}"` }
+        if (!(await setVisible(ctx, cc, obj.uid, 'object', visible))) return { ok: false, error: `Error: could not ${name} "${obj.name}"` }
       }
       return { ok: true }
     },

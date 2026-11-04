@@ -15,7 +15,6 @@ import { getCompatibleRendererNames } from '@renderer/worker/server/services/fil
 import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/file/headlessOpen'
 import { loadObject } from '@renderer/worker/server/services/file/loadObject'
 import { streamLoadFromUrl } from '@renderer/worker/server/services/file/streamLoadFromUrl'
-import { deleteNode, renameNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
 import { OBJREADER_CATEGORY, pickReaderName } from '@renderer/worker/server/services/helpers/pickReaderName'
 import { isHiddenObjReader } from '@renderer/worker/server/services/helpers/readerFilter'
 import { pickCoordUrl, pickMapUrl } from '@renderer/worker/shared/pdbUrls'
@@ -45,6 +44,7 @@ import {
   resolveObjects,
   resolvePath,
   resolveRenderers,
+  runOp,
 } from './helpers'
 
 /** Arguments PyMOL's `load` takes that have no counterpart here. */
@@ -216,8 +216,8 @@ async function loadUrl(ctx: WorkerContext, args: Record<string, string>, cc: Cmd
   const res = await streamLoadFromUrl(ctx, { reqId, url, readerName, objectName, sceneId: cc.sceneId, options })
   const norm = normalizeServiceResult(res, `Error: could not load ${url}`)
   if (!norm.ok) return norm
-  adoptPresetRenderers(ctx, cc.sceneId, objectName)
-  applyRememberedToObject(ctx, cc.sceneId, objectName)
+  await adoptPresetRenderers(ctx, cc, objectName)
+  await applyRememberedToObject(ctx, cc, objectName)
   cc.print(` load: "${url}" loaded as "${objectName}".`)
   return { ok: true }
 }
@@ -306,8 +306,8 @@ const load: PymCommand = {
     })
     const norm = normalizeServiceResult(res, `Error: could not load ${filePath}`)
     if (!norm.ok) return norm
-    adoptPresetRenderers(ctx, cc.sceneId, objectName)
-    applyRememberedToObject(ctx, cc.sceneId, objectName)
+    await adoptPresetRenderers(ctx, cc, objectName)
+    await applyRememberedToObject(ctx, cc, objectName)
     cc.print(` load: "${filePath}" loaded as "${objectName}".`)
     return { ok: true }
   },
@@ -507,12 +507,12 @@ const fetch: PymCommand = {
       })
       const norm = normalizeServiceResult(res, `Error: could not fetch ${pdbId}`)
       if (!norm.ok) return norm
-      adoptPresetRenderers(ctx, cc.sceneId, objectName)
+      await adoptPresetRenderers(ctx, cc, objectName)
       if (chain !== '') {
         const kept = keepChain(ctx, cc, objectName, chain)
         if (!kept.ok) return kept
       }
-      applyRememberedToObject(ctx, cc.sceneId, objectName)
+      await applyRememberedToObject(ctx, cc, objectName)
       cc.print(` fetch: "${objectName}" fetched.`)
     }
     return { ok: true }
@@ -520,10 +520,10 @@ const fetch: PymCommand = {
 }
 
 /** Forget the named selections `pattern` names; how many there were. */
-function deleteSelections(ctx: WorkerContext, cc: CmdContext, pattern: string): number {
+async function deleteSelections(ctx: WorkerContext, cc: CmdContext, pattern: string): Promise<number> {
   const sels = matchNamedSelections(ctx, cc.sceneId, pattern)
   for (const sel of sels) {
-    if (removeNamedSelection(ctx, cc.sceneId, sel)) cc.print(` delete: selection "${sel.name}" deleted.`)
+    if (await removeNamedSelection(ctx, cc, sel)) cc.print(` delete: selection "${sel.name}" deleted.`)
   }
   return sels.length
 }
@@ -535,20 +535,16 @@ const deleteCmd: PymCommand = {
   mutates: true,
   summary: 'Remove objects or renderers from the scene. Wildcards and "all" are accepted.',
   completions: [{ source: 'deletable', description: 'name', suffix: ' ' }],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const hits = resolveObjects(ctx, cc.sceneId, args.name)
     if (hits.length > 0) {
       for (const obj of hits) {
-        const res = deleteNode(ctx, {
-          sceneId: cc.sceneId,
-          nodeId: obj.uid,
-          nodeType: 'object',
-        })
+        const res = await runOp(ctx, cc, 'delete_node', { nodeId: obj.uid, nodeType: 'object' })
         if (!res.ok) return { ok: false, error: `Error: could not delete "${obj.name}"` }
         cc.print(` delete: "${obj.name}" deleted.`)
       }
       // PyMOL's `delete all` also forgets the named selections.
-      if (isAllSelection(args.name)) deleteSelections(ctx, cc, args.name)
+      if (isAllSelection(args.name)) await deleteSelections(ctx, cc, args.name)
       return { ok: true }
     }
 
@@ -560,18 +556,14 @@ const deleteCmd: PymCommand = {
     const rends = resolveRenderers(ctx, cc.sceneId, args.name)
     if (rends.length === 0) {
       // Then a named selection, which PyMOL's delete also takes.
-      if (deleteSelections(ctx, cc, args.name) > 0) return { ok: true }
+      if ((await deleteSelections(ctx, cc, args.name)) > 0) return { ok: true }
       // `delete all` on an empty scene is how scripts start; PyMOL says
       // nothing, so neither does this.
       if (isAllSelection(args.name)) return { ok: true }
       return { ok: false, error: `Error: nothing named "${args.name}" in the scene` }
     }
     for (const rend of rends) {
-      const res = deleteNode(ctx, {
-        sceneId: cc.sceneId,
-        nodeId: rend.rendId,
-        nodeType: 'renderer',
-      })
+      const res = await runOp(ctx, cc, 'delete_node', { nodeId: rend.rendId, nodeType: 'renderer' })
       if (!res.ok) return { ok: false, error: `Error: could not delete "${rend.rendName}"` }
       cc.print(` delete: "${rend.objName}/${rend.rendName}" deleted.`)
     }
@@ -589,7 +581,7 @@ const setName: PymCommand = {
     { source: 'names', description: 'name', suffix: ', ' },
     { source: 'names', description: 'name', suffix: '' },
   ],
-  run(ctx, args, cc) {
+  async run(ctx, args, cc) {
     const newName = args.new_name.trim()
     if (newName === '') return { ok: false, error: 'Error: no new name given' }
     // Looked up in delete's order: object, renderer, named selection.
@@ -600,18 +592,17 @@ const setName: PymCommand = {
       return { ok: false, error: `Error: "${args.old_name}" names more than one thing` }
     }
     if (objs.length === 1 || rends.length === 1) {
-      const res = renameNode(ctx, {
-        sceneId: cc.sceneId,
+      const res = await runOp(ctx, cc, 'rename_node', {
         nodeId: objs.length === 1 ? objs[0].uid : rends[0].rendId,
         nodeType: objs.length === 1 ? 'object' : 'renderer',
-        newName,
+        name: newName,
       })
       if (!res.ok) return { ok: false, error: `Error: could not rename "${args.old_name}"` }
       return { ok: true }
     }
     const sel = namedSelections(ctx, cc.sceneId).find((s) => s.name === args.old_name.trim())
     if (!sel) return { ok: false, error: `Error: nothing named "${args.old_name}" in the scene` }
-    if (!renameNamedSelection(ctx, cc.sceneId, sel, newName)) {
+    if (!(await renameNamedSelection(ctx, cc, sel, newName))) {
       return { ok: false, error: `Error: could not rename "${args.old_name}"` }
     }
     return { ok: true }

@@ -48,7 +48,8 @@ export type { CompletionContext, CompletionOutcome, Group, Offer } from './compl
 
 // --- Runtime helpers a command uses ---
 export { resolvePath } from './runtime/paths'
-export { opContextOf } from './runtime/opContext'
+export { opContextOf, runOp } from './runtime/opContext'
+export type { OpRun } from './runtime/opContext'
 export { quitCommand } from './runtime/quitCommand'
 export { closeLog, currentLog, openLog, writeLog } from './runtime/commandLog'
 export { commandHelp, commandTable } from './help/helpMarkdown'
