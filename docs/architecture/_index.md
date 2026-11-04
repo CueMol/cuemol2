@@ -149,6 +149,10 @@ architecture, it belongs here.
   `deleteAtoms` / `copyAtoms` の undo / redo が記録するもの (数値 ID・原子の複製・残基の property)、
   selection を評価し直さないこと、座標の undo などが ID で原子を指すため元の ID に戻すこと
   (`AtomPool::putAt`)、altloc の連動削除の扱い、既知の制約。
+- [undo / redo / rollback が失敗したとき (libcuemol2 / tritium)](undo-failure.md) (日本語) --
+  失敗したら undo / redo の履歴をすべて捨てる理由 (`EditInfo` に失敗時の無変更の保証が無い)、記録を止める
+  guard と例外の捕捉、rollback の失敗、worker で 1 step ずつ実行して成功数と失敗した step を GUI の alert と
+  console に伝えること。
 - [MD Trajectory の遅延フレーム読み込み (libcuemol2)](md-trajectory-lazy-loading.md) (日本語) --
   DCD / XTC / TRR を、開いた時点で全展開せず表示されたフレームだけ読む設計。
   `InStream` の 64bit seek が入って前提が変わった経緯、`canLazyLoad` の適用条件
