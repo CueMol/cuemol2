@@ -12,22 +12,33 @@ import { COLOR_COMMANDS } from './colorCommands'
 import { DISPLAY_COMMANDS } from './displayCommands'
 import { FILE_COMMANDS } from './fileCommands'
 import { MISC_COMMANDS, setCommandList } from './miscCommands'
+import { VIEW_COMMANDS } from './viewCommands'
 
 /** Every command, in ChimeraX's registration order. */
 export const CHX_COMMANDS: readonly ChxCommand[] = [
   DISPLAY_COMMANDS.cartoon,
   DISPLAY_COMMANDS.cartoonHide,
   FILE_COMMANDS.close,
+  VIEW_COMMANDS.cofr,
   COLOR_COMMANDS.color,
   FILE_COMMANDS.delete,
+  VIEW_COMMANDS.graphicsSilhouettes,
   DISPLAY_COMMANDS.hide,
+  VIEW_COMMANDS.move,
   FILE_COMMANDS.open,
+  VIEW_COMMANDS.set,
   DISPLAY_COMMANDS.show,
   DISPLAY_COMMANDS.style,
+  VIEW_COMMANDS.turn,
   MISC_COMMANDS.undo,
   MISC_COMMANDS.redo,
   MISC_COMMANDS.usage,
   MISC_COMMANDS.view,
+  VIEW_COMMANDS.viewList,
+  VIEW_COMMANDS.viewDelete,
+  VIEW_COMMANDS.viewName,
+  VIEW_COMMANDS.viewMatrix,
+  VIEW_COMMANDS.zoom,
   MISC_COMMANDS.help,
 ]
 
