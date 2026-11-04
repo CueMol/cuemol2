@@ -183,8 +183,8 @@ export function quatAxisAngle(u: [number, number, number], deg: number): Quat {
 
 /**
  * The view rotation after the scene turns by `deg` about the screen axis
- * `u`, as ChimeraX's `turn` (the camera turns the other way): screen = Rᵀ
- * world, and the scene's screen coordinates turning by T gives R' = R T⁻¹.
+ * `u`, as ChimeraX's `turn` (the camera turns the other way): screen = R^T
+ * world, and the scene's screen coordinates turning by T gives R' = R T^-1.
  */
 export function turnedRotation(q: Quat, u: [number, number, number], deg: number): Quat {
   return quatMul(q, quatAxisAngle(u, -deg))
