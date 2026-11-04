@@ -11,6 +11,7 @@ import { resolveWords, usageOf } from '../cli/syntax'
 import { framingOf } from '../camera'
 import { runOp, targetsOf } from '../display'
 import { warnIgnored } from './warn'
+import { recallView } from './viewCommands'
 
 const view = chxCommand({
   words: ['view'],
@@ -20,8 +21,13 @@ const view = chxCommand({
     { name: 'pad', type: StringArg, role: 'keyword', ignored: true },
   ],
   mutates: false,
-  summary: 'Move the camera so that what is named (everything when nothing is) fills the view.',
+  summary: 'Move the camera so that what is named (everything when nothing is) fills the view, or show a named view.',
   async run(ctx, args, cc) {
+    // `view v1`: a word that is no specification lands in `frames`; a saved view by that name is shown.
+    if (args.objects === '' && args.frames !== '' && !/^\d+$/.test(args.frames)) {
+      const recalled = await recallView(ctx, cc, args.frames)
+      return recalled ?? { ok: false, error: `Error: view: "${args.frames}" is neither an atom specification nor a named view` }
+    }
     warnIgnored(cc, 'view', args, ['frames', 'pad'])
     const found = targetsOf(ctx, cc.sceneId, args.objects)
     if (!found.ok) return found

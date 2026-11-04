@@ -111,6 +111,18 @@ function numberArg(name: string, re: RegExp): ArgType {
   }
 }
 
+/** An axis (cli.py `AxisArg`): `x`, `y`, `z` with an optional `-`, or three comma-separated numbers. */
+export const AxisArg: ArgType = {
+  name: 'an axis vector',
+  values: () => ['x', 'y', 'z'],
+  parse(text) {
+    const t = nextToken(text)
+    if (!t) return null
+    const ok = /^-?[xyz]$/i.test(t.value) || /^[-+.\d]+,[-+.\d]+,[-+.\d]+$/.test(t.value)
+    return ok ? { value: t.value, rest: t.rest } : null
+  },
+}
+
 export const IntArg = numberArg('an integer', /^[-+]?\d+$/)
 export const FloatArg = numberArg('a number', /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/)
 

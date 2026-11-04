@@ -186,9 +186,34 @@ renderer で表し、**その selection と paint が表示の状態そのもの
 | `cartoon` / `cartoon hide` | `[spec]`、`smooth` / `suppressBackboneDisplay` (無視) | `set_renderer_selection` | |
 | `style` | `[spec] stick\|ball\|sphere`、`dashes` / `ringFill` (無視) | `set_renderer_selection` | |
 | `color` | `[spec] [色 \| byhetero \| byelement]`、`target`、`transparency` / `halfbond` / `what` (無視) | `set_renderer_coloring`、`add_paint_at` | target の既定は ChimeraX と同じ `acsbpf`。色は名前、hex (`#rgb` から 16 桁まで、alpha 付きも)、`rgb()` `rgba()` `hsl()` `hsla()` `gray()` (数値は整数なら 0-255、小数点付きなら 0-1、`%`、色相は `deg` / `rad` / `grad` / `turn`)、`r,g,b[,a]` の百分率 (`colors.ts`)。CueMol の paint は alpha を持たないので、色が alpha を述べていれば warn して不透明で塗る |
-| `view` | `[spec]`、`frames` / `pad` (無視) | `set_view` | 下記 |
+| `view` | `[spec]`、`frames` / `pad` (無視)、`view <名前>` | `set_view`、`apply_camera` | 下記。spec でない語は名前付き view として戻す |
+| `view name` / `view list` / `view delete` | `name` / `name\|all` | `save_camera`、`list_cameras`、`delete_camera` | ChimeraX の予約語 (`clip` `cofr` `delete` `list` `matrix` ...) を前方一致で含む名前は断る。CueMol のカメラは視点だけで、ChimeraX のように model の位置は戻さない |
+| `view matrix` | `camera M` (12 数値)、`models` / `coordinateSystem` は断る | `set_view` ×2、`set_projection` | 下記 |
+| `turn` | `[axis] [angle] [frames]` (既定 y、90°) | `set_view` (`rotation`) | 下記。`center` `coordinateSystem` `rock` `wobble` `models` `atoms` は断る |
+| `move` | `axis [distance] [frames]` (Å、既定 1) | `set_view` (`center`) | 下記。`coordinateSystem` `models` `atoms` は断る |
+| `cofr` | 引数無し / `centerOfView` | (読み取り) | `Center of rotation: x y z  center of view` と出す。CueMol は view の中心で回すので、対象や点を指定する形は「視点が動いてしまう」として断り、`view <spec>` を案内する |
+| `zoom` | `[factor] [frames]`、`pixelSize` | `set_view` (`zoom`) | CueMol の zoom は view の高さ (Å) なので `zoom / factor`。1 pixel = zoom / 高さ (px) Å。引数無しは `Pixel size at center of rotation is ...`。`frames` は warn (ChimeraX は倍率を frames 全体で達成するので掛けない) |
+| `set` | `bgColor`、`silhouettes` `silhouetteWidth` `silhouetteColor` | `set_node_prop` | 引数無しは背景色を出す。他の keyword は warn |
+| `graphics silhouettes` | `[true\|false]`、`width` `color`、`depthJump` (無視) | `set_node_prop` (`egtype` `eglinew` `egcolor`) | 下記 |
 | `undo` / `redo` | | (runtime) | 行に単独のとき txn の外で (`undoStack`) |
 | `usage` / `help` | `[command]` | | |
+
+**カメラの向き**: CueMol の view は world の軸 = R(q) × 画面の軸 で、`forward_vec` は画面の +z (手前)。ChimeraX の camera
+も -z を向くので、軸は同じ向きで対応する (`camera.ts` の `readCamera`)。
+
+- `turn`: 画面の軸 u (`x` `-y` や 3 数値) の周りに scene を回す。今の回転 q に `q · rot(u, -θ)` を掛けて `set_view` で書く
+  (`turnedRotation`)。`rotate_view` は ChimeraX と逆向きに回るので使わない。
+- `move`: 画面の軸を world に直し、中心を `-d·軸` 動かす (scene が +d に動いて見える)。
+- `frames`: アニメーションはしない。有限の数は、ChimeraX が毎 frame 同じ角度・距離を繰り返すので掛けて一度に動かし
+  (`turn y 3 30` は 90°)、`forever` は断る。
+- `view matrix camera M`: 3×4 行列を行ごとに (列 0-2 が軸、列 3 が目の位置)。ChimeraX の camera は位置だけを持つが、CueMol は
+  目の前 `distance` の中心の周りに回り、その前後 `slab` だけを描く。そこで、中心は視線が表示中の分子の中心を通る点に置き、
+  distance はそこまでの距離にする。zoom は ChimeraX の水平の視野角 30° になる高さ (`2·d·tan15°/縦横比`)、投影は透視投影
+  (`set_projection`)、slab は分子に合わせ直す (`set_view` の `fitSlab`)。引数無しは `view matrix camera ...` を `%.5g` で出す。
+  model の行列は無い (CueMol の object は位置を持たない)。
+- `graphics silhouettes`: ChimeraX は view 全体の設定、CueMol は renderer ごとの輪郭線 (`egtype=silhouette`) なので、面を描く
+  全 renderer (Inspector の `NO_EDGE_LINE_TYPES` 以外) に書く。幅は ChimeraX が pixel、CueMol が Å なので、今の zoom で
+  換算する (以後の zoom で太さが変わることを warn)。
 
 **view**: ChimeraX の `view` と同じく、向きを変えずに、名指したもの (無ければ全部) が収まるように center・zoom・slab を
 1 回の `set_view` で書く。範囲は object ごとの式の原子を、view の軸 (`right_vec` / `up_vec` / `forward_vec`) で読んで求める
