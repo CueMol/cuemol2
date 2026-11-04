@@ -26,7 +26,7 @@ ChX console (plugin `chimerax-console`) は、基盤と基本コマンドだけ�
 | PR | 内容 |
 |---|---|
 | PR 1 | (実装済み) atom spec の拡張、色の書き方の拡張 |
-| PR 2 | 視点: `turn` `move` `cofr` `zoom`、`view` の名前付き view と `view matrix`、`set bgColor`、`graphics silhouettes` |
+| PR 2 | (実装済み) 視点のコマンド |
 | PR 3 | 選択と名前: `select` 一式、`name` 一式、`info` 一式、`alias` 一式 |
 | PR 4 | 表現と解析: `surface` 一式、`transparency`、`label` 一式、`distance` 一式、`align`、`matchmaker`、`save` |
 | PR 5 | 色の拡張 (`bychain` `bymodel` `random`、`rainbow`) と、`open` の auto style |
@@ -41,20 +41,10 @@ atom spec の zone・属性 test・wildcard・`start`/`end` と色の書き方�
 (`docs/architecture/console-chimerax-dialect.md` §3、§6)。残りの selector の拡張 (今の選択 `sel`、scene の名前付き
 selection の名前) は PR 3 で行う。
 
-## 3. PR 2: 視点
+## 3. (PR 2 は実装済み)
 
-`camera.ts` の view の軸の読み取りを再利用する。視点の op は undo の step にならない (`replay` で記録)。
-
-| コマンド | 実装 | 断る・warn するもの |
-|---|---|---|
-| `turn [axis] [angle] [frames]` (既定 y、90°) | 画面軸 x/y/z (符号付き) は `rotate_view`。3 数値の軸は、view の回転に quaternion を合成して `set_view rotation`。有限の `frames` は、ChimeraX が毎 frame 同じ角度を回すので、`angle × frames` を一度に回す (`turn y 3 30` は 90°) | アニメーションはしないことを warn。`frames forever` は最終状態が無いので断る。`center` `coordinateSystem` `models` `atoms` `rock` `wobble` は断る |
-| `move axis [distance] [frames]` (Å) | 画面軸を view の軸で world に直し、center を `−d·軸` だけ動かして `set_view center` (scene が +d に動いて見える)。有限の `frames` は `distance × frames` を一度に動かす (`move x 1 10` は 10 Å) | アニメーションはしないことを warn。`frames forever` は断る。`models` `atoms` は断る (座標を動かす op が無い) |
-| `cofr` | 引数無しは `Center of rotation: x y z centerOfView` と出す (`set_view` を全部 null で呼んで読む)。`centerOfView` は受け付ける | spec や点を指定する形は断る。CueMol は view の中心で回すので、cofr を動かすと視点が動き、ChimeraX と意味が違う (`view <spec>` を案内する) |
-| `zoom [factor] [frames]`、`pixelSize p` | CueMol の zoom は view の高さ (Å)。`zoom / factor`、`p × view の高さ (px)` を `set_view zoom` で書く。引数無しは pixel size を出す | `frames` は warn。ChimeraX の `zoom` は倍率を frames 全体で達成するので、`turn` / `move` と違い掛け算はしない |
-| `view name N` / `view N` / `view list` / `view delete N\|all` | `save_camera`、`apply_camera`、`list_cameras`、`delete_camera`。`view <x>` は、x がカメラ名ならその view を戻し、そうでなければ今の spec の fit | ChimeraX は model の位置も戻すが、CueMol のカメラは視点だけ。doc に書く。予約語 (`clip` `cofr` `delete` `list` `matrix` ...) を前方一致で含む名前は断る (ChimeraX と同じ) |
-| `view matrix camera M` | 3×4 行優先 (列 0–2 が軸、列 3 が位置、-z を向く、水平 FOV 30° の透視投影)。`center = t + d·v`、`rotation = quat(Rᵀ)`、`zoom = 2·d·tan(15°)/aspect` を `set_view` で書き、`set_projection perspective=true` で透視投影にする (CueMol の既定は平行投影で、透視投影の視野は zoom と distance から決まる (`GUIView` の `makePersProjMat`) ので、この 2 つで ChimeraX の FOV 30° と一致する)。引数無しは `camera` の行を `%.5g` で出す | `models` は断る |
-| `set bgColor c` | `set_node_prop` (scene の `bgcolor`)。引数無しは今の背景色を出す | 他の keyword は断る |
-| `graphics silhouettes [true\|false] width c color c` | scene の renderer のうち `egtype` を持つものすべてに `set_node_prop egtype=silhouette` / `none`、`egcolor`。width (px) は今の pixel size で Å に直して `eglinew` | width が zoom と一緒に変わることを warn。`depthJump` は warn |
+`turn` `move` `cofr` `zoom`、名前付き view と `view matrix`、`set bgColor`、`graphics silhouettes` は実装した
+(`docs/architecture/console-chimerax-dialect.md` §6)。
 
 ## 4. PR 3: 選択・名前・info・alias
 
@@ -152,9 +142,6 @@ selection の名前) は PR 3 で行う。
 
 ## 8. テスト (PR ごとの最小集合)
 
-- PR 2:
-  - `view matrix` の往復 (行列 → `set_view` の引数 → 出力が元の行列に戻る) と、`set_projection perspective=true` が呼ばれること。
-  - `move` の向き (scene が +d に動く) と、有限の `frames` で `distance × frames` 動くこと (`turn` も同じ規則)。
 - PR 3:
   - `select add` / `subtract` / `intersect` の組み合わせ。
   - `alias` の `$1` / `$*` の展開と、自分自身への展開を 1 段で止めること。
@@ -186,8 +173,6 @@ selection の名前) は PR 3 で行う。
    から、`task run_tritium` で起動マーカーを確認する。
 2. `task run_tritium_cli -- --dialect chimerax -c '...'` で PR の範囲のコマンドを流し、History pane の子行に op が並ぶこと、
    断るものが理由を言うことを確かめる。たとえば次のようなもの:
-   - PR 2: `turn y 30; move x 5; zoom 2; view name v1; view matrix`。`view matrix camera ...` の後で、奥行きの違う原子の見かけの
-     大きさが ChimeraX と同じ透視投影になっていることを目視で見る
    - PR 3: `select /A:1-10; select add :CYS; name site /A:20-25; info chains`
    - PR 4: `surface; hide /A surfaces; show /A surfaces; color /A red target s; transparency 50; label :10; distance /A:10@CA /A:20@CA; save ~/Desktop/x.png width 400`
    - PR 5: `open 4hhb`、`color bychain`、`rainbow`
