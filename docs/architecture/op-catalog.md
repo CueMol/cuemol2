@@ -47,6 +47,7 @@ dialect の plugin は console の内部を `@plugins/console/worker/dialect-api
 | 省略可能 | `optional(p)` | `[type, "null"]` | 省略 (既定値 `''`) |
 | object uid | `objectId(desc, objClass?)` / `rendererId` | integer | `1crn`、`#12`。`objClass` (例 `'MolCoord'`) を付けると、その class か派生 class の object 以外を console / qax の解決時に拒否する (`"x" is not a MolCoord object`) |
 | node uid | `nodeId(desc, typeParam)` | integer + 種別 enum | `1crn`、`1crn/cartoon1`、`#12` (種別も解決される)。object と renderer の区切りは `/` だけ (object 名がファイル名由来で `.` を含むため) |
+| node uid の列 | `nodeIds(desc)` | integer の配列 | `1crn 2xyz/cartoon1`、`1*` (空白区切り。パターンは一致した node 全部に広がり、重複は除く。1 回の op 呼び出しに全部を渡し、node ごとに op を繰り返さない。どれか 1 つでも引けなければ失敗)。記録は node ごとの path を改行でつないで持ち (`NODE_LIST_SEP`)、qax では node 1 つにつき同じ名前の `<arg>` を 1 つ書く |
 | selection | `selection` | string | CueMol 選択式をそのまま (bind 時に `validateSelection`) |
 | colour / path | `color` / `path` | string | 色名・`#rrggbb` / cwd 基準のパス |
 | renderer type | `rendererType` | string | 補完は対象 object の作成可能 type |
@@ -413,6 +414,12 @@ set は名前で指す。同じ名前があれば scene の set を global (syst
   console では空白区切り、qax では `a x y z`)。書く順は rotation -> center -> distance -> slab -> zoom
   (`setViewXform`)。C++ の `View::setSlabDepth` が slab をその時点の distance の 2 倍までに切り詰めるので、
   distance を先に書かないと遠い視点の slab が欠ける。
+- `focus_nodes nodeIds` (console の `focus`): object・renderer・renderer group を混ぜて、向きを変えずに全部が
+  収まるように center・zoom・slab を合わせる (scene tree で複数選択して Focus したときと同じ)。範囲は node ごとに
+  `focus_node` が合わせる範囲 (molecule の原子、renderer の selection、map の cell 全体) を view の軸で読んだ
+  box (`MolCoord::getFitBoxJSON` / `DensityMap::getFitBoxJSON`) の和で、合わせるのは `View::fitToBox`
+  (4 A より細い軸は 4 A に、zoom は幅か高さを view の縦横比で、slab は奥行き)。node が 1 つなら
+  `focus_node` と同じ処理。`focus_node` (node 1 つ) は PyMOL dialect が使うので残している。
 - `focus_selection objId, selection, zoom`: object の中の selection に視点を合わせる (`zoom` false は中心だけ)。
   `center_view` と違い、object の選択を書き換えず undo の行も作らない。`orient_view objId, selection`: selection
   の主軸を画面の軸に合わせてから合わせる (`MolCoord.orientView`)。どちらも `mutates: false`、`replay: true`。

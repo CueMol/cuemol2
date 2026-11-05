@@ -100,6 +100,9 @@ runtime_class View
   void setViewCenter(object<Vector> pos);
   object<Vector> getViewCenter() => getViewCenterScr;
 
+  /// Frame a box given in the view's rotated frame (see View::fitToBox)
+  void fitToBox(object<Vector> vmin, object<Vector> vmax);
+
   // translate (in view coordinates, in pixels)
   void translateView(real x, real y, real z);
   // translate (the same as translateView() with generating XXX_PROPDRG type event)

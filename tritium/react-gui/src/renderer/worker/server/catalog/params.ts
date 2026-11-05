@@ -17,7 +17,7 @@
  */
 
 /** The `.qif` scalar types, plus the one structured kind ops need. */
-export type ParamKind = 'boolean' | 'integer' | 'real' | 'string' | 'enum' | 'vec3' | 'quat' | 'atoms'
+export type ParamKind = 'boolean' | 'integer' | 'real' | 'string' | 'enum' | 'vec3' | 'quat' | 'atoms' | 'nodes'
 
 /**
  * What a value means beyond its type.
@@ -137,6 +137,27 @@ export function rendererId(description: string): Param<number> {
  */
 export function nodeId(description: string, typeParam: string): Param<number> {
   return param('integer', description, { semantic: 'node', typeParam })
+}
+
+/**
+ * Uids of several objects, renderers or renderer groups, for an op that acts
+ * on them together rather than once each (a console reads every word of the
+ * argument into this one list instead of running the op once per node).
+ * What each uid refers to is looked up from the uid itself.
+ */
+export function nodeIds(description: string): Param<number[]> {
+  return param('nodes', description, { semantic: 'node' })
+}
+
+/**
+ * A node list's paths as a record keeps them: one `refs` entry holds them all,
+ * one per line (a node name has no line break).
+ */
+export const NODE_LIST_SEP = '\n'
+
+/** A node list's paths from its `refs` entry, or its uids as `#uid` when there is none. */
+export function nodeListPaths(ids: readonly number[], ref: string | undefined): string[] {
+  return ref !== undefined ? ref.split(NODE_LIST_SEP) : ids.map((id) => `#${id}`)
 }
 
 /**

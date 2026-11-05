@@ -57,6 +57,9 @@ function paramSchema(p: Param<unknown>): Record<string, unknown> {
     // items, so minItems/maxItems is rejected outright by one provider.
     return { type: 'array', description: p.description, items: ATOM_ITEM_SCHEMA }
   }
+  if (p.kind === 'nodes') {
+    return { type: p.optional ? ['array', 'null'] : 'array', description: p.description, items: { type: 'integer' } }
+  }
   if (p.kind === 'vec3' || p.kind === 'quat') {
     // Three (or four) numbers; the count is checked when read, for the same strict-mode
     // reason as `atoms`. Nullable when optional, like any other argument.
@@ -116,7 +119,7 @@ function readJsonArg(name: string, p: Param<unknown>, value: unknown): { value: 
   const parsed =
     p.kind === 'boolean' ? (typeof value === 'string' ? parseBoolText(value) : value)
     : p.kind === 'integer' || p.kind === 'real' ? (typeof value === 'string' ? parseNumberText(value) : value)
-    : numberListSize(p.kind) !== null ? (Array.isArray(value) ? value.map(Number) : value)
+    : numberListSize(p.kind) !== null || p.kind === 'nodes' ? (Array.isArray(value) ? value.map(Number) : value)
     : String(value)
   const bad = checkArg(name, p, parsed)
   return bad ? bad : { value: parsed }

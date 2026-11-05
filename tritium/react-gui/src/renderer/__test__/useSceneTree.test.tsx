@@ -210,10 +210,10 @@ const WIRE_CASES: WireCase[] = [
         payload: { sceneId: SCENE_ID, nodeId: 42, nodeType: 'object', visible: false },
     },
     {
-        name: 'focusNode',
-        run: (r) => r.focusNode(5, '42'),
-        channel: 'focusOnNode',
-        payload: { sceneId: SCENE_ID, viewId: 5, nodeId: 42, nodeType: 'object' },
+        name: 'focusNodes',
+        run: (r) => r.focusNodes(5, ['42', '100']),
+        channel: 'focusOnNodes',
+        payload: { sceneId: SCENE_ID, viewId: 5, nodeIds: [42, 100] },
     },
     {
         name: 'deleteNode (renderer)',
@@ -420,7 +420,7 @@ describe('useSceneTree — return-value mapping', () => {
         const cm = makeCm()
         const h = await mountReady(cm)
         let ok: unknown
-        await act(async () => { ok = await h.result.focusNode(5, '42') })
+        await act(async () => { ok = await h.result.focusNodes(5, ['42']) })
         expect(ok).toBe(true)
         h.unmount()
     })
@@ -547,12 +547,12 @@ describe('useSceneTree — selection state', () => {
         h.unmount()
     })
 
-    it('multi-select disables focus/property but keeps delete', async () => {
+    it('multi-select keeps focus and delete but disables property', async () => {
         const cm = makeCm()
         const h = await mountReady(cm)
         act(() => { h.result.setSelectedId('42') })
         act(() => { h.result.toggleInSelection('100') })
-        expect(h.result.selectedHasOps.focus).toBe(false)
+        expect(h.result.selectedHasOps.focus).toBe(true)
         expect(h.result.selectedHasOps.property).toBe(false)
         expect(h.result.selectedHasOps.delete).toBe(true)
         h.unmount()

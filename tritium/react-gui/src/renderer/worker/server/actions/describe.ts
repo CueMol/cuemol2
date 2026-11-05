@@ -13,6 +13,7 @@
 import { findOp } from '@renderer/worker/server/catalog'
 import type { AnyOp } from '@renderer/worker/server/catalog/op'
 import type { ParamMap } from '@renderer/worker/server/catalog/params'
+import { nodeListPaths } from '@renderer/worker/server/catalog/params'
 import type { ActionEntry, ActionRow, OpEntry } from './actionLog'
 
 /** Longest line shown; the rest is cut with `...`. */
@@ -32,9 +33,13 @@ function opWords(name: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1)
 }
 
-/** How a node argument is named: the path it had, else its uid. */
+/** How a node argument is named: the path it had, else its uid; a node list by all of them. */
 function namer(entry: OpEntry): (param: string) => string {
-  return (param) => entry.refs[param] ?? (typeof entry.args[param] === 'number' ? `#${String(entry.args[param])}` : '?')
+  return (param) => {
+    const v = entry.args[param]
+    if (Array.isArray(v)) return nodeListPaths(v as number[], entry.refs[param]).join(', ')
+    return entry.refs[param] ?? (typeof v === 'number' ? `#${String(v)}` : '?')
+  }
 }
 
 /** The op's name and the arguments given, nodes by name. */
@@ -44,7 +49,7 @@ function fallback(op: AnyOp, entry: OpEntry): string {
   for (const [param, p] of Object.entries(op.params as ParamMap)) {
     const v = entry.args[param]
     if (v === null || v === undefined || p.kind === 'atoms') continue
-    if (REF_SEMANTICS.has(p.semantic ?? '') && typeof v === 'number') parts.push(name(param))
+    if (REF_SEMANTICS.has(p.semantic ?? '') && (typeof v === 'number' || p.kind === 'nodes')) parts.push(name(param))
     else if (p.kind === 'enum' && param.endsWith('Type')) continue
     else parts.push(Array.isArray(v) ? v.join(' ') : String(v))
   }

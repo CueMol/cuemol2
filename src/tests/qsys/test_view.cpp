@@ -619,3 +619,24 @@ TEST(ViewPropChgEventTest, SetCenterMarkIsSilentWhenUnchanged)
     v.setCenterMark(qsys::Camera::CCM_AXIS);
     EXPECT_EQ(rec.count("centerMark"), 0);
 }
+
+// --- fitToBox ---
+
+TEST(ViewFitToBoxTest, FramesTheBoxByTheWiderAxisForTheAspect)
+{
+    qsys::TTYView v;
+    v.setViewSize(200, 100);
+    // Identity rotation: the box is already in screen axes.
+    v.fitToBox(Vector4D(0, 0, 0), Vector4D(100, 20, 1));
+    const Vector4D c = v.getViewCenter();
+    EXPECT_DOUBLE_EQ(c.x(), 50.0);
+    EXPECT_DOUBLE_EQ(c.y(), 10.0);
+    EXPECT_DOUBLE_EQ(c.z(), 0.5);
+    // 100 wide on a 2:1 view needs a height of 50; the thin z axis is grown to the minimum.
+    EXPECT_DOUBLE_EQ(v.getZoom(), 50.0);
+    EXPECT_DOUBLE_EQ(v.getSlabDepth(), qsys::View::FIT_MIN_EXTENT);
+
+    // An empty box leaves the view alone.
+    v.fitToBox(Vector4D(1, 0, 0), Vector4D(0, 0, 0));
+    EXPECT_DOUBLE_EQ(v.getZoom(), 50.0);
+}

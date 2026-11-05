@@ -8,7 +8,7 @@
 
 import { bulkDeleteNode, bulkSetNodeVisible } from './bulkSceneNodeOps';
 import { reorderSceneNode } from './reorderSceneNode';
-import { deleteNode, focusOnNode, renameNode } from './sceneOps';
+import { deleteNode, focusOnNode, focusOnNodes, renameNode } from './sceneOps';
 import { getSceneTree, setNodeUiCollapsed, setNodeVisible } from './sceneTree';
 
 export const services = {
@@ -16,6 +16,7 @@ export const services = {
     bulkDeleteNode,
     reorderSceneNode,
     focusOnNode,
+    focusOnNodes,
     deleteNode,
     renameNode,
     getSceneTree,

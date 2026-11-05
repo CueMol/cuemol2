@@ -23,8 +23,11 @@ export interface SceneTreeNodeOps {
      * (object / rendGroup rows only; fire-and-forget, no undo txn).
      */
     setNodeUiCollapsed: (id: string, collapsed: boolean) => void
-    /** Focus a node (typically the selection) in the given view. */
-    focusNode: (viewId: number, id: string) => Promise<boolean>
+    /**
+     * Focus one or more nodes (typically the selection) in the given view;
+     * several are framed together.
+     */
+    focusNodes: (viewId: number, ids: readonly string[]) => Promise<boolean>
     /** Delete a node (typically the selection). */
     deleteNode: (id: string) => Promise<boolean>
     /** Rename a node (object / renderer / rendGroup). */
@@ -117,19 +120,16 @@ export function useSceneTreeNodeOps(
         [cm, sceneIdRef, tree],
     )
 
-    const focusNode = useCallback(
-        async (viewId: number, id: string): Promise<boolean> => {
+    const focusNodes = useCallback(
+        async (viewId: number, ids: readonly string[]): Promise<boolean> => {
             const sid = sceneIdRef.current
             if (!cm || sid === undefined) return false
-            const found = findTypedNode(tree, id)
-            if (!found) return false
-            const { numId, node } = found
-            const res = await cm.invokeService('focusOnNode', {
-                sceneId: sid,
-                viewId,
-                nodeId: numId,
-                nodeType: node.type as SceneNodeType,
+            const nodeIds = ids.flatMap((id) => {
+                const found = findTypedNode(tree, id, 'object', 'renderer', 'rendGroup')
+                return found ? [found.numId] : []
             })
+            if (nodeIds.length === 0) return false
+            const res = await cm.invokeService('focusOnNodes', { sceneId: sid, viewId, nodeIds })
             return res?.ok === true
         },
         [cm, sceneIdRef, tree],
@@ -417,7 +417,7 @@ export function useSceneTreeNodeOps(
         () => ({
             toggleVisibility,
             setNodeUiCollapsed,
-            focusNode,
+            focusNodes,
             deleteNode,
             renameNode,
             selectObjectMol,
@@ -430,7 +430,7 @@ export function useSceneTreeNodeOps(
             resolveNodeName,
         }),
         [
-        toggleVisibility, setNodeUiCollapsed, focusNode, deleteNode, renameNode,
+        toggleVisibility, setNodeUiCollapsed, focusNodes, deleteNode, renameNode,
         selectObjectMol, copyNode, pasteNode, moveSceneNode, bulkSetNodeVisible,
         bulkDeleteNodes, bulkCopyNodes, resolveNodeName,
         ],

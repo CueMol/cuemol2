@@ -1,7 +1,7 @@
 /**
  * @file worker/server/services/sceneOps.service.ts
  * @description Worker-thread services for ScenePane toolbar / context-menu
- * operations on the selected scene-tree node: focus (zoom-to), delete and
+ * operations on the selected scene-tree node(s): focus (zoom-to), delete and
  * rename.
  *
  * Runs in the Web Worker thread; C++ wrappers are called synchronously.
@@ -19,6 +19,7 @@ import { withUndoTxn } from '../withUndoTxn';
 import { destroyStyleSetIn } from '../style/styleOps';
 import { recordDeleteNode, recordOp, recordRenameNode } from '@renderer/worker/server/actions/serviceOps';
 import { safeRead } from '@renderer/worker/server/services/helpers/safeRead';
+import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { listGroupChildRenderers } from '@renderer/worker/server/services/helpers/groupChildren';
 import { collectGroupMemberUids } from '@renderer/worker/server/services/helpers/rendGroup';
 
@@ -27,9 +28,22 @@ export interface FocusOnNodeArgs {
     viewId: number;
     nodeId: number;
     nodeType: SceneNodeType;
+    /** False when the caller records the op itself (`focusOnNodes`). */
+    record?: boolean;
 }
 
 export interface FocusOnNodeResult {
+    ok: boolean;
+}
+
+export interface FocusOnNodesArgs {
+    sceneId: number;
+    viewId: number;
+    /** Uids of objects, renderers or renderer groups, in any mix. */
+    nodeIds: number[];
+}
+
+export interface FocusOnNodesResult {
     ok: boolean;
 }
 
@@ -88,7 +102,7 @@ export function focusOnNode(ctx: WorkerContext, args: FocusOnNodeArgs): FocusOnN
     const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
     const view = ctx.sceMgr.getView(args.viewId) as GUIView;
     if (!scene || !view) return { ok: false };
-    if (args.nodeType === 'object' || args.nodeType === 'renderer' || args.nodeType === 'rendGroup') {
+    if (args.record !== false && (args.nodeType === 'object' || args.nodeType === 'renderer' || args.nodeType === 'rendGroup')) {
         recordOp(ctx, scene.uid, 'focus_node', { nodeId: args.nodeId, nodeType: args.nodeType }, ['nodeId']);
     }
 
@@ -133,6 +147,124 @@ export function focusOnNode(ctx: WorkerContext, args: FocusOnNodeArgs): FocusOnN
 
     // scene / camera / style: no focus action.
     return { ok: false };
+}
+
+/** A box in the view's rotated frame, as `getFitBoxJSON` returns it. */
+interface FitBox {
+    min: [number, number, number];
+    max: [number, number, number];
+}
+
+/** What fitting several nodes needs of a molecule or a map. */
+interface FitBoxSource {
+    getFitBoxJSON(view: unknown, sel?: unknown): string;
+}
+
+/** What fitting several nodes needs of the view. */
+interface FitView {
+    fitToBox(vmin: unknown, vmax: unknown): void;
+}
+
+/**
+ * The fit box of the atoms `sel` matches in a MolCoord (all of them when
+ * `sel` is null), or of the whole map for a density map; null when the
+ * object has no fit box or nothing matched.
+ */
+function fitBoxOf(
+    ctx: WorkerContext,
+    obj: CueMolObject,
+    view: GUIView,
+    sel: MolSelection | null,
+): FitBox | null {
+    if (!hasMethod(obj, 'getFitBoxJSON')) return null;
+    const src = obj as unknown as FitBoxSource;
+    let json: string;
+    if (hasMethod(obj, 'fitView2')) {
+        // The wrapper cannot pass a null selection, so "all atoms" is spelt out.
+        const s = sel ?? makeSel(ctx, '*', obj.scene_uid);
+        if (!s) return null;
+        json = src.getFitBoxJSON(view, s);
+    } else {
+        // A map's fit box is always the whole map.
+        json = src.getFitBoxJSON(view);
+    }
+    return json ? (JSON.parse(json) as FitBox) : null;
+}
+
+/** The fit box of one scene-tree node, as `focusOnNode` would frame it. */
+function nodeFitBox(ctx: WorkerContext, scene: Scene, view: GUIView, nodeId: number, nodeType: SceneNodeType): FitBox | null {
+    if (nodeType === 'object') {
+        const obj = scene.getObject(nodeId) as CueMolObject | null;
+        return obj ? fitBoxOf(ctx, obj, view, null) : null;
+    }
+    if (nodeType === 'renderer' || nodeType === 'rendGroup') {
+        const rend = scene.getRenderer(nodeId) as Renderer | null;
+        const client = rend?.getClientObj() as CueMolObject | null | undefined;
+        if (!rend || !client) return null;
+        const sel = hasProp(rend, 'sel') ? ((rend as unknown as { sel: MolSelection }).sel ?? null) : null;
+        return fitBoxOf(ctx, client, view, sel);
+    }
+    return null;
+}
+
+/**
+ * What a uid names in the scene, for the fit: an object, or a renderer (a
+ * group frames as a renderer does); null when it names neither.
+ */
+function fitNodeType(scene: Scene, id: number): 'object' | 'renderer' | null {
+    if (safeRead(() => scene.getObject(id))) return 'object';
+    if (safeRead(() => scene.getRenderer(id))) return 'renderer';
+    return null;
+}
+
+/**
+ * Zoom the view to fit several objects / renderers at once (the `focus_nodes`
+ * op, and the scene-tree Focus button on a multi-selection).
+ *
+ * Each node contributes the box its own focus would frame (a molecule's
+ * atoms, or a renderer's selection, grown by 20%; a map's whole cell), all
+ * measured in the view's current axes; the view is fitted to their union by
+ * `View.fitToBox`, keeping the direction it looks. One node takes the
+ * single-node path (`focusOnNode`), so it frames exactly as before. Uids that
+ * name no object or renderer, and nodes with no box, are skipped.
+ */
+export function focusOnNodes(ctx: WorkerContext, args: FocusOnNodesArgs): FocusOnNodesResult {
+    const scene = ctx.sceMgr.getScene(args.sceneId) as Scene;
+    const view = ctx.sceMgr.getView(args.viewId) as GUIView;
+    if (!scene || !view) return { ok: false };
+    const nodes = args.nodeIds.flatMap((id) => {
+        const t = fitNodeType(scene, id);
+        return t ? [{ id, type: t }] : [];
+    });
+    if (nodes.length === 0) return { ok: false };
+    recordOp(ctx, scene.uid, 'focus_nodes', { nodeIds: nodes.map((n) => n.id) }, ['nodeIds']);
+
+    if (nodes.length === 1) {
+        const [n] = nodes;
+        return focusOnNode(ctx, { sceneId: args.sceneId, viewId: args.viewId, nodeId: n.id, nodeType: n.type, record: false });
+    }
+
+    const lo = [Infinity, Infinity, Infinity];
+    const hi = [-Infinity, -Infinity, -Infinity];
+    for (const n of nodes) {
+        const box = nodeFitBox(ctx, scene, view, n.id, n.type);
+        if (!box) continue;
+        for (let i = 0; i < 3; i++) {
+            lo[i] = Math.min(lo[i], box.min[i]);
+            hi[i] = Math.max(hi[i], box.max[i]);
+        }
+    }
+    if (!Number.isFinite(lo[0])) return { ok: false };
+
+    const toVec = (v: number[]) => {
+        const vec = ctx.svc.createObj('Vector') as unknown as { x: number; y: number; z: number };
+        vec.x = v[0];
+        vec.y = v[1];
+        vec.z = v[2];
+        return vec;
+    };
+    (view as unknown as FitView).fitToBox(toVec(lo), toVec(hi));
+    return { ok: true };
 }
 
 /**

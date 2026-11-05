@@ -36,7 +36,7 @@ import { asOneOp, insideOp, noteEntry, txnBegin, txnEnd, txnOpen } from '@render
 import type { ActionSource } from '@renderer/worker/server/actions/actionLog'
 import type { AnyOp, OpContext, OpOutcome } from './op'
 import type { ParamMap } from './params'
-import { recordedPath, sceneNodes } from './refs'
+import { recordedPath, recordedPaths, sceneNodes } from './refs'
 
 const log = console
 
@@ -65,7 +65,9 @@ const REF_SEMANTICS = new Set(['object', 'renderer', 'node'])
  */
 function refPaths(op: AnyOp, ctx: WorkerContext, args: Record<string, unknown>, sceneId: number): Record<string, string> {
   const params = op.params as ParamMap
-  const wanted = Object.keys(params).filter((n) => REF_SEMANTICS.has(params[n].semantic ?? '') && typeof args[n] === 'number')
+  const wanted = Object.keys(params).filter(
+    (n) => REF_SEMANTICS.has(params[n].semantic ?? '') && (typeof args[n] === 'number' || Array.isArray(args[n])),
+  )
   if (wanted.length === 0) return {}
   let nodes: ReturnType<typeof sceneNodes>
   try {
@@ -75,7 +77,12 @@ function refPaths(op: AnyOp, ctx: WorkerContext, args: Record<string, unknown>, 
   }
   const out: Record<string, string> = {}
   for (const name of wanted) {
-    const path = recordedPath(nodes, args[name] as number)
+    const v = args[name]
+    if (Array.isArray(v)) {
+      out[name] = recordedPaths(nodes, v as number[])
+      continue
+    }
+    const path = recordedPath(nodes, v as number)
     if (path !== null) out[name] = path
   }
   return out

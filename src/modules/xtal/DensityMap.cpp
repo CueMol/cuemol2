@@ -672,6 +672,28 @@ using qlib::Matrix4D;
 using qlib::Matrix3D;
 using qlib::Box3D;
 
+LString DensityMap::getFitBoxJSON(const qsys::ViewPtr &pView) const
+{
+  // Fractional unit cell -> scene coordinates, as fitView maps it.
+  Matrix4D xform = getXformMatrix();
+  if (!m_vOrigin.isZero3D())
+    xform.matprod( Matrix4D::makeTransMat(m_vOrigin) );
+  xform.matprod( Matrix4D(getXtalInfo().getOrthMat()) );
+
+  const Matrix4D rmat = Matrix4D::makeRotMat(pView->getRotQuat());
+
+  qlib::Box3D bbox;
+  for (int i=0; i<8; ++i) {
+    const Vector4D corner((i&1) ? 1 : 0, (i&2) ? 1 : 0, (i&4) ? 1 : 0, 1);
+    bbox.merge( rmat.mulvec(xform.mulvec(corner)) );
+  }
+
+  return LString::format(
+      "{\"min\":[%.17g,%.17g,%.17g],\"max\":[%.17g,%.17g,%.17g]}",
+      bbox.vstart.x(), bbox.vstart.y(), bbox.vstart.z(),
+      bbox.vend.x(), bbox.vend.y(), bbox.vend.z());
+}
+
 void DensityMap::fitView(const qsys::ViewPtr &pView, bool dummy) const
 {
   qlib::LQuat rotq = pView->getRotQuat();

@@ -10,7 +10,7 @@
 
 import * as fs from 'fs'
 import { findOp } from '@renderer/worker/server/catalog'
-import { atomList, formatCommand } from '@renderer/worker/server/catalog/cmlFormat'
+import { atomList, formatCommand, nodeListText } from '@renderer/worker/server/catalog/cmlFormat'
 import type { AtomSpec, ParamMap } from '@renderer/worker/server/catalog/params'
 import type { ActionEntryView, ActionStepView } from '@renderer/worker/shared/actionTypes'
 import type { ActionEntry, ActionRow } from './actionLog'
@@ -77,6 +77,7 @@ function entryArgs(entry: ActionEntry): ActionEntryView['args'] {
     if (v === null || v === undefined) continue
     let value: string
     if (isRefParam(p) && typeof v === 'number') value = entry.refs[name] ?? `#${v}`
+    else if (p.kind === 'nodes' && Array.isArray(v)) value = nodeListText(v as number[], entry.refs[name])
     else if (p.kind === 'atoms' && Array.isArray(v)) value = atomList(v as AtomSpec[])
     else if (Array.isArray(v)) value = v.join(' ')
     else value = String(v)

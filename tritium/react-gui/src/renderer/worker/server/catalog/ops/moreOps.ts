@@ -17,12 +17,12 @@ import { setRendererDefaultColor } from '@renderer/worker/server/services/colori
 import { saveScene } from '@renderer/worker/server/services/scene/saveScene'
 import { getObjectSaveInfo, saveObjectToFile } from '@renderer/worker/server/services/file/objectSave'
 import { goTime, pause, play, stop } from '@renderer/worker/server/services/anim/transport'
-import { focusOnNode } from '@renderer/worker/server/services/sceneTree/sceneOps'
+import { focusOnNode, focusOnNodes } from '@renderer/worker/server/services/sceneTree/sceneOps'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { NO_OBJECT, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
-import { boolean, color, coloringTarget, enumOf, integer, nodeId, objectId, optional, path, real, rendererId, selection, string } from '../params'
+import { boolean, color, coloringTarget, enumOf, integer, nodeId, nodeIds, objectId, optional, path, real, rendererId, selection, string } from '../params'
 import { outputPath } from '../outputFile'
 
 export const listRendererStyles = defineOp({
@@ -295,11 +295,35 @@ export const focusNode = defineOp({
   replay: true,
   expose: { tool: 'view', console: true },
   group: 'nodes',
-  aliases: [{ name: 'focus', summary: 'Fit the view to a node: focus 1crn/cartoon1' }],
   run(ctx, args, oc) {
     return normalizeServiceResult(
       focusOnNode(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, nodeId: args.nodeId, nodeType: args.nodeType }),
       'That node cannot be focused on.',
+    )
+  },
+})
+
+export const focusNodes = defineOp({
+  name: 'focus_nodes',
+  description:
+    'Fit the view to several objects and renderers together, keeping the direction it looks ' +
+    '(what Focus does on a multi-selection in the scene tree). Each one counts as much as ' +
+    'focus_node would frame: a molecule\'s atoms, a renderer\'s selection, a map\'s whole cell. ' +
+    'With one node it is focus_node.',
+  params: {
+    nodeIds: nodeIds('Uids of the objects, renderers or renderer groups, in any mix.'),
+  },
+  mutates: false,
+  describe: (_a, n) => `Focus on ${n('nodeIds')}`,
+  replay: true,
+  expose: { tool: 'view', console: true },
+  group: 'nodes',
+  aliases: [{ name: 'focus', summary: 'Fit the view to nodes, together: focus 1crn/cartoon1 2xyz' }],
+  run(ctx, args, oc) {
+    if (args.nodeIds.length === 0) return { ok: false, error: 'Name at least one node.' }
+    return normalizeServiceResult(
+      focusOnNodes(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, nodeIds: args.nodeIds }),
+      'Those nodes cannot be focused on.',
     )
   },
 })
@@ -315,4 +339,5 @@ export const MORE_OPS = [
   animate,
   setFrame,
   focusNode,
+  focusNodes,
 ]
