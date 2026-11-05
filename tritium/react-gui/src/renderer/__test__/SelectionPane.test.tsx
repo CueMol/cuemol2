@@ -8,7 +8,7 @@
  *     mol.sel (an update is pending)
  *  3. pushHistory fires only when the worker returns { ok: true }
  *  4. Clear empties the field, clears mol.sel, and disables itself
- *  5. Center invokes centerMolSelection on the applied selection (disabled
+ *  5. Center frames the applied (current) selection without re-setting it (disabled
  *     without a view)
  *  6. UI state persists across unmount/remount (pane switch) but resets on a
  *     scene change
@@ -81,7 +81,7 @@ function makeCm(opts?: {
             }
             if (name === 'validateSelection') return Promise.resolve({ ok: opts?.validateOk ?? true })
             if (name === 'getSelHitCount') return Promise.resolve({ count: null })
-            if (name === 'centerMolSelection') return Promise.resolve({ ok: true })
+            if (name === 'focusMolSelection') return Promise.resolve({ ok: true })
             return Promise.resolve(null)
         }),
     }
@@ -206,7 +206,7 @@ describe('SelectionPane', () => {
         unmount()
     })
 
-    it('Center invokes centerMolSelection on the applied selection', async () => {
+    it('Center frames the applied selection without setting it again', async () => {
         const cm = makeCm()
         const { container, unmount } = mountTree(
             withPaneEnv(cm as never, 7, 5, <SelectionPane />),
@@ -219,11 +219,12 @@ describe('SelectionPane', () => {
         await flushPromises()
         await act(async () => { actionByAria(container, 'Center view on selection').click() })
         await flushPromises()
-        expect(cm.invokeService).toHaveBeenCalledWith('centerMolSelection', {
+        expect(cm.invokeService).toHaveBeenCalledWith('focusMolSelection', {
             sceneId: 7,
             viewId: 5,
             molId: 11,
-            selStr: 'aname CA',
+            selStr: null,
+            zoom: false,
         })
         unmount()
     })

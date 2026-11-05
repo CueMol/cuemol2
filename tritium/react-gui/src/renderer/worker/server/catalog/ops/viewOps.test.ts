@@ -2,7 +2,7 @@
  * @file worker/server/catalog/ops/viewOps.test.ts
  * @description The two camera-like ops that must not touch the scene's
  * state: framing a selection leaves the object's own selection alone (the
- * difference from center_view, and the reason PyMOL's zoom uses it), and
+ * reason PyMOL's zoom uses it), and
  * showing a frame moves the frame without opening an undo transaction
  * (it is playback, not an edit).
  */
@@ -14,7 +14,6 @@ const { scene } = vi.hoisted(() => ({
 }))
 
 vi.mock('@renderer/worker/server/services/helpers/sceneResolver', () => ({ getSceneOrNull: () => scene }))
-vi.mock('@renderer/worker/server/services/select/getSelHitCount', () => ({ getSelHitCount: () => ({ count: 12 }) }))
 vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({ makeSel: () => ({ __sel: true }) }))
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
@@ -29,6 +28,7 @@ describe('focus_selection', () => {
     const setSel = vi.fn()
     const mol = {
       fitView2: vi.fn(),
+      getAtomSelSize: () => 12,
       set sel(v: unknown) { setSel(v) },
     }
     scene.getObject = () => mol

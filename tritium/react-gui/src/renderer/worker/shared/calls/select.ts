@@ -10,11 +10,13 @@
 import type {
   ApplyMolSelStringArgs,
   ApplyMolSelStringResult,
-  CenterMolSelectionArgs,
-  CenterMolSelectionResult,
-  ZoomMolSelectionArgs,
-  ZoomMolSelectionResult,
+  SelectAndFocusMolArgs,
+  SelectAndFocusMolResult,
 } from '@renderer/worker/server/services/select/applyMolSelString'
+import type {
+  FocusMolSelectionArgs,
+  FocusMolSelectionResult,
+} from '@renderer/worker/server/services/select/focusMolSelection'
 import type {
   GetMolAtomsArgs,
   GetMolAtomsResult,
@@ -55,8 +57,8 @@ export interface SelectCalls {
   getMolResidues:             { args: GetMolResiduesArgs; result: GetMolResiduesResult }
   getMolAtoms:                { args: GetMolAtomsArgs; result: GetMolAtomsResult }
   applyMolSelString:          { args: ApplyMolSelStringArgs; result: ApplyMolSelStringResult }
-  centerMolSelection:         { args: CenterMolSelectionArgs; result: CenterMolSelectionResult }
-  zoomMolSelection:           { args: ZoomMolSelectionArgs; result: ZoomMolSelectionResult }
+  selectAndFocusMol:          { args: SelectAndFocusMolArgs; result: SelectAndFocusMolResult }
+  focusMolSelection:          { args: FocusMolSelectionArgs; result: FocusMolSelectionResult }
   rectSelect:                 { args: RectSelectArgs; result: RectSelectResult }
   lassoSelect:                { args: LassoSelectArgs; result: LassoSelectResult }
 }
@@ -72,8 +74,8 @@ export const SELECT_KEYS = [
   'getMolResidues',
   'getMolAtoms',
   'applyMolSelString',
-  'centerMolSelection',
-  'zoomMolSelection',
+  'selectAndFocusMol',
+  'focusMolSelection',
   'rectSelect',
   'lassoSelect',
 ] as const satisfies readonly (keyof SelectCalls)[]

@@ -54,9 +54,7 @@ const ALLOWED_SCHEMA_KEYWORDS = new Set([
  * `list_node_props` / `set_node_prop`, which reach the scene, an object and a
  * renderer through one pair; that is how the scene-wide settings arrived
  * without costing a slot. Something genuinely new has to fold a tool first,
- * and the obvious candidate is `center_view`, which already sets the
- * molecule's selection as a documented side effect and could become an
- * argument of `set_mol_selection`.
+ * and the candidates are the ones another tool can stand in for.
  */
 const MAX_TOOLS = 21
 

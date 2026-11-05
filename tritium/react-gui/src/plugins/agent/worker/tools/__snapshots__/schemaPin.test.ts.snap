@@ -36,17 +36,11 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "description": "Look at the current view: returns a picture of what the user sees. Use it to check that a change looks the way you intended, or when the user refers to something on screen.
 
 - Each picture costs about a thousand tokens, so capture once a change is done rather than after every step.
-- To see detail, zoom in first with \`center_view\` rather than raising \`longSide\`: tokens grow with the pixel count.
+- To see detail, zoom in first with \`focus_selection\` rather than raising \`longSide\`: tokens grow with the pixel count.
 - Nothing is saved; use \`export_image\` to give the user a file.",
     "mutates": false,
     "name": "capture_view",
     "parameters": "{"type":"object","properties":{"longSide":{"type":["integer","null"],"description":"Pixels on the longer side. Null uses 1024, which suits almost every check; clamped to 256-1568."}},"required":["longSide"],"additionalProperties":false}",
-  },
-  {
-    "description": "Move the camera to a selection. Note the side effect: this also SETS the object's current selection to the expression given, the same as set_mol_selection.",
-    "mutates": true,
-    "name": "center_view",
-    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object."},"selection":{"type":["string","null"],"description":"Selection expression to centre on. Null uses the object's current selection."},"zoom":{"type":"boolean","description":"True also zooms to fit the selection; false only recentres."}},"required":["objId","selection","zoom"],"additionalProperties":false}",
   },
   {
     "description": "Remove every region painted with add_paint on one renderer or object.",
@@ -145,10 +139,10 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"nodeIds":{"type":"array","description":"Uids of the objects, renderers or renderer groups, in any mix.","items":{"type":"integer"}}},"required":["nodeIds"],"additionalProperties":false}",
   },
   {
-    "description": "Move the camera to the atoms a selection matches in one MolCoord object, without changing the object's current selection (center_view sets it). zoom true (the default) fits the view to them; false only moves the centre to their mean position.",
+    "description": "Move the camera to the atoms a selection matches in one MolCoord object. The object's current selection is not changed (set it with set_mol_selection). zoom true (the default) fits the view, zoom and clipping to them; false only moves the centre to their mean position.",
     "mutates": false,
     "name": "focus_selection",
-    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object."},"selection":{"type":"string","description":"The atoms to frame."},"zoom":{"type":["boolean","null"],"description":"True (or null) fits the zoom too; false only centres."}},"required":["objId","selection","zoom"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object."},"selection":{"type":["string","null"],"description":"The atoms to frame. Null uses the object's current selection."},"zoom":{"type":["boolean","null"],"description":"True (or null) fits the zoom too; false only centres."}},"required":["objId","selection","zoom"],"additionalProperties":false}",
   },
   {
     "description": "List the objects in the scene, their renderers, and the named selections available. Every id you use in another tool must come from here or from a tool result. Call it again after loading a file or creating a renderer, since ids are assigned then.",
@@ -233,7 +227,7 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"objId":{"type":"integer","description":"Uid of the MolCoord object."},"selection":{"type":"string","description":"The atoms to orient on; \\"*\\" for the whole object."}},"required":["objId","selection"],"additionalProperties":false}",
   },
   {
-    "description": "Slide the view without turning it: x moves the scene right, y up, z toward the viewer, in screen units (about one pixel each at the current zoom). Use center_view to go to a selection instead.",
+    "description": "Slide the view without turning it: x moves the scene right, y up, z toward the viewer, in screen units (about one pixel each at the current zoom). Use focus_selection to go to a selection instead.",
     "mutates": false,
     "name": "pan_view",
     "parameters": "{"type":"object","properties":{"dx":{"type":"number","description":"Shift along screen x."},"dy":{"type":"number","description":"Shift along screen y."},"dz":{"type":["number","null"],"description":"Shift along the line of sight. Null leaves the depth."}},"required":["dx","dy","dz"],"additionalProperties":false}",
@@ -364,7 +358,7 @@ Call \`list_node_props\` first: the property name, its type, and the allowed val
 - \`zoom\`: the height of the view, in angstroms.
 - \`slab\`: the depth that is drawn, about the centre; atoms outside it are clipped.
 - \`distance\`: from the eye to the centre. And the centre itself.
-- \`fitSlab\` sets the slab so every MolCoord object (or \`objId\`) is in it while keeping the centre and zoom as they are -- use it, not \`center_view\`, when only the clipping is wrong.
+- \`fitSlab\` sets the slab so every MolCoord object (or \`objId\`) is in it while keeping the centre and zoom as they are -- use it, not \`focus_selection\`, when only the clipping is wrong.
 
 Give only what should change; with nothing given it just reports the current values.",
     "mutates": false,

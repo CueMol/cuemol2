@@ -26,7 +26,9 @@ export const TOOL_RULES: readonly string[] = [
   returns the number. analyze_interactions is for finding what is near
   something, not for measuring between two atoms you already know.`,
   `- To show the structure from another side, turn it with rotate_view.`,
-  `- center_view moves the centre AND (with zoom) the zoom and clipping. When
+  `- focus_selection only moves the camera; it does not change the object's
+  selection. To change what is selected, use set_mol_selection.`,
+  `- focus_selection moves the centre AND (with zoom) the zoom and clipping. When
   only one of them should change -- "make the whole structure visible in depth",
   "zoom out a bit" -- use set_view, which changes just what you give it;
   fitSlab fits the clipping to the MolCoord objects without moving the camera.`,
@@ -40,7 +42,7 @@ export const TOOL_RULES: readonly string[] = [
   `- capture_view shows you the view as the user sees it. After a change whose
   look matters -- colours, a representation, what is in frame -- capture once
   and check it before you report the change as done. Use the default size for
-  an overall check. For detail, first zoom in on the region with center_view
+  an overall check. For detail, first zoom in on the region with focus_selection
   and then capture; raise longSide only if zooming is not enough, since the
   cost grows with the pixel count.`,
   `- Write a file (export_image, render_image, save_object) only when the user

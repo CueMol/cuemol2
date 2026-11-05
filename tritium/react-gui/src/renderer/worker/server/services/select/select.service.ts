@@ -7,7 +7,8 @@
  * sequence panel's own services live with that plugin.
  */
 
-import { applyMolSelString, centerMolSelection, zoomMolSelection } from './applyMolSelString';
+import { applyMolSelString, selectAndFocusMol } from './applyMolSelString';
+import { focusMolSelection } from './focusMolSelection';
 import { getMolAtoms, getMolChains, getMolResidues } from './getMolStructure';
 import { getSelDefs } from './getSelDefs';
 import { getSelHitCount } from './getSelHitCount';
@@ -20,8 +21,8 @@ import { validateSelection } from './validateSelection';
 
 export const services = {
     applyMolSelString,
-    centerMolSelection,
-    zoomMolSelection,
+    selectAndFocusMol,
+    focusMolSelection,
     getMolChains,
     getMolResidues,
     getMolAtoms,
@@ -36,6 +37,7 @@ export const services = {
 };
 
 export type * from './applyMolSelString';
+export type * from './focusMolSelection';
 export type * from './getMolStructure';
 export type * from './getSelDefs';
 export type * from './getSelHitCount';

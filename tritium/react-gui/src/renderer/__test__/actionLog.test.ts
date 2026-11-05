@@ -233,6 +233,11 @@ describe('serviceOps', () => {
         format: { kind: 'mtz', options: { columnF: 'FWT', columnPhi: 'PHWT', phaseEnabled: false, columnW: 'FOM', weightEnabled: true, resolutionLimit: 2, gridSpacing: 0.5 } },
         renderer: { ...choice, objectName: '1crn', centerView: false, mapCenterPolicy: 'setMapCenter' },
       })
+      // A format with no load op of its own keeps the reader the dialog read it with.
+      ops.recordLoadFile(ctx, scene.uid, '/tmp/1crn.dat', {
+        format: { kind: 'unknown', options: {} },
+        renderer: { ...choice, objectName: '1crn', centerView: true, mapCenterPolicy: 'auto' },
+      }, 'pdb')
       // The shapes clipboard/paste.ts and cameraVisFlags.ts record.
       ops.recordOp(ctx, scene.uid, 'paste_node', { kind: 'renderer', form: 'single', xml: '<renderer/>', target: mol.uid, targetType: 'object' }, ['target'])
       ops.recordOp(ctx, scene.uid, 'set_camera_visibility', { name: 'c1', entries: 'on 1crn; off 1crn/cartoon1' })
@@ -241,7 +246,7 @@ describe('serviceOps', () => {
     })
 
     const entries = rowsOf(scene)[0].entries
-    expect(entries).toHaveLength(14)
+    expect(entries).toHaveLength(15)
     for (const e of entries) {
       if (e.kind !== 'op') throw new Error(`not an op: ${e.text}`)
       const op = findOp(e.op)
@@ -257,6 +262,7 @@ describe('serviceOps', () => {
       op: 'load_mtz',
       args: { columnPhi: '', columnWeight: 'FOM', resolutionLimit: 2, centerView: false, mapCenterPolicy: 'setMapCenter' },
     })
+    expect(entries[11]).toMatchObject({ op: 'load_file', args: { path: '/tmp/1crn.dat', reader: 'pdb' } })
   })
 
   it('records the Interaction analysis dialog with its own settings, as arguments its op reads back', async () => {

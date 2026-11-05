@@ -90,7 +90,7 @@ export function loadObject(ctx: WorkerContext, args: LoadObjectArgs): LoadObject
     if (!scene) return fail(`scene ${args.sceneId} not found`, 'not-found');
 
     return undoTxnResult(scene, 'Open file', () => {
-        recordLoadFile(ctx, scene.uid, args.filePath, args.options);
+        recordLoadFile(ctx, scene.uid, args.filePath, args.options, args.readerName);
         let obj: CObject | null = null;
         try {
             obj = reader.createDefaultObj() as unknown as CObject;

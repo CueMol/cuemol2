@@ -228,15 +228,17 @@ export const SelectionPane: React.FC<SelectionPaneProps> = ({ collapsed, onToggl
     );
     const isValid = useSelectionValidation({ cm, sceneId: activeSceneId, text: textDraft });
 
-    // Center the active view on the applied selection.
+    // Center the active view on the applied selection (the object's current
+    // one, which this leaves as it is).
     const canCenter = canApply && activeMolViewId !== undefined;
     const onCenter = useCallback(() => {
         if (!cm || !canCenter || currentSel === '') return;
-        fireService(cm, 'centerMolSelection', {
+        fireService(cm, 'focusMolSelection', {
             sceneId: activeSceneId!,
             viewId: activeMolViewId!,
             molId: selectedMolId!,
-            selStr: currentSel,
+            selStr: null,
+            zoom: false,
         });
     }, [cm, canCenter, activeSceneId, activeMolViewId, selectedMolId, currentSel]);
 

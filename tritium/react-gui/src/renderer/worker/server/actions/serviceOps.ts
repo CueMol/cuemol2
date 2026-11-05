@@ -252,10 +252,21 @@ function formatLoad(format: FormatOptions): [string, Record<string, unknown>] {
 /**
  * A file opened from the File Open dialog: the format's own load op with
  * the options the dialog read it with, and the renderer it is first drawn with.
+ *
+ * @param readerName - the reader the user chose, when they chose one; a
+ *   `load_file` keeps it so the replay does not pick another by extension.
+ *   The format ops name their reader themselves.
  */
-export function recordLoadFile(ctx: WorkerContext, sceneId: number, filePath: string, options: FileOpenOptions): void {
+export function recordLoadFile(
+  ctx: WorkerContext,
+  sceneId: number,
+  filePath: string,
+  options: FileOpenOptions,
+  readerName?: string,
+): void {
   const r = options.renderer
   const [op, formatArgs] = formatLoad(options.format)
+  if (op === 'load_file' && readerName !== undefined) formatArgs.reader = readerName
   recordOp(ctx, sceneId, op, {
     path: filePath,
     rendererType: r.presetName ? null : r.rendererType || null,

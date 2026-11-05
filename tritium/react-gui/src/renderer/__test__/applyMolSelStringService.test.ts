@@ -3,10 +3,11 @@
  *
  *   - applyMolSelString -> assigns mol.sel under "Change mol selection"
  *     undo txn, auto-creates the *selection renderer.
- *   - centerMolSelection -> applies sel, then view.setViewCenter(
- *     mol.getCenterPos(true)). Skips silently if getCenterPos throws.
- *   - zoomMolSelection -> applies sel, then mol.fitView(view, true).
- *     Duck-types fitView so missing-method cases fail soft.
+ *   - selectAndFocusMol -> applies sel, then frames the view on it, in
+ *     one txn recorded as set_mol_selection then focus_selection.
+ *   - focusMolSelection with no selection given uses the object's current
+ *     one and never writes mol.sel; an empty one is refused, not taken as
+ *     every atom.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -15,11 +16,13 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 vi.mock('@renderer/worker/server/services/helpers/makeSel', () => ({
     makeSel: vi.fn(() => ({ __sel: true })),
 }))
+vi.mock('@renderer/worker/server/actions/serviceOps', () => ({ recordOp: vi.fn() }))
 
 import { services } from '@renderer/worker/server/services/select/select.service'
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
+import { recordOp } from '@renderer/worker/server/actions/serviceOps'
 
-const { applyMolSelString, centerMolSelection, zoomMolSelection } = services
+const { applyMolSelString, selectAndFocusMol, focusMolSelection } = services
 
 function makeMol(opts: {
     hasSelRend?: boolean
@@ -114,123 +117,58 @@ describe('applyMolSelString', () => {
     })
 })
 
-describe('centerMolSelection', () => {
+/** A MolCoord whose selection reads back what was written to it. */
+function framingMol(current: string) {
+    let sel: unknown = { toString: () => current }
+    const setSel = vi.fn((v: unknown) => { sel = v })
+    const fitView2 = vi.fn()
+    const mol = {
+        get sel() { return sel },
+        set sel(v: unknown) { setSel(v) },
+        getAtomSelSize: vi.fn(() => 5),
+        fitView2,
+        getRendererByType: vi.fn(() => ({})),
+        createRenderer: vi.fn(),
+    }
+    const view = {}
+    const scene = { ...makeUndoScene(100), getObject: vi.fn(() => mol) }
+    const ctx = makeCtx({ scene, view: view as never })
+    return { ctx, mol, setSel, fitView2, view, scene }
+}
+
+describe('selectAndFocusMol', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    function setup(opts: { centerThrows?: boolean } = {}) {
-        const { mol, setSel, getCenterPos } = makeMol({
-            hasSelRend: true,
-            centerThrows: opts.centerThrows,
-        })
-        const setViewCenter = vi.fn()
-        const view = { setViewCenter, getScene: () => scene }
-        const scene = {
-            ...makeUndoScene(100),
-            getObject: vi.fn(() => mol),
-        }
-        const ctx = {
-            sceMgr: {
-                getView: vi.fn(() => view),
-                getScene: vi.fn(() => scene),
-            },
-        } as unknown as WorkerContext
-        return { ctx, mol, setSel, setViewCenter, getCenterPos, scene }
-    }
-
-    it('applies sel then setViewCenter(getCenterPos(true)) under undo txn', () => {
-        const { ctx, setSel, setViewCenter, getCenterPos, scene } = setup()
-        const result = centerMolSelection(ctx, {
-            sceneId: 100, viewId: 7, molId: 11, selStr: 'protein',
-        })
-        expect(result).toEqual({ ok: true })
+    it('sets the selection, fits the view to it, and records both ops on one step', () => {
+        const { ctx, setSel, fitView2, view, scene } = framingMol('')
+        const res = selectAndFocusMol(ctx, { sceneId: 100, viewId: 7, molId: 11, selStr: 'resid 1:5', zoom: true })
+        expect(res).toEqual({ ok: true })
         expect(setSel).toHaveBeenCalledWith({ __sel: true })
-        expect(getCenterPos).toHaveBeenCalledWith(true)
-        expect(setViewCenter).toHaveBeenCalledWith({ __pos: true })
-        expect(scene.startUndoTxn).toHaveBeenCalledWith('Center on mol selection')
-    })
-
-    it('skips setViewCenter and reports ok:false when getCenterPos throws', () => {
-        const { ctx, setViewCenter } = setup({ centerThrows: true })
-        const result = centerMolSelection(ctx, {
-            sceneId: 100, viewId: 7, molId: 11, selStr: 'protein',
-        })
-        expect(result).toEqual({ ok: false })
-        expect(setViewCenter).not.toHaveBeenCalled()
-    })
-
-    it('returns ok:false when the view lookup misses', () => {
-        const ctx = {
-            sceMgr: {
-                getView: vi.fn(() => null),
-                getScene: vi.fn(() => null),
-            },
-        } as unknown as WorkerContext
-        expect(
-            centerMolSelection(ctx, { sceneId: 100, viewId: 7, molId: 11, selStr: 'protein' }),
-        ).toEqual({ ok: false })
-    })
-
-    it('rejects when sceneId does not match the view\'s scene (cross-scene guard)', () => {
-        const { ctx, setViewCenter } = setup()
-        // setup makes scene.uid == 100; ask for sceneId 999.
-        const result = centerMolSelection(ctx, {
-            sceneId: 999, viewId: 7, molId: 11, selStr: 'protein',
-        })
-        expect(result).toEqual({ ok: false })
-        expect(setViewCenter).not.toHaveBeenCalled()
+        // Framed on the selection just set, not compiled again.
+        expect(fitView2).toHaveBeenCalledWith(view, { __sel: true })
+        expect(scene.startUndoTxn).toHaveBeenCalledTimes(1)
+        expect(vi.mocked(recordOp).mock.calls.map((c) => [c[2], c[3]])).toEqual([
+            ['set_mol_selection', { objId: 11, selection: 'resid 1:5' }],
+            ['focus_selection', { objId: 11, selection: null, zoom: true }],
+        ])
     })
 })
 
-describe('zoomMolSelection', () => {
+describe('focusMolSelection', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    function setup(opts: { hasFitView?: boolean; fitViewThrows?: boolean } = {}) {
-        const { mol, setSel, fitView } = makeMol({
-            hasSelRend: true,
-            hasFitView: opts.hasFitView,
-            fitViewThrows: opts.fitViewThrows,
-        })
-        const setViewCenter = vi.fn()
-        const view = { setViewCenter, getScene: () => scene }
-        const scene = {
-            ...makeUndoScene(100),
-            getObject: vi.fn(() => mol),
-        }
-        const ctx = {
-            sceMgr: {
-                getView: vi.fn(() => view),
-                getScene: vi.fn(() => scene),
-            },
-        } as unknown as WorkerContext
-        return { ctx, mol, setSel, fitView, scene }
-    }
+    it('frames the current selection without writing it, and refuses an empty one', () => {
+        const { ctx, mol, setSel, fitView2, view } = framingMol('resid 1:5')
+        const current = mol.sel
+        expect(focusMolSelection(ctx, { sceneId: 100, viewId: 7, molId: 11, selStr: null, zoom: true }).ok).toBe(true)
+        expect(fitView2).toHaveBeenCalledWith(view, current)
+        expect(setSel).not.toHaveBeenCalled()
 
-    it('applies sel then mol.fitView(view, true) under undo txn', () => {
-        const { ctx, setSel, fitView, scene } = setup()
-        const result = zoomMolSelection(ctx, {
-            sceneId: 100, viewId: 7, molId: 11, selStr: 'protein',
-        })
-        expect(result).toEqual({ ok: true })
-        expect(setSel).toHaveBeenCalledWith({ __sel: true })
-        expect(fitView).toHaveBeenCalledTimes(1)
-        // fitView(view, true) -- second arg is bSelOnly
-        expect(fitView.mock.calls[0][1]).toBe(true)
-        expect(scene.startUndoTxn).toHaveBeenCalledWith('Zoom to mol selection')
-    })
-
-    it('returns ok:false when fitView is not exposed on this mol subclass', () => {
-        const { ctx } = setup({ hasFitView: false })
-        const result = zoomMolSelection(ctx, {
-            sceneId: 100, viewId: 7, molId: 11, selStr: 'protein',
-        })
-        expect(result).toEqual({ ok: false })
-    })
-
-    it('returns ok:false when fitView throws', () => {
-        const { ctx } = setup({ fitViewThrows: true })
-        const result = zoomMolSelection(ctx, {
-            sceneId: 100, viewId: 7, molId: 11, selStr: 'protein',
-        })
-        expect(result).toEqual({ ok: false })
+        // C++ iterates an empty selection as every atom: that must not
+        // become a fit to the whole molecule.
+        const empty = framingMol('')
+        const res = focusMolSelection(empty.ctx, { sceneId: 100, viewId: 7, molId: 11, selStr: null, zoom: true })
+        expect(res.ok).toBe(false)
+        expect(empty.fitView2).not.toHaveBeenCalled()
     })
 })

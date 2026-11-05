@@ -288,7 +288,7 @@ sceneId / viewId は `TurnContext` から補うのでモデルには見せない
 | `list_chains` | no | `getMolChains` |
 | `count_selection` | no | `validateSelection` + `getSelHitCount` |
 | `set_mol_selection` | yes | `applyMolSelString` |
-| `center_view` | yes | `centerMolSelection` / `zoomMolSelection` |
+| `focus_selection` | no (view は undo 対象外) | `focusMolSelection` |
 | `rotate_view` | no (view は undo 対象外) | `rotateView` |
 | `set_view` | no | `getViewXform` / `setViewXform` (zoom / slab / distance / center を個別に。`fitSlab` は中心とズームを保って slab を全分子に合わせる) |
 | `list_renderer_types` | no | `getNewRendererOptions` |
@@ -393,7 +393,7 @@ token を払わないため)。
   `{ type: 'text' }` のままで、送るバイト列は変わらない。
 - **サイズ**: 既定は長辺 1024px (1 枚およそ 1000 token)。`longSide` で 256-1568px。上限は
   Anthropic が縮小を始める大きさ (約 1568px / 1.15 MP) で全 provider 共通にした。細部は
-  解像度より **`center_view` で寄ってから撮る**ほうが安い (token は画素数に比例) ので、
+  解像度より **`focus_selection` で寄ってから撮る**ほうが安い (token は画素数に比例) ので、
   system prompt と tool 説明でそう指示している。
 - **履歴**: 会話は毎 turn 全部を再送するので、renderer が保存するときに `dropStaleImages`
   (`shared/historyImages.ts`) で**最新 1 枚以外を注記 text に置き換える**。同じ turn の中の
@@ -401,8 +401,7 @@ token を払わないため)。
 - **panel 表示**: 同じ画像を progress の `tool_result.image` で renderer に送り、
   長辺 480px の JPEG に縮小して tool 行に常時表示する (`renderer/viewThumbnail.ts`)。
   transcript は session 中全行を持つので、原寸は保持しない。
-候補は `center_view` -- 既に「選択も適用する」副作用を持っており、`set_mol_selection` の
-引数にできる。`tools/index.test.ts` が本数を pin している。
+core の枠が要るときに外す候補は、別の tool で代わりが利くもの。`tools/index.test.ts` が本数を pin している。
 
 `list_node_props` / `set_node_prop` は当初 `get_renderer_props` / `set_renderer_prop` だったものを
 **対象ノードを引数に取る形に広げた**もの。`resolvePropTarget` が scene / object / renderer を同じ
@@ -450,7 +449,7 @@ description に必ず書いている曖昧点:
 
 - uid は不透明な整数。名前から推測せず `get_scene_state` で取る
 - `residueIndex` は文字列 (挿入コード付きがある)
-- `center_view` は選択の適用も行う (副作用)
+- `focus_selection` は視点だけを動かし、選択は変えない (変えるのは `set_mol_selection`)
 - `set_renderer_coloring` の style 名は `list_coloring_styles` のものだけ有効
 - `fetch_pdb` / `load_file` は新しい object と既定 renderer を作る
 - `export_image` はディスクにファイルを書く (agent からは Desktop に basename だけで書く。console / MCP はパスを指定できる。`outputPath`)

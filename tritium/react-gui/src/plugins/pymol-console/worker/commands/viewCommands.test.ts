@@ -7,7 +7,7 @@
  * distance before slab, viewXformService.test.ts pins), and the projection
  * through `set_projection`.
  * `zoom` on a selection must frame it without changing the molecule's own
- * selection, so it is `focus_selection`, not `center_view`.
+ * selection, which `focus_selection` does not touch.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
