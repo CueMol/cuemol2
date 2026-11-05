@@ -116,11 +116,12 @@ helper)。
 | `focusOnNode` | `focus_node` |
 | `focusOnNodes` (scene tree の Focus) | `focus_nodes` (node が 1 つでも。中で `focusOnNode` を呼ぶときは記録しない) |
 | `setNodeVisible` (`sceneTree/sceneTree.ts`) | `set_visible` |
-| `applyMolSelString` | `set_mol_selection`。selection への center / zoom (`centerMolSelection` / `zoomMolSelection`) は `center_view` |
+| `applyMolSelString` | `set_mol_selection` |
+| `selectAndFocusMol` (MolStruct pane の Center / Zoom) | 同じ step に `set_mol_selection`、続けて `focus_selection` (selection は null = いま設定したもの)。Selection pane の Center (`focusMolSelection`) は視点だけなので記録しない |
 | `superposeMol` | `superpose`。transform (xformMat) として保つときは `keepAsProperty` |
 | `createRendererOnObject` | `create_renderer` (type・name・selection・`centerView`)。group 指定があれば、続けて `group` の `set_node_prop`。preset は `create_preset_renderer` (preset・group 名・`centerView`) |
 | `changeRendererType` | `set_renderer_type` |
-| `loadObject` (File > Open) | 形式ごとの load の op (`load_pdb` / `load_mmcif` / `load_mtz` / `load_ccp4` / `load_msms` / `load_namd` / `load_amber`、どれでもなければ `load_file`) に、dialog の形式のオプションと renderer の選択 (type・selection・`rendererName`・`preset`・`centerView`・`mapCenterPolicy`) を入れる。reader は op が自分で選ぶ (dialog で別の reader を選んだときは、再生で形式が合わず断られることがある) |
+| `loadObject` (File > Open) | 形式ごとの load の op (`load_pdb` / `load_mmcif` / `load_mtz` / `load_ccp4` / `load_msms` / `load_namd` / `load_amber`、どれでもなければ `load_file`) に、dialog の形式のオプションと renderer の選択 (type・selection・`rendererName`・`preset`・`centerView`・`mapCenterPolicy`) を入れる。形式ごとの op は reader を自分で選ぶ。`load_file` には dialog が読んだ reader を `reader` として入れる (再生で拡張子から別の reader が選ばれないように) |
 | `viewXform` (回転・平行移動) | 0 でない軸ごとの `rotate_view`、`pan_view` |
 | map の property (`map/props.ts`) | renderer への `set_node_prop`。Re-centre は `recenter_map` (中心は再生したときの view の中心) |
 | 背景色 (`scene/sceneBgColor.ts`、メニューの背景色) | scene の `set_node_prop bgcolor` (色名のまま)。Color proofing は切り替えた後の `use_colproof` (と既定の `icc_filename`) の `set_node_prop` |
@@ -170,6 +171,7 @@ console に出す (記録の漏れを見つけるため)。
   が、scene が変わらなければ txn は rollback するので行が残らない。scene を変える入力と同じ行にあるときだけ、
   その step に並ぶ。
 - 対応する op が無いもの: MD trajectory (mdtools plugin の service で、plugin から op を足す仕組みが無い)。
+  renderer の右クリックの Create Style (`createStyleFromRenderer`。undo の txn も開かないので History にも残らない)。
   計画は [261013-action-record-coverage-plan.md](../plans/261013-action-record-coverage-plan.md)。
 - **scene を変えない操作は記録しない** (意図して): style set / camera を元のファイルへ上書きする Save は、
   scene の中が何も変わらず undo の行ができない。再生でファイルを黙って上書きしないためでもある。

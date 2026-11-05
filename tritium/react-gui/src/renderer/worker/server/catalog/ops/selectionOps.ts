@@ -11,12 +11,10 @@ import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHi
 import { validateSelection } from '@renderer/worker/server/services/select/validateSelection'
 import {
   applyMolSelString,
-  centerMolSelection,
-  zoomMolSelection,
 } from '@renderer/worker/server/services/select/applyMolSelString'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
-import { boolean, integer, objectId, optional, selection, string } from '../params'
+import { integer, objectId, optional, selection, string } from '../params'
 import { wrapList } from '../consoleFormat'
 
 /** Residues returned before the tail is summarised away. */
@@ -151,44 +149,9 @@ export const setMolSelection = defineOp({
   },
 })
 
-export const centerView = defineOp({
-  name: 'center_view',
-  description:
-    'Move the camera to a selection. Note the side effect: this also SETS the object\'s ' +
-    'current selection to the expression given, the same as set_mol_selection.',
-  params: {
-    objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
-    selection: optional(
-      selection("Selection expression to centre on. Null uses the object's current selection."),
-    ),
-    zoom: boolean('True also zooms to fit the selection; false only recentres.'),
-  },
-  mutates: true,
-  expose: { tool: 'core', console: true },
-  group: 'viewing',
-  aliases: [
-    { name: 'zoom', fixed: { zoom: true }, summary: 'Centre the view on a selection and zoom to fit it.' },
-    { name: 'center', fixed: { zoom: false }, summary: 'Centre the view on a selection.' },
-  ],
-  run(ctx, args, oc) {
-    const svcArgs = {
-      sceneId: oc.sceneId,
-      viewId: oc.viewId,
-      molId: args.objId,
-      selStr: args.selection ?? '',
-    }
-    const result = args.zoom ? zoomMolSelection(ctx, svcArgs) : centerMolSelection(ctx, svcArgs)
-    return normalizeServiceResult(
-      result,
-      'The view could not be centred. Check the object id and the expression.',
-    )
-  },
-})
-
 export const SELECTION_OPS = [
   getMolChainsOp,
   getMolResiduesOp,
   checkSelection,
   setMolSelection,
-  centerView,
 ]

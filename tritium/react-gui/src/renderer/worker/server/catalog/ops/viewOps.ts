@@ -12,11 +12,10 @@ import {
   setViewXform,
 } from '@renderer/worker/server/services/view/viewXform'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
-import { makeSel } from '@renderer/worker/server/services/helpers/makeSel'
 import { listSceneObjects } from '@renderer/worker/server/services/scene/listSceneObjects'
-import { getSelHitCount } from '@renderer/worker/server/services/select/getSelHitCount'
+import { focusMolSelection, framingTarget } from '@renderer/worker/server/services/select/focusMolSelection'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { NO_OBJECT, VIEW_UNREADABLE } from '../errors'
+import { VIEW_UNREADABLE } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
 import { boolean, enumOf, objectId, optional, quat, real, selection, vec3 } from '../params'
@@ -129,7 +128,7 @@ export const setView = defineOp({
     '- `slab`: the depth that is drawn, about the centre; atoms outside it are clipped.\n' +
     '- `distance`: from the eye to the centre. And the centre itself.\n' +
     '- `fitSlab` sets the slab so every MolCoord object (or `objId`) is in it while keeping the ' +
-    'centre and zoom as they are -- use it, not `center_view`, when only the clipping is ' +
+    'centre and zoom as they are -- use it, not `focus_selection`, when only the clipping is ' +
     'wrong.\n\n' +
     'Give only what should change; with nothing given it just reports the current values.',
   params: {
@@ -184,91 +183,36 @@ export const setView = defineOp({
   },
 })
 
-/** The MolCoord members that frame the view on a selection. */
-interface FramingMol {
-  fitView2(view: unknown, sel: unknown): void
-  orientView(view: unknown, sel: unknown): void
-}
-
-/** An atom iterator, as `AtomIterator` exposes it. */
-interface AtomIter {
-  target: unknown
-  sel: unknown
-  first(): void
-  next(): void
-  hasMore(): boolean
-  get(): { pos: XYZ }
-}
-
-/**
- * The object, view and compiled selection a framing op works on, after
- * checking the selection matches some atoms.
- */
-function framingTarget(
-  ctx: WorkerContext,
-  sceneId: number,
-  viewId: number,
-  objId: number,
-  selStr: string,
-): { mol: FramingMol; view: unknown; sel: unknown } | { error: string } {
-  const mol = getSceneOrNull(ctx, sceneId)?.getObject(objId) as unknown as FramingMol | null
-  if (!mol) return { error: NO_OBJECT }
-  const view = ctx.sceMgr.getView(viewId)
-  if (!view) return { error: VIEW_UNREADABLE }
-  const hits = getSelHitCount(ctx, { sceneId, molId: objId, selStr })
-  if (hits.count === null) return { error: 'The selection did not compile.' }
-  if (hits.count === 0) return { error: 'The selection matches no atoms.' }
-  const sel = makeSel(ctx, selStr, sceneId)
-  if (!sel) return { error: 'The selection did not compile.' }
-  return { mol, view, sel }
-}
-
-/** The mean position of the atoms `sel` matches in `mol`, or null when none. */
-function selectionCentroid(ctx: WorkerContext, mol: unknown, sel: unknown): XYZ | null {
-  const iter = ctx.svc.createObj('AtomIterator') as unknown as AtomIter | null
-  if (!iter) return null
-  iter.target = mol
-  iter.sel = sel
-  let n = 0
-  const sum = { x: 0, y: 0, z: 0 }
-  for (iter.first(); iter.hasMore(); iter.next()) {
-    const p = iter.get().pos
-    sum.x += p.x
-    sum.y += p.y
-    sum.z += p.z
-    n += 1
-  }
-  return n === 0 ? null : { x: sum.x / n, y: sum.y / n, z: sum.z / n }
-}
-
 export const focusSelection = defineOp({
   name: 'focus_selection',
   description:
-    'Move the camera to the atoms a selection matches in one MolCoord object, without changing ' +
-    "the object's current selection (center_view sets it). zoom true (the default) fits the " +
-    'view to them; false only moves the centre to their mean position.',
+    'Move the camera to the atoms a selection matches in one MolCoord object. The object\'s ' +
+    'current selection is not changed (set it with set_mol_selection). zoom true (the default) ' +
+    'fits the view, zoom and clipping to them; false only moves the centre to their mean position.',
   params: {
     objId: objectId('Uid of the MolCoord object.', 'MolCoord'),
-    selection: selection('The atoms to frame.'),
+    selection: optional(selection("The atoms to frame. Null uses the object's current selection.")),
     zoom: optional(boolean('True (or null) fits the zoom too; false only centres.')),
   },
   mutates: false,
-  describe: (a, n) => `${a.zoom === false ? 'Centre' : 'Fit'} the view on ${a.selection} in ${n('objId')}`,
+  describe: (a, n) =>
+    `${a.zoom === false ? 'Centre' : 'Fit'} the view on ${a.selection ?? 'the selection'} in ${n('objId')}`,
   replay: true,
-  // center_view already moves the camera to a selection for the model.
-  expose: { tool: 'view', console: true },
+  expose: { tool: 'core', console: true },
   group: 'viewing',
+  aliases: [
+    { name: 'zoom', fixed: { zoom: true }, summary: 'Fit the view to a selection: zoom 1crn, resid 10:20' },
+    { name: 'center', fixed: { zoom: false }, summary: 'Centre the view on a selection.' },
+  ],
   run(ctx, args, oc) {
-    const t = framingTarget(ctx, oc.sceneId, oc.viewId, args.objId, args.selection)
-    if ('error' in t) return { ok: false, error: t.error }
-    if (args.zoom !== false) {
-      t.mol.fitView2(t.view, t.sel)
-      return { ok: true }
-    }
-    const c = selectionCentroid(ctx, t.mol, t.sel)
-    if (!c) return { ok: false, error: 'The selection matches no atoms.' }
-    const res = setViewXform(ctx, { viewId: oc.viewId, center: c })
-    return res.ok ? { ok: true } : { ok: false, error: VIEW_UNREADABLE }
+    const res = focusMolSelection(ctx, {
+      sceneId: oc.sceneId,
+      viewId: oc.viewId,
+      molId: args.objId,
+      selStr: args.selection,
+      zoom: args.zoom !== false,
+    })
+    return res.ok ? { ok: true } : { ok: false, error: res.error }
   },
 })
 
@@ -284,7 +228,7 @@ export const orientView = defineOp({
   mutates: false,
   describe: (a, n) => `Orient the view on ${a.selection} in ${n('objId')}`,
   replay: true,
-  // center_view already moves the camera to a selection for the model.
+  // focus_selection already moves the camera to a selection for the model.
   expose: { tool: 'view', console: true },
   group: 'viewing',
   run(ctx, args, oc) {

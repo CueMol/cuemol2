@@ -294,8 +294,8 @@ renderer で表し、**その selection と paint が表示の状態そのもの
 **view**: ChimeraX の `view` と同じく、向きを変えずに、名指したもの (無ければ全部) が収まるように center・zoom・slab を
 1 回の `set_view` で書く。範囲は object ごとの式の原子を、view の軸 (`right_vec` / `up_vec` / `forward_vec`) で読んで求める
 (`camera.ts`)。計算は `MolCoord::fitView` (`MolCoordGeomImpl.cpp`) と同じ: 各辺 20% 広げ、4 A より細い軸は 4 A に、zoom は
-幅か高さを view の縦横比で、slab は奥行き。既存の op を使わないのは、`focus_node` は node 1 つ、`center_view` は molecule
-1 つで object の selection も書き換え、`focus_nodes` (複数 node の和に fit) は node 単位で object ごとの原子式を取らないため。camera の変更は undo しない。
+幅か高さを view の縦横比で、slab は奥行き。既存の op を使わないのは、`focus_node` は node 1 つ、`focus_selection` は molecule
+1 つ、`focus_nodes` (複数 node の和に fit) は node 単位で object ごとの原子式を取らないため。camera の変更は undo しない。
 
 ## 7. テスト
 

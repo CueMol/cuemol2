@@ -25,21 +25,22 @@ op ごとの記録と qax での再生は実装済み ([action-log.md](../archit
 
 ## 2. op になっていない機能
 
-GUI の service はあるが op が無く、agent / console / MCP から使えないもの
-(2026-10-11 時点で `renderer/worker/server/catalog/` に参照が無いことを確認)。
+GUI の操作のうち、op の組み合わせで表せないもの (2026-11-06 に GUI の呼び出しと op を突き合わせて確認)。
+読み取りだけの service (原子・material・style set の中身・camera の表示設定などの一覧) は、必要になった
+ときに op にする。
 
-| 分野 | service | メモ |
+| 分野 | GUI の操作 | 足りないもの |
 |---|---|---|
-| scene tree | `copyNode` / `pasteNode` (`services/clipboard/`) | |
-| renderer | `getMaterialNames` (`services/rend/getMaterialNames.ts`) | material の一覧 |
-| view | `setViewCenterMark` (`services/view/viewProjection.ts`) | 専用 op は無いが、`set_node_prop` で view の `centerMark` を設定できる |
-| 対称性 | `createSymmMol` (`services/molops/createSymmMol.ts`) | `show_symmetry` は symm / unit cell の renderer のみ |
-| selection | `getMolAtoms` | 原子の一覧 |
-| 着色 | multigrad 系 (`getMultiGradState` / `setMultiGradNodes` / `setMultiGradColorMap` ほか) | |
-| file / scene | `listSavableObjects` | `save_object` は対象を指定して使う |
-| レンダリング | POV-Ray 出力 | |
-| アニメーション | 追加できない型 (`RealPropAnim` / `RendXformAnim`、ファイル由来) の generic property | |
-| agent | ラベル編集・結合編集、APBS・morph・アニメーション編集 | APBS 以下は console / MCP の op はあるが agent には出していない (`tool: false`) |
+| style | renderer の右クリック > Create Style (`createStyleFromRenderer`) | op が無く、undo の txn も開かない |
+| scene | 新しい scene / tab (`createNewSceneAndView` / `createViewInScene`) | op は今の scene に対して動くので、scene を作る op が無い |
+| scene tree | node の Copy (`copyNode` / `copyNodes`) | node の XML を取る op が無い (Paste は `paste_node`) |
+| file | Get PDB の形式オプション (`streamLoadFromUrl`) | `fetch_pdb` / `fetch_url` に reader のオプションが無い |
+| file | Scene の Save As の writer オプション | `save_scene` は `path` だけ |
+| レンダリング | 動画・POV-Ray のレンダリング (`renderStart`) | `render_image` は Umbreon の静止画だけ |
+| レンダリング | Export の Umbreon 画像 (`exportScene`) | `export_scene` の format に `umbreon` が無い |
+| view | 対称分子の原子へ Center (`naviCenterAtSymm`) | symm renderer の原子を指す op が無い (視点なので記録はしない) |
+| MD | trajectory を開く・block の編集 (mdtools) | plugin から op を足す仕組みが無い |
+| agent | ラベル編集・結合編集、APBS・morph・アニメーション編集 | console / MCP の op はあるが agent には出していない (`tool: false`) |
 
 ## 3. MCP / agent
 

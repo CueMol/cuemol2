@@ -10,8 +10,8 @@
  *
  * Residue / atom rows are lazy-loaded on expand via `useMolStructure`;
  * the worker round-trip only happens the first time a node opens.
- * Center / Zoom drive `centerMolSelection` / `zoomMolSelection` using
- * the active mol-view's id. Properties stays a stub -- UXP's
+ * Center / Zoom drive `selectAndFocusMol` (set the selection, then move
+ * the view to it) using the active mol-view's id. Properties stays a stub -- UXP's
  * `onBtnPropCmd` is empty.
  *
  * @module MolStructPane
@@ -41,7 +41,7 @@ import {
 import { useCueMol } from "@renderer/hooks/cuemol/useCueMol";
 import { useActiveScene } from "@renderer/state/workspace";
 
-type SelApplyService = "applyMolSelString" | "centerMolSelection" | "zoomMolSelection";
+type SelApplyService = "applyMolSelString" | "selectAndFocusMol";
 
 /**
  * Apply a tree-derived expression through one of the mol-selection services
@@ -381,11 +381,12 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({ collapsed, onToggl
         if (!cm || !canApply || !hasView) return;
         const selStr = selStrFromTree(selectedIds, residueOrder);
         if (!selStr) return;
-        applyAndRecord(cm, "centerMolSelection", {
+        applyAndRecord(cm, "selectAndFocusMol", {
             sceneId: activeSceneId!,
             viewId: activeMolViewId!,
             molId: selectedMolId!,
             selStr,
+            zoom: false,
         });
     }, [cm, canApply, hasView, selectedIds, residueOrder, activeSceneId, activeMolViewId, selectedMolId]);
 
@@ -393,11 +394,12 @@ export const MolStructPane: React.FC<MolStructPaneProps> = ({ collapsed, onToggl
         if (!cm || !canApply || !hasView) return;
         const selStr = selStrFromTree(selectedIds, residueOrder);
         if (!selStr) return;
-        applyAndRecord(cm, "zoomMolSelection", {
+        applyAndRecord(cm, "selectAndFocusMol", {
             sceneId: activeSceneId!,
             viewId: activeMolViewId!,
             molId: selectedMolId!,
             selStr,
+            zoom: true,
         });
     }, [cm, canApply, hasView, selectedIds, residueOrder, activeSceneId, activeMolViewId, selectedMolId]);
 

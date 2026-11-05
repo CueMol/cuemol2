@@ -135,7 +135,7 @@ defineOp({
 - console 自身の機能 (`cd` / `pwd` / `ls` / `run` / log / `help`) も op にせず native dialect の
   builtin にする (agent / MCP は使わない)。
 - **置き場所** (agent): 頻繁に使い、無いと別の tool で代用されるもの (slab だけ変えたいのに
-  `center_view` で中心とズームまで変える、など) は `core`。それ以外は toolset。`core` が上限
+  `focus_selection` で中心とズームまで変える、など) は `core`。それ以外は toolset。`core` が上限
   (`MAX_TOOLS`) に当たっているときは、使用頻度の低い `core` を toolset に移してから足す。
   dialog 由来の重い操作 (Tools 系・アニメーション編集・形式ごとの load) は agent に出さず、
   `tool: false, mcp: true` で console と MCP にだけ出す。
@@ -326,9 +326,8 @@ op 名 (= console のコマンド名、MCP と agent の tool 名) と alias は
 
 ## 6. 未対応 (範囲外)
 
-- GUI 用 service のうち op になっていないものは agent / console / MCP から使えない。主なもの:
-  node の copy / paste、material の一覧、対称分子の生成 (`createSymmMol`)、原子の一覧、
-  multigrad 着色、保存できる object の一覧、POV-Ray 出力。一覧は
+- GUI の操作のうち op の組み合わせで表せないものは agent / console / MCP から使えない。主なもの:
+  renderer からの style の作成、scene の新規作成、node の Copy、動画・POV-Ray のレンダリング。一覧は
   [backlog](../plans/261011-op-console-backlog-plan.md) の「op になっていない機能」。
 - アクションの記録と再生、undo 履歴 UI は未実装
   ([backlog](../plans/261011-op-console-backlog-plan.md) の「op 基盤 (記録・再生・undo 連携)」)。
@@ -420,10 +419,15 @@ set は名前で指す。同じ名前があれば scene の set を global (syst
   box (`MolCoord::getFitBoxJSON` / `DensityMap::getFitBoxJSON`) の和で、合わせるのは `View::fitToBox`
   (4 A より細い軸は 4 A に、zoom は幅か高さを view の縦横比で、slab は奥行き)。node が 1 つなら
   `focus_node` と同じ処理。`focus_node` (node 1 つ) は PyMOL dialect が使うので残している。
-- `focus_selection objId, selection, zoom`: object の中の selection に視点を合わせる (`zoom` false は中心だけ)。
-  `center_view` と違い、object の選択を書き換えず undo の行も作らない。`orient_view objId, selection`: selection
-  の主軸を画面の軸に合わせてから合わせる (`MolCoord.orientView`)。どちらも `mutates: false`、`replay: true`。
-  agent では toolset `view`。
+- `focus_selection objId, selection, zoom` (console の `zoom` / `center`): object の中の selection に視点を
+  合わせる (`zoom` false は中心だけ)。object の選択は書き換えず、undo の行も作らない (選択も変えたいときは
+  `set_mol_selection` と組み合わせる)。selection が null なら object の今の selection を、文字列から compile
+  し直さずにそのまま使う。今の selection が空なら失敗にする (C++ は空の selection を全原子として数えるので、
+  そのまま使うと分子全体に合ってしまう)。agent では `core`。
+  - 以前は選択を書き換えてから視点を合わせる `center_view` があったが、名前と意味が合わず、null の selection が
+    空文字として代入されて選択が消える不具合もあったので、`focus_selection` に一本化した。
+- `orient_view objId, selection`: selection の主軸を画面の軸に合わせてから合わせる (`MolCoord.orientView`)。
+  `focus_selection` と同じく `mutates: false`、`replay: true`。agent では toolset `view`。
 - `set_frame objId, frame`: 複数 frame を持つ object (morph、MD trajectory) の frame を 0 から指定する。範囲外は
   断る。再生と同じく undo の step にしない (`mutates: false`、`replay: true`)。toolset `anim`。
 - `save_object` の `selection` / `format` / `link`: selection の原子だけを書く (writer の `sel`)、writer 名で

@@ -2,11 +2,9 @@
 //
 // MolStructPane toolbar backends:
 //   - applyMolSelString: Select button -- assign a free-form selection
-//     string to mol.sel under an undo txn.
-//   - centerMolSelection: Center button -- apply selection, then move the
-//     view center to the selection centroid.
-//   - zoomMolSelection: Zoom button -- apply selection, then fit the view
-//     to it.
+//     string to mol.sel under an undo txn (op `set_mol_selection`).
+//   - selectAndFocusMol: Center / Zoom buttons -- the same, then move the
+//     view to the new selection (op `focus_selection`), as one undo step.
 //
 // Mirrors UXP `onBtnSelCmd(nMode)` in
 // `uxp_gui/cuemol2/base/content/molstruct-panel.js`:
@@ -15,13 +13,12 @@
 //   nMode==2 -> Zoom
 
 import type { MolCoord } from '@cuemol/core/src/wrappers/MolCoord';
-import type { View } from '@cuemol/core/src/wrappers/View';
-import type { Vector } from '@cuemol/core/src/wrappers/Vector';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
-import { getSceneOrNull, getViewSceneObjOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { withUndoTxn } from '../withUndoTxn';
 import { recordOp } from '@renderer/worker/server/actions/serviceOps';
+import { focusMolSelection } from './focusMolSelection';
 
 export interface ApplyMolSelStringArgs {
     sceneId: number;
@@ -34,43 +31,17 @@ export interface ApplyMolSelStringResult {
     ok: boolean;
 }
 
-export interface CenterMolSelectionArgs {
+export interface SelectAndFocusMolArgs {
     sceneId: number;
     viewId: number;
     molId: number;
     selStr: string;
+    /** True fits the view to the selection; false only centres on it. */
+    zoom: boolean;
 }
 
-export interface CenterMolSelectionResult {
+export interface SelectAndFocusMolResult {
     ok: boolean;
-}
-
-export interface ZoomMolSelectionArgs {
-    sceneId: number;
-    viewId: number;
-    molId: number;
-    selStr: string;
-}
-
-export interface ZoomMolSelectionResult {
-    ok: boolean;
-}
-
-/**
- * Whether the molecule's current selection matches any atom.
- *
- * `fitView` and `getCenterPos` have nothing to work from when it does not,
- * and leave the view alone (C++ returns early on an empty bounding box). The
- * caller needs to know that happened so it can say so, rather than report a
- * zoom that never moved.
- */
-function selectionHitsAny(mol: MolCoord): boolean {
-    try {
-        return mol.getAtomSelSize(mol.sel) > 0;
-    } catch {
-        // Probe failure is not the same as "no atoms": let the caller try.
-        return true;
-    }
 }
 
 /**
@@ -93,6 +64,13 @@ function assignMolSel(
     return true;
 }
 
+/** Set the selection and record it; the caller holds the undo txn. */
+function setSelection(ctx: WorkerContext, mol: MolCoord, molId: number, selStr: string, sceneUid: number): boolean {
+    if (!assignMolSel(ctx, mol, selStr, sceneUid)) return false;
+    recordOp(ctx, sceneUid, 'set_mol_selection', { objId: molId, selection: selStr }, ['objId']);
+    return true;
+}
+
 export function applyMolSelString(
     ctx: WorkerContext,
     args: ApplyMolSelStringArgs,
@@ -104,77 +82,36 @@ export function applyMolSelString(
 
     let ok = false;
     withUndoTxn(scene, 'Change mol selection', () => {
-        ok = assignMolSel(ctx, mol, args.selStr, scene.uid);
-        if (ok) recordOp(ctx, scene.uid, 'set_mol_selection', { objId: args.molId, selection: args.selStr }, ['objId']);
+        ok = setSelection(ctx, mol, args.molId, args.selStr, scene.uid);
     });
     return { ok };
 }
 
 /**
- * Probe `mol.getCenterPos(true)` defensively -- it can throw on objects
- * with no atoms / unrecognised selection, in which case we skip the
- * view-center update rather than letting the exception escape.
+ * Set the selection, then fit the view to it (or centre on it): the
+ * MolStruct pane's Center / Zoom. Recorded as `set_mol_selection` followed
+ * by `focus_selection` on the same step. The selection stays set even when
+ * it matches no atoms and the view cannot move.
  */
-function safeGetSelectionCenter(mol: MolCoord): Vector | null {
-    try {
-        const pos = mol.getCenterPos(true);
-        return pos ?? null;
-    } catch {
-        return null;
-    }
-}
-
-export function centerMolSelection(
+export function selectAndFocusMol(
     ctx: WorkerContext,
-    args: CenterMolSelectionArgs,
-): CenterMolSelectionResult {
-    const vsm = getViewSceneObjOrNull<MolCoord>(ctx, args.viewId, args.molId);
-    if (!vsm) return { ok: false };
-    if (vsm.scene.uid !== args.sceneId) return { ok: false };
+    args: SelectAndFocusMolArgs,
+): SelectAndFocusMolResult {
+    const scene = getSceneOrNull(ctx, args.sceneId);
+    if (!scene) return { ok: false };
+    const mol = scene.getObject(args.molId) as MolCoord | null;
+    if (!mol) return { ok: false };
 
     let ok = false;
-    withUndoTxn(vsm.scene, 'Center on mol selection', () => {
-        if (!assignMolSel(ctx, vsm.obj, args.selStr, vsm.scene.uid)) return;
-        if (!selectionHitsAny(vsm.obj)) return;
-        const pos = safeGetSelectionCenter(vsm.obj);
-        if (!pos) return;
-        vsm.view.setViewCenter(pos);
-        recordOp(ctx, vsm.scene.uid, 'center_view', { objId: args.molId, selection: args.selStr, zoom: false }, ['objId']);
-        ok = true;
-    });
-    return { ok };
-}
-
-/**
- * `fitView` lives on MolCoord but not on every subclass at the C++ layer;
- * probe before calling so a missing-method case fails the service cleanly
- * instead of crashing the worker.
- */
-function tryFitView(mol: MolCoord, view: View): boolean {
-    const fn = (mol as unknown as { fitView?: (v: unknown, b: boolean) => void }).fitView;
-    if (typeof fn !== 'function') return false;
-    try {
-        mol.fitView(view, true);
-        return true;
-    } catch {
-        return false;
-    }
-}
-
-export function zoomMolSelection(
-    ctx: WorkerContext,
-    args: ZoomMolSelectionArgs,
-): ZoomMolSelectionResult {
-    const vsm = getViewSceneObjOrNull<MolCoord>(ctx, args.viewId, args.molId);
-    if (!vsm) return { ok: false };
-    if (vsm.scene.uid !== args.sceneId) return { ok: false };
-
-    let ok = false;
-    withUndoTxn(vsm.scene, 'Zoom to mol selection', () => {
-        if (!assignMolSel(ctx, vsm.obj, args.selStr, vsm.scene.uid)) return;
-        if (!selectionHitsAny(vsm.obj)) return;
-        ok = tryFitView(vsm.obj, vsm.view);
-        if (ok) recordOp(ctx, vsm.scene.uid, 'center_view', { objId: args.molId, selection: args.selStr, zoom: true }, ['objId']);
+    withUndoTxn(scene, 'Change mol selection', () => {
+        if (!setSelection(ctx, mol, args.molId, args.selStr, scene.uid)) return;
+        ok = focusMolSelection(ctx, {
+            sceneId: args.sceneId,
+            viewId: args.viewId,
+            molId: args.molId,
+            selStr: null,
+            zoom: args.zoom,
+        }).ok;
     });
     return { ok };
 }

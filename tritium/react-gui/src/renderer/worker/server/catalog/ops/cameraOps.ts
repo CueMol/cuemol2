@@ -135,7 +135,7 @@ export const panView = defineOp({
   name: 'pan_view',
   description:
     'Slide the view without turning it: x moves the scene right, y up, z toward the viewer, in ' +
-    'screen units (about one pixel each at the current zoom). Use center_view to go to a ' +
+    'screen units (about one pixel each at the current zoom). Use focus_selection to go to a ' +
     'selection instead.',
   params: {
     dx: real('Shift along screen x.'),

@@ -166,7 +166,7 @@ export const captureView = defineOp({
     'a change looks the way you intended, or when the user refers to something on screen.\n\n' +
     '- Each picture costs about a thousand tokens, so capture once a change is done rather ' +
     'than after every step.\n' +
-    '- To see detail, zoom in first with `center_view` rather than raising `longSide`: ' +
+    '- To see detail, zoom in first with `focus_selection` rather than raising `longSide`: ' +
     'tokens grow with the pixel count.\n' +
     '- Nothing is saved; use `export_image` to give the user a file.',
   params: {
