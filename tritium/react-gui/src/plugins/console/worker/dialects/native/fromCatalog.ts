@@ -89,6 +89,31 @@ const REF_KIND: Readonly<Record<string, RefKind>> = {
 }
 
 /**
+ * A node-list argument: every node its words name, patterns expanded, in
+ * order and each once. Unlike a single node argument it is one value, so the
+ * op runs once for all of them rather than once each.
+ */
+function readNodeList(ctx: WorkerContext, cc: CmdContext, name: string, text: string): { value: number[] } | string {
+  const ids: number[] = []
+  const add = (id: number) => {
+    if (!ids.includes(id)) ids.push(id)
+  }
+  for (const w of splitPathWords(text)) {
+    if (isWildcardRef(w.pattern)) {
+      const res = resolveRefs(ctx, cc.sceneId, w.pattern, 'node')
+      if (!res.ok) return `${name}: ${res.error}`
+      if (res.nodes.length === 0) cc.warn(`no matches found: ${w.raw}`)
+      res.nodes.forEach((n) => add(n.id))
+      continue
+    }
+    const ref = resolveRef(ctx, cc.sceneId, w.value, 'node')
+    if (!ref.ok) return `${name}: ${ref.error}`
+    add(ref.node.id)
+  }
+  return { value: ids }
+}
+
+/**
  * One typed argument read into its parameter's type.
  *
  * @returns the value, or the reason it cannot be one.
@@ -100,6 +125,7 @@ function readArg(
   p: Param<unknown>,
   raw: string,
 ): { value: unknown } | string {
+  if (p.kind === 'nodes') return readNodeList(ctx, cc, name, raw)
   const text = unquote(raw)
   const refKind = p.semantic ? REF_KIND[p.semantic] : undefined
   if (refKind) {
@@ -301,7 +327,8 @@ function readTargets(
   for (const [name, p] of Object.entries(op.params as ParamMap)) {
     const text = (bound[name] ?? '').trim()
     if (name in fixed || text === '') continue
-    const isRef = p.semantic === 'propPath' || (p.semantic !== undefined && REF_KIND[p.semantic] !== undefined)
+    // A node list is read whole by readArg, never fanned out.
+    const isRef = p.kind !== 'nodes' && (p.semantic === 'propPath' || (p.semantic !== undefined && REF_KIND[p.semantic] !== undefined))
     if (name !== filesParam && !isRef) continue
     const read = name === filesParam ? fileTargets(cc, name, text) : refTargets(ctx, cc, name, p, text)
     if (typeof read === 'string') return read

@@ -148,6 +148,10 @@ namespace xtal {
 
     virtual void fitView(const qsys::ViewPtr &pView, bool dummy) const;
 
+    /// The whole map's box in the view's rotated frame (see
+    /// View::fitToBox), as JSON {"min":[x,y,z],"max":[x,y,z]}
+    LString getFitBoxJSON(const qsys::ViewPtr &pView) const;
+
     ///////////////////////////////////////////////
     // setup density map
 

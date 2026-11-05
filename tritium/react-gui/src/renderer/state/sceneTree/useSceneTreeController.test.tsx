@@ -62,7 +62,7 @@ function makeScene(overrides: Record<string, unknown> = {}) {
     refetch: vi.fn(),
     setNodeUiCollapsed: vi.fn(),
     moveSceneNode: vi.fn(),
-    focusNode: vi.fn().mockResolvedValue(true),
+    focusNodes: vi.fn().mockResolvedValue(true),
     renameNode: vi.fn().mockResolvedValue(true),
     ...overrides,
   };
@@ -190,14 +190,22 @@ describe('useSceneTreeController gestures dispatch commands', () => {
     const scene = makeScene();
     const h = renderController(scene, 9);
     act(() => h.result.actions.focusSelected('42'));
-    expect(scene.focusNode).toHaveBeenCalledWith(9, '42');
+    expect(scene.focusNodes).toHaveBeenCalledWith(9, ['42']);
     h.unmount();
 
     const scene2 = makeScene();
     const h2 = renderController(scene2, undefined);
     act(() => h2.result.actions.focusSelected('42'));
-    expect(scene2.focusNode).not.toHaveBeenCalled();
+    expect(scene2.focusNodes).not.toHaveBeenCalled();
     h2.unmount();
+  });
+
+  it('focus fits the whole multi-selection together', () => {
+    const scene = makeScene({ selectedIds: new Set(['42', '43']) });
+    const h = renderController(scene, 9);
+    act(() => h.result.actions.focusSelected('42'));
+    expect(scene.focusNodes).toHaveBeenCalledWith(9, ['42', '43']);
+    h.unmount();
   });
 });
 

@@ -24,6 +24,7 @@
 #include <qlib/EventManager.hpp>
 #include <qlib/Utils.hpp>
 #include <qlib/Matrix4D.hpp>
+#include <qlib/Box3D.hpp>
 #include <qlib/LVarArgs.hpp>
 #include <qlib/ClassRegistry.hpp>
 #include <qlib/LClassUtils.hpp>
@@ -215,6 +216,40 @@ void View::setSlabDepth(double d)
   ev.setType(ViewEvent::VWE_PROPCHG);
   ev.setDescr("slab");
   fireViewEvent(ev);
+}
+
+/// Roughly the size of one atom with room around it: a box with no size (a
+/// single atom, or several sharing a coordinate) would otherwise divide by
+/// zero working out the aspect ratio and zoom in without limit.
+const double View::FIT_MIN_EXTENT = 4.0;
+
+void View::fitToBox(const qlib::Vector4D &vmin, const qlib::Vector4D &vmax)
+{
+  qlib::Box3D bbox;
+  bbox.vstart = vmin;
+  bbox.vend = vmax;
+  if (bbox.isEmpty())
+    return;
+
+  // Grow any axis thinner than the minimum, about its own centre.
+  for (int i=0; i<3; ++i) {
+    const double width = bbox.vend.ai(i+1) - bbox.vstart.ai(i+1);
+    if (width >= FIT_MIN_EXTENT)
+      continue;
+    const double cen = (bbox.vend.ai(i+1) + bbox.vstart.ai(i+1)) * 0.5;
+    bbox.vstart.ai(i+1) = cen - FIT_MIN_EXTENT * 0.5;
+    bbox.vend.ai(i+1) = cen + FIT_MIN_EXTENT * 0.5;
+  }
+
+  const qlib::Matrix4D invmat =
+    qlib::Matrix4D::makeRotMat(getRotQuat()).invert();
+  setViewCenter(invmat.mulvec(bbox.center()));
+
+  const double fasp = double(getWidth()) / double(qlib::max(1, getHeight()));
+  const double mx = bbox.vend.x() - bbox.vstart.x();
+  const double my = bbox.vend.y() - bbox.vstart.y();
+  setZoom(mx / my > fasp ? mx / fasp : my);
+  setSlabDepth(bbox.vend.z() - bbox.vstart.z());
 }
 
 void View::setViewCenter(const qlib::Vector4D &pos)

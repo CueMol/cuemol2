@@ -77,7 +77,7 @@ undo / redo、`clearUndoData`、scene の読み込み (`clearAllData`) など、
   - `op.replay` が真
 - **`replay`** (`catalog/op.ts`): undo stack には載らないが、再生では繰り返す必要がある view の op
   に付けるフラグ。値は真偽値か、引数を受け取る述語。
-  - `true`: `rotate_view` / `pan_view` / `apply_camera` / `focus_node`
+  - `true`: `rotate_view` / `pan_view` / `apply_camera` / `focus_node` / `focus_nodes`
   - 述語: `set_view` (zoom / slab / distance / center のどれかが非 null、または fitSlab のとき)、
     `set_projection` (perspective が非 null のとき)。引数が無ければ getter なので記録しない。
   - replay の op は、外側の txn が commit したときだけ残る。読むだけの submit は rollback する
@@ -114,6 +114,7 @@ helper)。
 | `resetGenericProps` と、reset の write | `reset_prop` (path は scene なら `prop`、view なら `view.prop`、node なら `obj/rend.prop`。path が引けなければ `#uid.prop`) |
 | scene tree の delete / rename (`sceneTree/sceneOps.ts`) | `delete_node` / `rename_node`。scene の改名は `set_node_prop name` |
 | `focusOnNode` | `focus_node` |
+| `focusOnNodes` (scene tree の Focus) | `focus_nodes` (node が 1 つでも。中で `focusOnNode` を呼ぶときは記録しない) |
 | `setNodeVisible` (`sceneTree/sceneTree.ts`) | `set_visible` |
 | `applyMolSelString` | `set_mol_selection`。selection への center / zoom (`centerMolSelection` / `zoomMolSelection`) は `center_view` |
 | `superposeMol` | `superpose`。transform (xformMat) として保つときは `keepAsProperty` |

@@ -139,6 +139,12 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "parameters": "{"type":"object","properties":{"nodeId":{"type":"integer","description":"Uid of the object, renderer, or renderer group."},"nodeType":{"type":"string","enum":["object","renderer","rendGroup"],"description":"What nodeId refers to."}},"required":["nodeId","nodeType"],"additionalProperties":false}",
   },
   {
+    "description": "Fit the view to several objects and renderers together, keeping the direction it looks (what Focus does on a multi-selection in the scene tree). Each one counts as much as focus_node would frame: a molecule's atoms, a renderer's selection, a map's whole cell. With one node it is focus_node.",
+    "mutates": false,
+    "name": "focus_nodes",
+    "parameters": "{"type":"object","properties":{"nodeIds":{"type":"array","description":"Uids of the objects, renderers or renderer groups, in any mix.","items":{"type":"integer"}}},"required":["nodeIds"],"additionalProperties":false}",
+  },
+  {
     "description": "Move the camera to the atoms a selection matches in one MolCoord object, without changing the object's current selection (center_view sets it). zoom true (the default) fits the view to them; false only moves the centre to their mean position.",
     "mutates": false,
     "name": "focus_selection",

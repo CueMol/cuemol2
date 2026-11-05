@@ -31,7 +31,7 @@ vi.mock('@renderer/worker/server/services/select/validateSelection', () => ({
 }))
 
 import { defineOp } from '@renderer/worker/server/catalog/op'
-import { atoms, boolean, enumOf, nodeId, objectId, optional, path as path_, selection } from '@renderer/worker/server/catalog/params'
+import { atoms, boolean, enumOf, nodeId, nodeIds, objectId, optional, path as path_, selection } from '@renderer/worker/server/catalog/params'
 import { formatCommand } from '@renderer/worker/server/catalog/cmlFormat'
 import { catalogCommands } from './fromCatalog'
 import { CONSOLE_COMMAND_OPS } from '@renderer/worker/server/catalog'
@@ -150,6 +150,27 @@ describe('a name pattern', () => {
     const res = await catalogCommands([pair])[0].command.run({} as WorkerContext, { movId: '*', refId: '2*' }, cc)
     expect(res.ok).toBe(false)
     expect(run).not.toHaveBeenCalled()
+  })
+})
+
+describe('a node-list argument', () => {
+  it('runs the op once with every name and match, and stops on a name that names nothing', async () => {
+    run.mockClear()
+    const fit = defineOp({
+      name: 'focus_nodes',
+      description: 'Fit.',
+      params: { nodeIds: nodeIds('nodes') },
+      mutates: false,
+      group: 'nodes',
+      expose: { tool: false, console: true },
+      run,
+    })
+    const cmd = catalogCommands([fit])[0].command
+    expect(await cmd.run({} as WorkerContext, { nodeIds: '1crn/cartoon1 * 2abc' }, cc)).toEqual({ ok: true })
+    // One run, duplicates dropped, in the order named.
+    expect(run.mock.calls.map((c) => c[1])).toEqual([{ nodeIds: [11, 10, 20] }])
+    expect((await cmd.run({} as WorkerContext, { nodeIds: '1crn nosuch' }, cc)).ok).toBe(false)
+    expect(run).toHaveBeenCalledTimes(1)
   })
 })
 

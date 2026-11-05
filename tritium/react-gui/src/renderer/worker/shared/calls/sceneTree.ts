@@ -29,6 +29,8 @@ import type {
   DeleteNodeResult,
   FocusOnNodeArgs,
   FocusOnNodeResult,
+  FocusOnNodesArgs,
+  FocusOnNodesResult,
   RenameNodeArgs,
   RenameNodeResult,
 } from '@renderer/worker/server/services/sceneTree/sceneOps'
@@ -46,6 +48,7 @@ export interface SceneTreeCalls {
   setNodeVisible:             { args: SetNodeVisibleArgs; result: SetNodeVisibleResult }
   setNodeUiCollapsed:         { args: SetNodeUiCollapsedArgs; result: SetNodeUiCollapsedResult }
   focusOnNode:                { args: FocusOnNodeArgs; result: FocusOnNodeResult }
+  focusOnNodes:               { args: FocusOnNodesArgs; result: FocusOnNodesResult }
   deleteNode:                 { args: DeleteNodeArgs; result: DeleteNodeResult }
   renameNode:                 { args: RenameNodeArgs; result: RenameNodeResult }
   copyNode:                   { args: CopyNodeArgs; result: CopyNodeResult }
@@ -61,6 +64,7 @@ export const SCENE_TREE_KEYS = [
   'setNodeVisible',
   'setNodeUiCollapsed',
   'focusOnNode',
+  'focusOnNodes',
   'deleteNode',
   'renameNode',
   'copyNode',

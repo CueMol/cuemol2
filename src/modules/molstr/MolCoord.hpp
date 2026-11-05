@@ -365,6 +365,17 @@ namespace molstr {
     void fitView(qsys::ViewPtr pView, bool fselect) const;
     void fitView2(qsys::ViewPtr pView, SelectionPtr pSel) const;
 
+    /// The box fitView2 frames, in the view's rotated frame (see
+    /// View::fitToBox): the atoms pSel matches (all atoms when pSel is
+    /// null) grown by 20% a side. Returns false when no atom matches.
+    /// (impl: MolCoordGeomImpl.cpp)
+    bool getFitBox(qsys::ViewPtr pView, SelectionPtr pSel, qlib::Vector4D &vmin,
+                   qlib::Vector4D &vmax) const;
+
+    /// getFitBox for scripting: JSON {"min":[x,y,z],"max":[x,y,z]}, or an
+    /// empty string when no atom matches.
+    LString getFitBoxJSON(qsys::ViewPtr pView, SelectionPtr pSel) const;
+
     /// Turn the view so that the principal axes of the selected atoms lie
     /// along the screen axes (the largest spread along x, then y, the
     /// smallest along z), then frame them as fitView2 does. PyMOL's orient.

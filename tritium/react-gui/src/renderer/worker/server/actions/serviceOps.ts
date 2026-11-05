@@ -19,7 +19,7 @@
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { SceneNodeEntry } from '@renderer/worker/server/catalog/refs'
-import { recordedPath, recordedPropPath, sceneNodes } from '@renderer/worker/server/catalog/refs'
+import { recordedPath, recordedPaths, recordedPropPath, sceneNodes } from '@renderer/worker/server/catalog/refs'
 import type { FileOpenOptions, FormatOptions } from '@renderer/worker/shared/fileOpenTypes'
 import { insideOp, noteEntry, txnOpen } from './actionLog'
 
@@ -59,8 +59,8 @@ function sizeText(bytes: number): string {
 /**
  * Record one op with the given typed arguments.
  *
- * @param refParams - the arguments that are node uids, whose current paths
- *   are kept with the record.
+ * @param refParams - the arguments that are node uids (or lists of them),
+ *   whose current paths are kept with the record.
  */
 export function recordOp(
   ctx: WorkerContext,
@@ -84,6 +84,10 @@ export function recordOp(
     const nodes = nodesOf(ctx, sceneId)
     for (const name of refParams) {
       const id = args[name]
+      if (Array.isArray(id)) {
+        refs[name] = recordedPaths(nodes, id as number[])
+        continue
+      }
       if (typeof id !== 'number') continue
       const path = recordedPath(nodes, id)
       if (path !== null) refs[name] = path

@@ -44,7 +44,7 @@ export interface SceneTreeActions {
   toggleVisibility: (id: string) => void;
   /** Open the property inspector for a row. */
   showProperty: (id: string) => void;
-  /** Toolbar Focus: centre the active view on a row. */
+  /** Toolbar Focus: fit the active view to a row, or to the whole multi-selection. */
   focusSelected: (id: string) => void;
   /** Toolbar Delete / Delete key: the whole multi-selection when there is one. */
   deleteSelected: (id: string) => void;
@@ -167,10 +167,13 @@ export function useSceneTreeController({
 
       // --- Scene-tree toolbar handlers (UXP workspace_panel onBtn*Cmd) ---
 
+      // A multi-selection is framed together, as the delete below acts on
+      // all of it.
       focusSelected: (id) => {
         const { scene: s, activeMolViewId: viewId } = live.current;
         if (viewId === undefined) return;
-        s.focusNode(viewId, id).catch((err: unknown) => {
+        const ids = s.selectedIds.size > 1 ? [...s.selectedIds] : [id];
+        s.focusNodes(viewId, ids).catch((err: unknown) => {
           console.warn("focusSceneNode failed:", err);
         });
       },

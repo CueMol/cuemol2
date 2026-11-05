@@ -35,7 +35,7 @@ vi.mock('@renderer/features/scene/useSceneTree', () => ({
     selectedNode: null,
     selectedHasOps: { focus: true, delete: true, property: true, add: true },
     setSelectedId: vi.fn(), toggleInSelection: vi.fn(), selectRangeTo: vi.fn(), refetch: vi.fn(),
-    setNodeUiCollapsed: vi.fn(), moveSceneNode: vi.fn(), focusNode: vi.fn(),
+    setNodeUiCollapsed: vi.fn(), moveSceneNode: vi.fn(), focusNodes: vi.fn(),
     renameNode: vi.fn(),
   }),
 }))

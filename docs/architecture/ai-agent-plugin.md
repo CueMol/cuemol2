@@ -349,6 +349,7 @@ render job は GUI の Render パネルと同じ in-process job で走る。待�
 | `set_projection` | no | `getViewProjection` / `setViewProjection` |
 | `pan_view` | no | `translateView` |
 | `focus_node` | no | `focusOnNode` |
+| `focus_nodes` | no | `focusOnNodes` |
 
 **toolset `map`**
 

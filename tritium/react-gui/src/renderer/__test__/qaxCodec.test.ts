@@ -32,6 +32,7 @@ const PARAMS = {
   center: param('vec3'),
   atoms: param('atoms'),
   target: param('integer', { semantic: 'renderer' }),
+  targets: param('nodes', { semantic: 'node' }),
   unset: param('string'),
 } as unknown as ParamMap
 
@@ -59,18 +60,21 @@ describe('qax', () => {
       center: [1, -2.5, 0],
       atoms: [{ chain: 'A', resid: '7', atomName: 'CA' }],
       target: 12,
+      // A node list: one <arg> per node, in order; one without a path keeps its uid.
+      targets: [10, 13],
       unset: null,
     }
-    const item = opToQax('probe', PARAMS, args, { target: '1crn/cartoon1' })
+    const item = opToQax('probe', PARAMS, args, { target: '1crn/cartoon1', targets: '1crn\n#13' })
     const doc = parseQax(writeQax({ version: 1, actions: [{ items: [item] }] })) as QaxDoc
     const back = doc.actions[0].items[0]
     if (back.kind !== 'op') throw new Error('not an op')
 
     // The path is looked up; the uid written beside it is only a hint.
-    const read = qaxToInput(back, PARAMS, (ref) => (ref.path === '1crn/cartoon1' ? 40 : { error: 'no' }))
+    const paths: Record<string, number> = { '1crn/cartoon1': 40, '1crn': 50 }
+    const read = qaxToInput(back, PARAMS, (ref) => (ref.path !== undefined ? (paths[ref.path] ?? { error: 'no' }) : (ref.uid ?? { error: 'no' })))
     if (!read.ok) throw new Error(read.error)
     const typed = readToolArgs({ name: 'probe', params: PARAMS } as unknown as AnyOp, read.input)
-    expect(typed).toEqual({ ...args, target: 40 })
+    expect(typed).toEqual({ ...args, target: 40, targets: [50, 13] })
   })
 
   it('refuses another version, a param no macro declares, and a macro defined twice', () => {

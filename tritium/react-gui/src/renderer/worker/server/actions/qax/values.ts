@@ -3,7 +3,8 @@
  * @description An op's typed arguments to qax `<arg>` elements and back,
  * by the op's parameter declarations.
  *
- * Writing: a node uid is written as its path (and the uid as a hint), a
+ * Writing: a node uid is written as its path (and the uid as a hint), a node
+ * list as one such `<arg>` per node under the same name, a
  * `vec3` / `quat` as `x y z` / `a x y z`, a list of atoms as `<atom>` children, anything else as
  * text; a null argument is left out. Reading gives the JSON shape
  * `readToolArgs` takes -- the same reader MCP and the agent use -- with node
@@ -11,7 +12,7 @@
  */
 
 import type { AtomSpec, Param, ParamMap } from '@renderer/worker/server/catalog/params'
-import { numberListSize } from '@renderer/worker/server/catalog/params'
+import { nodeListPaths, numberListSize } from '@renderer/worker/server/catalog/params'
 import type { QaxArg, QaxItem } from './model'
 
 /** The semantic kinds whose value is a node uid. */
@@ -37,7 +38,13 @@ export function opToQax(
   for (const [argName, p] of Object.entries(params)) {
     const v = args[argName]
     if (v === null || v === undefined) continue
-    if (isRefParam(p) && typeof v === 'number') {
+    if (p.kind === 'nodes' && Array.isArray(v)) {
+      const paths = nodeListPaths(v as number[], refs[argName])
+      ;(v as number[]).forEach((uid, i) => {
+        const path = paths[i]
+        out.push({ name: argName, ...(path !== undefined && !path.startsWith('#') ? { path } : {}), uid })
+      })
+    } else if (isRefParam(p) && typeof v === 'number') {
       out.push({ name: argName, ...(refs[argName] !== undefined ? { path: refs[argName] } : {}), uid: v })
     } else if (p.kind === 'atoms' && Array.isArray(v)) {
       out.push({ name: argName, atoms: (v as AtomSpec[]).map((a) => ({ chain: a.chain, resid: a.resid, name: a.atomName })) })
@@ -71,7 +78,9 @@ export function qaxToInput(
       if (!isRefParam(p)) return { ok: false, error: `"${a.name}" does not take a node` }
       const id = resolve({ path: a.path, uid: a.uid }, p, a.name)
       if (typeof id !== 'number') return { ok: false, error: id.error }
-      input[a.name] = id
+      // A node list has one <arg> per node, gathered back in order.
+      if (p.kind === 'nodes') input[a.name] = [...((input[a.name] as number[] | undefined) ?? []), id]
+      else input[a.name] = id
     } else if (a.atoms) {
       input[a.name] = a.atoms.map((t) => ({ chain: t.chain, resid: t.resid, atomName: t.name }))
     } else if (numberListSize(p.kind) !== null) {

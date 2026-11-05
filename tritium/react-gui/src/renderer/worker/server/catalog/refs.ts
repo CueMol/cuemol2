@@ -42,6 +42,7 @@ import type { Scene } from '@cuemol/core/src/wrappers/Scene'
 import { getSceneTree } from '@renderer/worker/server/services/sceneTree/sceneTree'
 import type { SceneTreeNode } from '@renderer/worker/shared/sceneTreeTypes'
 import { globToRegExp, isGlob, unglob } from './glob'
+import { NODE_LIST_SEP } from './params'
 
 /** What kind of node a parameter wants. */
 export type RefKind = 'object' | 'renderer' | 'node'
@@ -114,6 +115,14 @@ export function recordedPath(nodes: SceneNodeEntry[], id: number): string | null
   if (!node.typeName) return `${plain}#${id}`
   const typed = typedPath(node)
   return nodes.filter((n) => typedPath(n) === typed).length === 1 ? typed : `${typed}#${id}`
+}
+
+/**
+ * `recordedPath` of every node of a node list, as the one `refs` entry it is
+ * kept in (`NODE_LIST_SEP`); `#uid` for a node that is not there.
+ */
+export function recordedPaths(nodes: SceneNodeEntry[], ids: readonly number[]): string {
+  return ids.map((id) => recordedPath(nodes, id) ?? `#${id}`).join(NODE_LIST_SEP)
 }
 
 /**

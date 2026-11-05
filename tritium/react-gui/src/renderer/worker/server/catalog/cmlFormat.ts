@@ -10,7 +10,7 @@
  */
 
 import type { AtomSpec, ParamKind, ParamMap } from './params'
-import { numberListSize } from './params'
+import { nodeListPaths, numberListSize } from './params'
 
 /** The semantic kinds whose value is a node uid. */
 const REF_SEMANTICS = new Set(['object', 'renderer', 'node'])
@@ -58,6 +58,14 @@ export function atomList(atoms: readonly AtomSpec[], sep = ' '): string {
   return atoms.map((a) => `${a.chain}.${a.resid}.${a.atomName}`).join(sep)
 }
 
+/**
+ * A node list as console text: each node's recorded path (`#uid` without
+ * one), quoted where it has to be, separated by spaces.
+ */
+export function nodeListText(ids: readonly number[], ref: string | undefined): string {
+  return nodeListPaths(ids, ref).map((path) => listArg(path, false)).join(' ')
+}
+
 /** One argument's value as text, or null when it is left out. */
 function argText(value: unknown, kind: string, ref: string | undefined, list: 'node' | 'file' | null): string | null {
   if (value === null || value === undefined) return null
@@ -84,6 +92,10 @@ export function formatCommand(
 ): string {
   const parts: string[] = []
   for (const [argName, p] of Object.entries(params)) {
+    if (p.kind === 'nodes' && Array.isArray(args[argName])) {
+      parts.push(`${argName}=${nodeListText(args[argName] as number[], refs[argName])}`)
+      continue
+    }
     const isRef = REF_SEMANTICS.has(p.semantic ?? '') && typeof args[argName] === 'number'
     const ref = isRef ? (refs[argName] ?? `#${String(args[argName])}`) : undefined
     // The arguments the console reads as lists (fromCatalog.ts).

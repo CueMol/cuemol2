@@ -45,6 +45,10 @@ runtime_class DensityMap extends ScalarObject
 
   void fitView(object<View$> pView, boolean dummy);
 
+  /// The whole map's box in the view's rotated frame, as JSON
+  /// {"min":[x,y,z],"max":[x,y,z]} (see View::fitToBox)
+  string getFitBoxJSON(object<View$> pView);
+
   /// Density level enclosing the top fraction of the grid points
   real getLevelAtTopFraction(real frac);
 
