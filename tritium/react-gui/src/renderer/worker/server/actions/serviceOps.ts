@@ -208,7 +208,7 @@ function orNull(text: string): string | null {
 }
 
 /** The format load op that reads a file with these options, and those options as its arguments. */
-function formatLoad(format: FormatOptions): [string, Record<string, unknown>] {
+export function formatLoad(format: FormatOptions): [string, Record<string, unknown>] {
   switch (format.kind) {
     case 'pdb':
       return ['load_pdb', { ...format.options }]

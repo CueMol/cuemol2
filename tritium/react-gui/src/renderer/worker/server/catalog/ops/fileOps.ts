@@ -12,7 +12,9 @@ import { defineOp } from '../op'
 import { LOAD_RENDERER_PARAMS, NULL_RENDERER_DOC, applyRendererArgs, loadObjectFile, openTarget, readerTarget, SCENE_FILE_RE } from '../fileLoad'
 import type { OpContext, OpOutcome } from '../op'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
-import { enumOf, optional, path, rendererType, selection, string } from '../params'
+import { boolean, enumOf, optional, path, rendererType, selection, string } from '../params'
+import { STRUCTURE_OPTIONS, STRUCTURE_TOPOLOGY, withValues } from './loadFormatOps'
+import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes'
 
 /** The renderer arguments a download takes (a map's centring is a load's). */
 const { mapCenterPolicy: _mapCenter, ...FETCH_RENDERER_PARAMS } = LOAD_RENDERER_PARAMS
@@ -34,6 +36,7 @@ async function fetchInto(
   readerName: string,
   name: string,
   args: FetchArgs,
+  setFormat: (format: FileOpenOptions['format']) => FileOpenOptions['format'] = (f) => f,
 ): Promise<OpOutcome> {
   const options = buildHeadlessFileOpenOptions(ctx, {
     readerName,
@@ -42,6 +45,7 @@ async function fetchInto(
     selection: args.selection,
   })
   applyRendererArgs(options.renderer, args)
+  options.format = setFormat(options.format)
 
   // Registered with the caller so that stopping it aborts this download
   // rather than leaving it running.
@@ -68,6 +72,10 @@ export const fetchPdb = defineOp({
     selection: optional(selection('Draw only this selection. Null draws everything.')),
     name: optional(string('Name of the new object. Null uses the accession code.')),
     ...FETCH_RENDERER_PARAMS,
+    // The reader options of Get PDB's File Open dialog, as load_pdb / load_mmcif take them.
+    ...STRUCTURE_OPTIONS,
+    loadSegid: optional(boolean('Read the segment ids (format pdb only).')),
+    ...STRUCTURE_TOPOLOGY,
   },
   mutates: true,
   describe: (a) => `Fetch ${a.pdbId}${a.rendererType !== null ? ` as ${a.rendererType}` : ''}`,
@@ -87,7 +95,12 @@ export const fetchPdb = defineOp({
       return { ok: false, error: `"${args.pdbId}" is not a PDB accession code (four characters, first a digit).` }
     }
     const spec = pickCoordUrl(pdbId, args.format === 'pdb' ? 'RCSB_PDB' : 'RCSB_CIF')
-    const done = await fetchInto(ctx, oc, spec.url, spec.readerName, args.name?.trim() || pdbId, args)
+    const { loadModel, loadAnisou, loadAltConf, loadSegid, build2ndry, autoTopology } = args
+    const done = await fetchInto(ctx, oc, spec.url, spec.readerName, args.name?.trim() || pdbId, args, (f) => {
+      if (f.kind === 'pdb') return { ...f, options: withValues(f.options, { loadModel, loadAnisou, loadAltConf, loadSegid, build2ndry, autoTopology }) }
+      if (f.kind === 'mmcif') return { ...f, options: withValues(f.options, { loadModel, loadAnisou, loadAltConf, build2ndry, autoTopology }) }
+      return f
+    })
     if (!done.ok) return { ok: false, error: `${pdbId.toUpperCase()} could not be downloaded: ${done.error}` }
     return done
   },

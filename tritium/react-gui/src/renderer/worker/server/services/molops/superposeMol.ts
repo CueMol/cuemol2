@@ -112,6 +112,7 @@ export function superposeMol(
                 algo: args.algo,
                 ...(args.algo === 'USalign' && args.pivot ? { pivot: args.pivot } : {}),
                 keepAsProperty: args.useprop,
+                ...(args.autoRecenter ? { recenter: true } : {}),
             }, ['movId', 'refId']);
             if (args.algo === 'USalign') {
                 mgr.superposeUSalign1(ref, rsel, mov, msel, args.pivot ?? 'auto', args.useprop);

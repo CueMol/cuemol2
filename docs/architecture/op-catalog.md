@@ -312,7 +312,7 @@ op 名 (= console のコマンド名、MCP と agent の tool 名) と alias は
   | `show` / `hide` | 表示する / 隠す (この意味だけ。情報の表示には使わない) |
 
   固有の動詞 (`superpose`、`measure`、`merge`、`cut`、`rotate`、`pan`、`focus`、`center`、
-  `recenter`、`orient` (主軸を画面の軸に合わせる)、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture`、`convert` (object の型を変える)、`paste` (Copy した XML から足す)、`reload` (元のファイルから読み直す)、`quit` / `exit` など) は、
+  `recenter`、`orient` (主軸を画面の軸に合わせる)、`analyze`、`render`、`animate`、`renumber`、`define`、`count`、`capture`、`convert` (object の型を変える)、`copy` / `paste` (node の XML を取る / その XML から足す)、`reload` (元のファイルから読み直す)、`quit` / `exit` など) は、
   上の動詞と意味が重ならないものに限って使う。`make` / `gen` / `new` (→ `create`)、
   `compute` / `regen` (→ `calc` / `recalc`)、`change` / `update` (→ `set`)、一覧の `get` (→ `list`) は使わない。
 - **目的語**: `scene`、`object`、`renderer`、`group`、`camera`、`view`、`prop(s)`、`selection`、
@@ -393,6 +393,8 @@ dialog・context menu・panel が使う service をそのまま呼ぶ (undo の�
   `save_camera_file name [, path]` (null は元のファイル)、`reload_camera name`
 - 貼り付け: `paste_node kind, form, xml, target, targetType` (scene tree の Paste。Copy した XML から
   object / renderer / group / style set / camera を足す。名前は貼り付け先で重ならないように付け直す)
+- コピー: `copy_node nodeId, nodeType` (scene tree の Copy。object / renderer / group の XML を、`paste_node` に
+  渡す `kind` / `form` と一緒に返す。scene を変えないので記録しない)
 
 ### style set の op (`ops/styleOps.ts`。console と MCP、help の分類は `styles`)
 

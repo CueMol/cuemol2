@@ -34,7 +34,7 @@ op を経由せずに worker の service を直接呼ぶ。scene を変える se
 | group への出し入れ | `reorderSceneNode` | renderer の `set_node_prop group` |
 | Focus (1 つ・複数選択) | `focusOnNode` / `focusOnNodes` | `focus_node` / `focus_nodes` |
 | Paste | `pasteNode` | `paste_node` (Copy した XML ごと記録) |
-| Copy | `copyNode` / `copyNodes` | **無し** (scene を変えない。XML を取る op が無い) |
+| Copy | `copyNode` / `copyNodes` | node ごとの `copy_node` (XML を返す。scene を変えないので記録しない) |
 | Select Mol | `selectObjectMol` | `set_mol_selection` |
 | 新しい renderer group | `createRendererGroup` | `create_group` |
 | 行の開閉 | `setNodeUiCollapsed` | 無し (表示の状態。txn の外で書く) |
@@ -72,7 +72,7 @@ op を経由せずに worker の service を直接呼ぶ。scene を変える se
 | 原子の削除 | `deleteMolAtoms` | `delete_atoms` |
 | 分子の結合 | `mergeMol` | `merge_molecules` |
 | 二次構造の再割り当て | `reassignProt2ndry` | `set_secondary_structure` |
-| 重ね合わせ | `superposeMol` | `superpose`。auto recenter は op では常に off (後から `focus_*` で同じ結果) |
+| 重ね合わせ | `superposeMol` | `superpose` (auto recenter は `recenter`) |
 | 分子表面の作成 / 再計算 | `makeMolSurf` / `regenMolSurf` | `create_surface` / `recalc_surface` |
 | 分子表面の切断 | `cutSurfByPlane` | `cut_surface` |
 | map からの表面 | `generateRendererSurfObj` | `create_surface_from_map` |
@@ -131,9 +131,9 @@ op を経由せずに worker の service を直接呼ぶ。scene を変える se
 |---|---|---|
 | File > Open (object) | `loadObject` | 形式ごとの `load_pdb` / `load_mmcif` / `load_mtz` / `load_ccp4` / `load_msms` / `load_namd` / `load_amber`。それ以外は `load_file` (dialog が読んだ reader を `reader` に入れる) |
 | File > Open (scene) | `loadScene` | `load_file` (`.qsc`)。scene の読み込みは undo に載らないので記録しない |
-| Get PDB / EMDB | `streamLoadFromUrl` / `streamLoadDensityMap` | `fetch_pdb` / `fetch_url` / `fetch_emdb` / `fetch_map`。Get PDB の形式オプションは op に無い (renderer の選択だけ) |
+| Get PDB / EMDB | `streamLoadFromUrl` / `streamLoadDensityMap` | `fetch_pdb` / `fetch_url` / `fetch_emdb` / `fetch_map`。File Open dialog の形式オプションは `fetch_pdb` に入る (`load_pdb` / `load_mmcif` と同じ名前) |
 | object の Save as | `saveObjectToFile` | `save_object` (scene を変えないので記録しない) |
-| scene の Save / Save as | `saveScene` | `save_scene` (記録しない)。writer のオプション (embed・compress・version) は op に無い |
+| scene の Save / Save as | `saveScene` | `save_scene` (writer のオプション `embedAll` / `version` / `compress` / `base64` 付き。記録しない) |
 | scene の Export (png / pov / stl / mqo) | `exportScene` | `export_scene` / `export_image` (記録しない)。Umbreon の画像は format に無い |
 | Rendering ウィンドウ (静止画) | `renderStart` | `render_image` (Umbreon の GI / NPR。記録しない) |
 | Rendering ウィンドウ (動画・POV-Ray) | `renderStart` | **無し** |

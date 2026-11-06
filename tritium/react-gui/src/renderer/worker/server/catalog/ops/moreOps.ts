@@ -146,8 +146,16 @@ export const setDefaultColor = defineOp({
 
 export const saveSceneOp = defineOp({
   name: 'save_scene',
-  description: 'Save the whole scene to a .qsc file.',
-  params: { path: path('Where to write the .qsc file.') },
+  description:
+    'Save the whole scene to a .qsc file. The format options are those of the Save As dialog; ' +
+    'null keeps the writer default for each.',
+  params: {
+    path: path('Where to write the .qsc file.'),
+    embedAll: optional(boolean('True embeds the data of every object in the file instead of linking to its source file.')),
+    version: optional(enumOf(['QDF1', 'QDF0'], 'File format version. QDF0 (the old format) has no compression or base64. Null keeps the default, or QDF1 when compress or base64 is given.')),
+    compress: optional(enumOf(['xzip', 'gzip', 'none'], 'Compression of the embedded data (QDF1 only).')),
+    base64: optional(boolean('True writes the embedded data as base64 text (QDF1 only).')),
+  },
   mutates: false,
   // Saving resets the undo stack, which cannot happen inside an agent turn's
   // transaction: the console runs it alone on its line, an MCP call outside
@@ -159,7 +167,20 @@ export const saveSceneOp = defineOp({
   run(ctx, args, oc) {
     const target = outputPath(oc, args.path, '.qsc')
     if ('error' in target) return { ok: false, error: target.error }
-    const res = saveScene(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, filePath: target.path })
+    // QDF0 has no compression or text encoding: asking for them selects
+    // QDF1 (the dialog's default), and asking for them with QDF0 is refused
+    // rather than dropped.
+    const encoding = args.compress !== null || args.base64 !== null
+    if (encoding && args.version === 'QDF0') return { ok: false, error: 'compress and base64 need version QDF1.' }
+    const version = args.version ?? (encoding ? 'QDF1' : null)
+    const options = {
+      ...(args.embedAll !== null ? { embedAll: args.embedAll } : {}),
+      ...(version !== null ? { version } : {}),
+      ...(version === 'QDF0' ? { compress: 'none', base64: false } : {}),
+      ...(args.compress !== null ? { compress: args.compress } : {}),
+      ...(args.base64 !== null ? { base64: args.base64 } : {}),
+    }
+    const res = saveScene(ctx, { sceneId: oc.sceneId, viewId: oc.viewId, filePath: target.path, options })
     return res.ok ? { ok: true, data: { path: target.path } } : { ok: false, error: `The scene could not be saved to ${target.path}.` }
   },
 })

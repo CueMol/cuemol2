@@ -38,7 +38,7 @@ const common = (readerName: string) => ({
 })
 
 /** A format's options with the given (non-null) values written over them. */
-function withValues<T extends object>(options: T, values: Partial<Record<keyof T, unknown>>): T {
+export function withValues<T extends object>(options: T, values: Partial<Record<keyof T, unknown>>): T {
   const out = { ...options } as Record<string, unknown>
   for (const [k, v] of Object.entries(values)) if (v !== null && v !== undefined) out[k] = v
   return out as T
@@ -63,12 +63,12 @@ function loadAs(
 }
 
 /** The structure reader options PDB and mmCIF share. */
-const STRUCTURE_OPTIONS = {
+export const STRUCTURE_OPTIONS = {
   loadModel: optional(boolean('Read every model of a multi-model file (NMR), not only the first.')),
   loadAnisou: optional(boolean('Read the anisotropic B-factors (ANISOU).')),
   loadAltConf: optional(boolean('Read the alternative conformations.')),
 }
-const STRUCTURE_TOPOLOGY = {
+export const STRUCTURE_TOPOLOGY = {
   build2ndry: optional(boolean('Compute the secondary structure instead of reading it from the file.')),
   autoTopology: optional(boolean('Build the bonds of residues the topology does not know.')),
 }
