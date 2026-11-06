@@ -1,6 +1,6 @@
 # Viewport Tool System 実装計画 — Phase 1 & 2
 
-> **Target repository:** `CueMol/cuemol2` — branch `tritium_260412`, subdirectory `tritium/`
+> **Target repository:** `CueMol/cuemol3` — branch `tritium_260412`, subdirectory `tritium/`
 > **実行者:** Claude Code
 > **前提:** 本ドキュメントを repo ルート（`tritium/`）からコンテキストとして与え、段階ごとに指示する。
 

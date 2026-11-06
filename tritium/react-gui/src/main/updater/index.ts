@@ -51,7 +51,7 @@ const STARTUP_CHECK_DELAY_MS = 10_000
 const RESULT_POLL_MS = 250
 const RESULT_POLL_TRIES = 40
 
-const RELEASES_PAGE = 'https://github.com/CueMol/cuemol2/releases/latest'
+const RELEASES_PAGE = 'https://github.com/CueMol/cuemol3/releases/latest'
 
 /**
  * How long after a handover the start-up cleanup leaves the work directory

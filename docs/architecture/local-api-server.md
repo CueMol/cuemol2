@@ -214,7 +214,7 @@ ES module `dist/tritium_cli.mjs` に bundle する (`task build_tritium` に含�
      `/opt/CueMol3/resources/cli/tritium_cli` (wrapper) を読み、`exec "$dir/../../<exe>"` から実行
      ファイル名を取る (名前は packager が package 名から決めるので固定できない)。AppImage は
      `CUEMOL3_APP` で指定してもらう。
-  どれも無ければ `NOT_INSTALLED` (`https://github.com/CueMol/cuemol2/releases/latest` と
+  どれも無ければ `NOT_INSTALLED` (`https://github.com/CueMol/cuemol3/releases/latest` と
   `CUEMOL3_APP` の案内) を出して exit 1。`--no-launch` では起動せず、案内を出して終わる。
   spawn の失敗 (実行ファイルが無い等) は `error` event で即座に失敗にする (90 秒待たない)。
 - 対話: 起動時に banner (version、port、pid、操作の案内) を出す。prompt は `CueMol <dir> ❯` /
@@ -343,7 +343,7 @@ undo txn は scene ごとに分かれる。
   - publish 前に `devDependencies` を消す (`workspace:` protocol は repo の外で意味を持たない)。
   - 認証は npm trusted publishing (GitHub OIDC、`id-token: write`)。token の secret は持たない。
     npm >= 11.5.1 が要るので job で `npm@latest` を入れる。npmjs.com の package 設定 (Trusted
-    Publisher) に repository `CueMol/cuemol2`、workflow `build2.yml` を登録しておくこと。この設定は
+    Publisher) に repository `CueMol/cuemol3`、workflow `build2.yml` を登録しておくこと。この設定は
     package が存在しないとできないので、最初の 1 回は手で publish した。
 
 ### 5.6 `tritium_cli mcp` (stdio の MCP)

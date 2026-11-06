@@ -14,7 +14,7 @@ import * as path from 'node:path'
 import { execFileSync } from 'node:child_process'
 
 /** Where to get CueMol3 when it is not installed. */
-export const DOWNLOAD_URL = 'https://github.com/CueMol/cuemol2/releases/latest'
+export const DOWNLOAD_URL = 'https://github.com/CueMol/cuemol3/releases/latest'
 
 const PRODUCT = 'CueMol3'
 const BUNDLE_ID = 'org.cuemol.cuemol3'

@@ -5,10 +5,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CueMol/cuemol2.git",
+    "url": "git+https://github.com/CueMol/cuemol3.git",
     "directory": "tritium/cli"
   },
-  "homepage": "https://github.com/CueMol/cuemol2",
+  "homepage": "https://github.com/CueMol/cuemol3",
   "type": "module",
   "bin": {
     "tritium_cli": "dist/tritium_cli.mjs"

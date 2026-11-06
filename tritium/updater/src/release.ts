@@ -14,7 +14,7 @@
 import { compareVersions, formatVersion, parseVersion, type Version } from './version'
 
 /** Where the app looks unless CUEMOL_UPDATE_FEED points elsewhere. */
-export const DEFAULT_FEED_URL = 'https://api.github.com/repos/CueMol/cuemol2/releases/latest'
+export const DEFAULT_FEED_URL = 'https://api.github.com/repos/CueMol/cuemol3/releases/latest'
 
 /** The installers an update can use, by OS and architecture. */
 export type UpdatePlatform = 'darwin-arm64' | 'win32-x64' | 'linux-x64'

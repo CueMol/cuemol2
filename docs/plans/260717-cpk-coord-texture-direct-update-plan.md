@@ -21,7 +21,7 @@ Phase 2 で `AnimMol` と `Trajectory` を導入し、MD trajectory の realtime
 | **実装先** | `/Users/user1/proj64/cuemol2` | `develop` | CMake ビルド。tritium (Electron/WebGL2) を含む現行本流 |
 | **参照実装** | `/Users/user1/proj64/cuemol2_png` | `dev201608` | autotools ビルドの 2016-2018 年レガシーブランチ。**読むだけ。変更しない** |
 
-両者は同一 origin (`github.com:CueMol/cuemol2`) の別ブランチで、分岐点は `2bdc93e2` (2018-05-23)。`dev201608` は develop に**マージされていない**。以降、本書で「参照実装」と書いたら `/Users/user1/proj64/cuemol2_png` 内のパスを指す。
+両者は同一 origin (`github.com:CueMol/cuemol3`) の別ブランチで、分岐点は `2bdc93e2` (2018-05-23)。`dev201608` は develop に**マージされていない**。以降、本書で「参照実装」と書いたら `/Users/user1/proj64/cuemol2_png` 内のパスを指す。
 
 ---
 
