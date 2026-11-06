@@ -73,6 +73,8 @@ architecture, it belongs here.
   qax v1 のスキーマと値の書き方、`run x.qax` の 1 action = 1 txn、`open_log`、`list_actions` /
   `export_actions`。GUI の Actions view と History pane (選択・Go to step・qax 保存・コピー)、
   Inspector の step 表示、op から作る undo の表示文 (`describe`)、`actions-changed` push。
+- [GUI 操作と op の対応](gui-op-coverage.md) (日本語) -- GUI の各操作がどの op (の組み合わせ) で
+  表せて記録されるか、op で表せないものはどれかの一覧
 - [Console の ChimeraX dialect (ChX console)](console-chimerax-dialect.md) (日本語) -- ChimeraX のコマンド言語に
   部分互換の基本コマンド。cli.py に倣った読み方 (登録順の前方一致、空白区切りの引数と keyword)、atom specification の
   object ごとの CueMol 式への翻訳、model 番号、`chx:` renderer の selection と paint を表示の状態とする作り、
