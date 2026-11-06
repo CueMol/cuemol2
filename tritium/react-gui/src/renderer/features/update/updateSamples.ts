@@ -7,7 +7,7 @@ import type { UpdateRelease, UpdateStatus } from '@shared/types/update'
 
 const RELEASE: UpdateRelease = {
   version: '2.3.22.550',
-  htmlUrl: 'https://github.com/CueMol/cuemol2/releases/tag/v2.3.22.550',
+  htmlUrl: 'https://github.com/CueMol/cuemol3/releases/tag/v2.3.22.550',
   notes: '## CueMol3\n\n- Self-update from the app\n- Notifications in the status bar\n\n## Fixes\n\n- The window reveal waits one task after ready',
   asset: { name: 'CueMol3-2.3.22.550-macOS-arm64-Installer.dmg', url: '', size: 208_675_573, digest: '' },
 }

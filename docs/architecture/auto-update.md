@@ -179,7 +179,7 @@ backup を戻して `failed` を書き、旧 app を起動する。backup から
 ## 9. 既知の制約
 
 - 差分更新は無く、毎回インストーラ全体 (DMG 約 208 MB、Setup.exe 約 125 MB) を取得する。
-- 信頼の根拠は「GitHub の CueMol/cuemol2 の release」と HTTPS、`digest` の照合だけで、手で取得するのと同じ。
+- 信頼の根拠は「GitHub の CueMol/cuemol3 の release」と HTTPS、`digest` の照合だけで、手で取得するのと同じ。
 - App Management (macOS 13+) の判定は将来の macOS で変わりうる。2026-10 時点の macOS 26 では、
   ad-hoc 署名の app が自分を置換してもダイアログは出なかった。
 - Windows は perMachine なので、更新のたびに UAC が出る (発行元は「不明」)。消すには署名か、

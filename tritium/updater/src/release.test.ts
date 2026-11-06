@@ -4,7 +4,7 @@ import { parseVersion } from './version'
 
 const asset = (name: string) => ({ name, browser_download_url: `https://x/${name}`, size: 10, digest: 'sha256:00' })
 const raw = (assets: RawRelease['assets']): RawRelease => ({
-  tag_name: 'v2.3.22.550', html_url: 'https://github.com/CueMol/cuemol2/releases/tag/v2.3.22.550', body: 'notes', assets,
+  tag_name: 'v2.3.22.550', html_url: 'https://github.com/CueMol/cuemol3/releases/tag/v2.3.22.550', body: 'notes', assets,
 })
 const current = parseVersion('2.3.21.544')!
 

@@ -87,7 +87,7 @@ libcuemol2 の CI ビルドは clang/gcc/MSVC の 3 コンパイラで多数の�
 1. develop 最新化を確認 (本計画着手時点で PR #439 反映済み `6857eacb`)。
 2. CI ログから各カテゴリの正確な file:line を取得できることを確認:
    - clang/gcc: `gh run view --job <job-id> --log`
-   - **MSVC は `gh run view --log` では取れない** → `gh api /repos/CueMol/cuemol2/actions/jobs/<job-id>/logs` で full ログ取得 (実証済み、1541 件取得)。
+   - **MSVC は `gh run view --log` では取れない** → `gh api /repos/CueMol/cuemol3/actions/jobs/<job-id>/logs` で full ログ取得 (実証済み、1541 件取得)。
 3. Phase 1 着手前に、mmdb/ssmlib/BALL の source list が CMake でどう列挙されているか (2.1 の行) を再確認。
 
 ---
@@ -149,7 +149,7 @@ libcuemol2 の CI ビルドは clang/gcc/MSVC の 3 コンパイラで多数の�
 - Phase 2: `-Wformat`(clang/gcc)・C4477(MSVC) が対象ファイルで消滅。gtest 全 pass (出力文字列不変)。
 - Phase 3: `-Winconsistent-missing-override`(clang) 消滅。全ターゲットビルド + 全 gtest pass。
 - Phase 4: 対象警告の消滅と、指摘された潜在バグ (ポインタ切詰め等) の妥当な修正。
-- 共通: **CI ログの警告 file:line を before/after で比較**して数え上げる。MSVC は `gh api /repos/CueMol/cuemol2/actions/jobs/<job-id>/logs` で取得。
+- 共通: **CI ログの警告 file:line を before/after で比較**して数え上げる。MSVC は `gh api /repos/CueMol/cuemol3/actions/jobs/<job-id>/logs` で取得。
 
 ---
 
@@ -160,6 +160,6 @@ libcuemol2 の CI ビルドは clang/gcc/MSVC の 3 コンパイラで多数の�
 gh run view --job <job-id> --log | grep -oE '\[-W[a-z0-9-]+\]' | sort | uniq -c | sort -rn
 
 # MSVC (--log では取れないので API から full ログ)
-gh api /repos/CueMol/cuemol2/actions/jobs/<job-id>/logs > win.log
+gh api /repos/CueMol/cuemol3/actions/jobs/<job-id>/logs > win.log
 grep -aoE 'warning C[0-9]{4}' win.log | sort | uniq -c | sort -rn
 ```
