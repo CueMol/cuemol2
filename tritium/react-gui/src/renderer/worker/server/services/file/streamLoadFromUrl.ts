@@ -11,7 +11,7 @@ import { streamFetchToReader, cancelStream } from '@renderer/worker/server/servi
 import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions';
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
-import { recordOp } from '@renderer/worker/server/actions/serviceOps';
+import { formatLoad, recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { pickCoordUrl } from '@renderer/worker/shared/pdbUrls';
 
 const log = console;
@@ -71,6 +71,8 @@ function recordFetch(ctx: WorkerContext, sceneId: number, args: StreamLoadFromUr
             format: fetch.format,
             name: name !== fetch.pdbId ? name : null,
             ...renderer,
+            // Get PDB reads a PDB or mmCIF file, whose reader options fetch_pdb takes as load_pdb / load_mmcif do.
+            ...formatLoad(args.options.format)[1],
         });
         return;
     }

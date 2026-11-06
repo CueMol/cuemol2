@@ -10,6 +10,7 @@ import { NO_NODE } from '../errors'
 import { defineOp } from '../op'
 import { boolean, enumOf, nodeId, optional, string } from '../params'
 import { pasteNode } from '@renderer/worker/server/services/clipboard/paste'
+import { copyNode } from '@renderer/worker/server/services/clipboard/copy'
 import { MOVE_DEST_PARAMS, moveText } from '../moveDest'
 import { moveNodeTo } from '@renderer/worker/server/services/sceneTree/reorderSceneNode'
 import { columns, wrapList } from '../consoleFormat'
@@ -196,4 +197,25 @@ export const pasteNodeOp = defineOp({
   },
 })
 
-export const SCENE_OPS = [getSceneState, setVisible, deleteNode, renameNode, moveNode, pasteNodeOp]
+export const copyNodeOp = defineOp({
+  name: 'copy_node',
+  description:
+    'The CueMol XML of an object, renderer or renderer group (what Copy puts on the clipboard), ' +
+    'with the kind and form paste_node takes back. Copy then paste to duplicate a renderer onto ' +
+    'another object. Changes nothing.',
+  params: {
+    nodeId: nodeId('Uid of the object, renderer or renderer group.', 'nodeType'),
+    nodeType: enumOf(['object', 'renderer', 'rendGroup'], 'What nodeId refers to.'),
+  },
+  mutates: false,
+  describe: (_a, n) => `Copy ${n('nodeId')}`,
+  expose: { tool: false, console: true, mcp: true },
+  group: 'nodes',
+  run(ctx, args, oc) {
+    const res = copyNode(ctx, { sceneId: oc.sceneId, nodeId: args.nodeId, nodeType: args.nodeType })
+    if (!res.ok || !res.bytes || res.kind === null) return { ok: false, error: NO_NODE }
+    return { ok: true, data: { kind: res.kind, form: res.form ?? 'single', xml: new TextDecoder().decode(res.bytes) } }
+  },
+})
+
+export const SCENE_OPS = [getSceneState, setVisible, deleteNode, renameNode, moveNode, pasteNodeOp, copyNodeOp]

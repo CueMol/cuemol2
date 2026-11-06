@@ -59,6 +59,7 @@ export const superpose = defineOp({
     keepAsProperty: optional(
       boolean('True keeps the fit as the object\'s transform (xformMat) and leaves the coordinates; null or false moves the coordinates.'),
     ),
+    recenter: optional(boolean('True fits the view to the fitted atoms of the moving object afterwards; null or false leaves the view.')),
   },
   mutates: true,
   describe: (_a, n) => `Superpose ${n('movId')} onto ${n('refId')}`,
@@ -77,7 +78,7 @@ export const superpose = defineOp({
       movObjId: args.movId,
       movSel: args.movSel ?? dflt,
       useprop: args.keepAsProperty ?? false,
-      autoRecenter: false,
+      autoRecenter: args.recenter === true,
     })
     return normalizeServiceResult(res, 'The superposition failed. Check the ids and selections.')
   },

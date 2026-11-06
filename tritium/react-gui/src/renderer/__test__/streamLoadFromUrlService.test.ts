@@ -26,10 +26,15 @@ vi.mock('@renderer/worker/server/services/withUndoTxn', () => ({
 vi.mock('@renderer/worker/server/services/helpers/applyReaderOptions', () => ({
     applyReaderOptions: vi.fn(),
 }))
+vi.mock('@renderer/worker/server/actions/serviceOps', async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    recordOp: vi.fn(),
+}))
 
 import { services } from '@renderer/worker/server/services/file/file.service'
 import { setupRenderer } from '@renderer/worker/server/services/rend/setupRenderer'
 import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions'
+import { recordOp } from '@renderer/worker/server/actions/serviceOps'
 
 const { streamLoadFromUrl, cancelStreamLoad } = services
 
@@ -160,6 +165,13 @@ describe('streamLoadFromUrl service', () => {
         expect(env.scene.addObject).toHaveBeenCalledWith(env.obj)
         expect(setupRenderer).toHaveBeenCalledTimes(1)
         expect(result).toEqual(expect.objectContaining({ ok: true }))
+
+        // Recorded as fetch_pdb with the reader options the dialog read it with
+        // (the mmCIF reader has no segment ids, so no loadSegid).
+        const [, , op, opArgs] = vi.mocked(recordOp).mock.calls[0]
+        expect(op).toBe('fetch_pdb')
+        expect(opArgs).toMatchObject({ pdbId: '1mbn', format: 'mmcif', loadModel: true, build2ndry: true, autoTopology: false })
+        expect(opArgs).not.toHaveProperty('loadSegid')
     })
 
     it('cancel path: aborts fetch, drains IOThread via waitLoadAsync, does NOT add to scene', async () => {

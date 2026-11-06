@@ -33,9 +33,6 @@ GUI の操作のうち、op の組み合わせで表せないもの (2026-11-06 
 |---|---|---|
 | style | renderer の右クリック > Create Style (`createStyleFromRenderer`) | op が無く、undo の txn も開かない |
 | scene | 新しい scene / tab (`createNewSceneAndView` / `createViewInScene`) | op は今の scene に対して動くので、scene を作る op が無い |
-| scene tree | node の Copy (`copyNode` / `copyNodes`) | node の XML を取る op が無い (Paste は `paste_node`) |
-| file | Get PDB の形式オプション (`streamLoadFromUrl`) | `fetch_pdb` / `fetch_url` に reader のオプションが無い |
-| file | Scene の Save As の writer オプション | `save_scene` は `path` だけ |
 | レンダリング | 動画・POV-Ray のレンダリング (`renderStart`) | `render_image` は Umbreon の静止画だけ |
 | レンダリング | Export の Umbreon 画像 (`exportScene`) | `export_scene` の format に `umbreon` が無い |
 | view | 対称分子の原子へ Center (`naviCenterAtSymm`) | symm renderer の原子を指す op が無い (視点なので記録はしない) |
