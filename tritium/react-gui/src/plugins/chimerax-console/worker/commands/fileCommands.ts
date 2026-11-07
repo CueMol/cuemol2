@@ -95,6 +95,12 @@ const open = chxCommand({
         if (!res.ok) return res
         return adopt(ctx, cc, before)
       }
+      case 'mapUrl': {
+        if (args.format !== '') cc.warn('open: format is not used for a URL (its extension says it)')
+        const res = await runOp(ctx, cc, 'fetch_map_url', { url: target.spec.url, name: objectName, gzip: null })
+        if (!res.ok) return res
+        return adopt(ctx, cc, before)
+      }
       case 'emdb': {
         if (args.format !== '') cc.warn('open: format is not used for an EMDB map')
         const res = await runOp(ctx, cc, 'fetch_emdb', { id: target.id, name: objectName, source: target.mirror, level: null })

@@ -96,7 +96,21 @@ export function pickMapUrl(
 }
 
 /** Which mirror an EMDB map is downloaded from. */
-export type EmdbServerType = 'WWPDB' | 'EBI'
+export type EmdbServerType = 'WWPDB' | 'EBI' | 'PDBJ'
+
+/** Every EMDB mirror, in the order they are offered. */
+export const EMDB_SERVERS: readonly EmdbServerType[] = ['WWPDB', 'EBI', 'PDBJ']
+
+/**
+ * Where each mirror keeps the EMDB structures (ChimeraX `map/emdb_fetch.py`).
+ * PDBj's `ftp.pdbj.org` redirects to `files.pdbj.org`, so that is named
+ * directly. The China mirror is left out: it did not answer when this was added.
+ */
+const EMDB_BASES: Readonly<Record<EmdbServerType, string>> = {
+  WWPDB: 'https://files.wwpdb.org/pub/emdb/structures',
+  EBI: 'https://ftp.ebi.ac.uk/pub/databases/emdb/structures',
+  PDBJ: 'https://files.pdbj.org/pub/emdb/structures',
+}
 
 export interface EmdbMapUrlSpec {
   url: string
@@ -106,11 +120,8 @@ export interface EmdbMapUrlSpec {
 
 /** The primary map of EMDB entry `EMD-<num>` (a gzipped CCP4/MRC file). */
 export function pickEmdbMapUrl(num: string, server: EmdbServerType): EmdbMapUrlSpec {
-  const base = server === 'EBI'
-    ? 'https://ftp.ebi.ac.uk/pub/databases/emdb/structures'
-    : 'https://files.wwpdb.org/pub/emdb/structures'
   return {
-    url: `${base}/EMD-${num}/map/emd_${num}.map.gz`,
+    url: `${EMDB_BASES[server]}/EMD-${num}/map/emd_${num}.map.gz`,
     readerName: 'ccp4map',
     gzip: true,
   }

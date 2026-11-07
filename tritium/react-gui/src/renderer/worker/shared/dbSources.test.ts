@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { parseDbEntryInfo, structureFetch, urlFetch } from './dbSources'
+import { mapUrlFetch, parseDbEntryInfo, structureFetch, urlFetch } from './dbSources'
 
 const spec = (r: ReturnType<typeof structureFetch>) => (r.ok ? r.spec : r.error)
 
@@ -21,6 +21,10 @@ describe('structureFetch', () => {
       url: 'https://alphafold.ebi.ac.uk/files/AF-Q8N9C0-2-F1-model_v4.cif', readerName: 'mmcif', gzip: false, name: 'AF-Q8N9C0-2-F1',
     })
     expect(spec(structureFetch('pubchem', '2244', null))).toMatchObject({ readerName: 'sdf', name: 'pubchem_2244' })
+    expect(mapUrlFetch('https://example.org/m/emd_1080.map.gz')).toEqual({
+      url: 'https://example.org/m/emd_1080.map.gz', readerName: 'ccp4map', gzip: true, name: 'emd_1080',
+    })
+    expect(mapUrlFetch('https://example.org/x/1abc.pdb')).toBeNull()
     expect(spec(urlFetch('https://example.org/x/1abc.pdb.gz?dl=1'))).toEqual({
       url: 'https://example.org/x/1abc.pdb.gz?dl=1', readerName: 'pdb', gzip: true, name: '1abc',
     })

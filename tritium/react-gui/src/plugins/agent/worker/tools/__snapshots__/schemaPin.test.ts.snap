@@ -112,7 +112,7 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "description": "Download a cryo-EM map from EMDB and add it to the scene as an isosurface at the authors' recommended contour level. Give the EMDB code (EMD-11638), or the PDB ID of a cryo-EM entry to fetch the map its model was built into. Maps are large (tens to hundreds of MB), so this can take a while. Fetch the model itself with fetch_pdb.",
     "mutates": true,
     "name": "fetch_emdb",
-    "parameters": "{"type":"object","properties":{"id":{"type":"string","description":"EMDB code such as EMD-11638, or the PDB ID of a cryo-EM entry."},"name":{"type":["string","null"],"description":"Name for the map object. Null uses emd_<number>."},"source":{"type":["string","null"],"enum":["WWPDB","EBI",null],"description":"Which mirror: WWPDB (files.wwpdb.org) or EBI. Null is WWPDB."},"level":{"type":["number","null"],"description":"Contour level in the map's own density units. Null uses the level EMDB recommends (the top 1% of grid points when it gives none)."}},"required":["id","name","source","level"],"additionalProperties":false}",
+    "parameters": "{"type":"object","properties":{"id":{"type":"string","description":"EMDB code such as EMD-11638, or the PDB ID of a cryo-EM entry."},"name":{"type":["string","null"],"description":"Name for the map object. Null uses emd_<number>."},"source":{"type":["string","null"],"enum":["WWPDB","EBI","PDBJ",null],"description":"Which mirror: WWPDB (files.wwpdb.org), EBI or PDBJ (PDBj, Japan). Null is WWPDB."},"level":{"type":["number","null"],"description":"Contour level in the map's own density units. Null uses the level EMDB recommends (the top 1% of grid points when it gives none)."}},"required":["id","name","source","level"],"additionalProperties":false}",
   },
   {
     "description": "Download an entry from a structure database by its accession code and add it to the scene: pdb (RCSB PDB), pdbe (PDBe), pdbj (PDBj), redo (PDB-REDO, re-refined PDB entries), alphafold (AlphaFold DB, by UniProt accession such as P29474) or pubchem (PubChem, by compound id; a small molecule in 3D). Creates a new object AND a default renderer, so call get_scene_state afterwards to learn their ids. For a cryo-EM map use fetch_emdb.",
@@ -125,6 +125,12 @@ exports[`the tool list sent to the model > is unchanged 1`] = `
     "mutates": true,
     "name": "fetch_map",
     "parameters": "{"type":"object","properties":{"pdbId":{"type":"string","description":"Four-character PDB accession code."},"mapType":{"type":["string","null"],"enum":["2fofc","fofc",null],"description":"Which map: 2fofc (usual) or fofc (difference). Null is 2fofc."},"name":{"type":["string","null"],"description":"Name for the map object. Null uses <pdbid>_<mapType>."},"source":{"type":["string","null"],"enum":["RCSB_CIF","EBI_MTZ",null],"description":"Where from: RCSB_CIF (validation report coefficients) or EBI_MTZ (PDBe MTZ). Null is RCSB_CIF."}},"required":["pdbId","mapType","name","source"],"additionalProperties":false}",
+  },
+  {
+    "description": "Download a density map file (CCP4 / MRC: .map, .mrc, .ccp4, or one of them .gz) from a URL and add it to the scene. CueMol tells a cryo-EM map from a crystallographic one when it reads it: a cryo-EM map is drawn as an isosurface, a crystallographic one as a contour at 1 sigma. For an EMDB entry use fetch_emdb, for a PDB entry's map fetch_map.",
+    "mutates": true,
+    "name": "fetch_map_url",
+    "parameters": "{"type":"object","properties":{"url":{"type":"string","description":"The URL (http or https) of the map file."},"name":{"type":["string","null"],"description":"Name for the map object. Null uses the file name."},"gzip":{"type":["boolean","null"],"description":"The download is gzip-compressed. Null tells it from a .gz at the end of the file name."}},"required":["url","name","gzip"],"additionalProperties":false}",
   },
   {
     "description": "Download a structure from the RCSB PDB by its four-character accession code and add it to the scene. Creates a new object AND a default renderer, so call get_scene_state afterwards to learn their ids. This one takes a few seconds.",

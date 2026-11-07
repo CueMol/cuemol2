@@ -23,6 +23,8 @@ describe('openTarget', () => {
     expect(openTarget('1crn', '', '', none)).toEqual({ kind: 'entry', source: 'pdb', id: '1crn', format: null })
     expect(openTarget('emdb:1080', '', '', none)).toEqual({ kind: 'emdb', id: 'EMD-1080', mirror: 'WWPDB' })
     expect(openTarget('C:\\data\\x.pdb', '', '', none)).toEqual({ kind: 'file' })
+    expect(openTarget('emdb_japan:1080', '', '', none)).toEqual({ kind: 'emdb', id: 'EMD-1080', mirror: 'PDBJ' })
+    expect(openTarget('https://example.org/m/x.mrc', '', '', none)).toMatchObject({ kind: 'mapUrl' })
   })
 
   it('refuses a database it cannot open, saying why', () => {

@@ -13,9 +13,9 @@
  * console cannot open, saying why.
  */
 
-import { emdbAccession, STRUCTURE_SOURCES, structureFetch, urlFetch } from '@renderer/worker/shared/dbSources'
-import type { StructureFetchSpec, StructureFormat, StructureSource } from '@renderer/worker/shared/dbSources'
-import { PDB_ID_RE } from '@renderer/worker/shared/pdbUrls'
+import { emdbAccession, mapUrlFetch, STRUCTURE_SOURCES, structureFetch, urlFetch } from '@renderer/worker/shared/dbSources'
+import type { MapUrlSpec, StructureFetchSpec, StructureFormat, StructureSource } from '@renderer/worker/shared/dbSources'
+import { PDB_ID_RE, type EmdbServerType } from '@renderer/worker/shared/pdbUrls'
 
 export type OpenTarget =
   | { kind: 'file' }
@@ -23,16 +23,17 @@ export type OpenTarget =
   | { kind: 'entry'; source: StructureSource; id: string; format: StructureFormat | null }
   /** A URL: `fetch_url`. */
   | { kind: 'url'; spec: StructureFetchSpec }
-  | { kind: 'emdb'; id: string; mirror: 'WWPDB' | 'EBI' }
+  /** The URL of a density map (`.map`, `.mrc`, `.ccp4`): `fetch_map_url`. */
+  | { kind: 'mapUrl'; spec: MapUrlSpec }
+  | { kind: 'emdb'; id: string; mirror: EmdbServerType }
   | { kind: 'error'; error: string }
 
 /** EMDB's ChimeraX names and the mirror `fetch_emdb` takes for each. */
-const EMDB_MIRRORS: Readonly<Record<string, 'WWPDB' | 'EBI'>> = { emdb: 'WWPDB', emdb_us: 'WWPDB', emdb_europe: 'EBI' }
+const EMDB_MIRRORS: Readonly<Record<string, EmdbServerType>> = { emdb: 'WWPDB', emdb_us: 'WWPDB', emdb_europe: 'EBI', emdb_japan: 'PDBJ' }
 
 /** ChimeraX's other fetch sources: refused, with the reason. */
 const REFUSED: Readonly<Record<string, string>> = {
-  emdb_japan: 'that EMDB mirror is not supported yet; use emdb or emdb_europe',
-  emdb_china: 'that EMDB mirror is not supported yet; use emdb or emdb_europe',
+  emdb_china: 'that mirror did not answer when it was tried; use emdb, emdb_europe or emdb_japan',
   emdb_fits: 'opening the fitted models is not supported yet',
   cod: 'small-molecule crystal CIF files cannot be read',
   pcod: 'small-molecule crystal CIF files cannot be read',
@@ -90,6 +91,8 @@ export function openTarget(name: string, fromDatabase: string, format: string, e
   if (db !== '') return fetchFrom(db, name, fmt)
   if (exists(name)) return { kind: 'file' }
   if (/^https?:\/\//i.test(name)) {
+    const map = mapUrlFetch(name)
+    if (map) return { kind: 'mapUrl', spec: map }
     const r = urlFetch(name)
     return r.ok ? { kind: 'url', spec: r.spec } : { kind: 'error', error: `Error: open: ${r.error}` }
   }
