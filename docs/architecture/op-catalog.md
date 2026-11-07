@@ -212,6 +212,11 @@ terminal からは thin client `tritium_cli` で同じ runtime を使える (作
   - native は **Python の呼び出しと同じ**: 位置引数は先頭から順に埋まり、名前付き (`name=value`) の後には書けない。
     同じ引数を 2 回書くとエラー。
   - PyMOL dialect は PyMOL のまま: 位置引数は名前付きも数えた全体の番号の引数に入り、重複は後勝ち、LEGACY 展開あり。
+- コマンド名も dialect ごと (`commaSyntax` の `exactNames`): native は**正式名 (op 名か alias) の完全一致だけで実行**し、
+  省略形 (一意な前方一致 `sho`、`_` の省略 `s_n`) は実行せずに `Error: unknown command: "open" (did you mean
+  open_log?)` と候補を出す。別の dialect のつもりで打った動詞 (`open 1a0m 1crn`) が、その動詞で始まる唯一の
+  コマンド (`open_log`) として走り、`1a0m 1crn` という名前の log を書いたことがあるため。省略形は Tab の補完で
+  使える (補完の規則は変えない)。PyMOL dialect は PyMOL のとおり省略形で実行する (PyMOL の script が使う)。
 - 主な alias: `show` / `hide`、`select`、`zoom` / `center`、`turn`、`view` / `slab` / `fit_slab`、
   `load` (`.qsc` は panel が開く) / `fetch`、`set` / `get` (property path)、`props`、`scene`、
   `count`、`delete` / `rename` / `retype`、`render` (ray tracing / GI。Stop で中断)、
