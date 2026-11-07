@@ -19,10 +19,9 @@ ChimeraX のソースは `~/ext/ChimeraX/src/bundles/`。
 
 ## 1. AlphaFold の pLDDT の色を core に
 
-core の coloring の preset (または style) にする。ChimeraX の `alphafold` colormap は連続な補間なので、
-paint の 50 色の近似ではなく、B-factor を引数に取る gradient の coloring (CueMol の MultiGrad など) が使えるか
-調べる。ChX の `colorByPlddt` はそれに置き換える。ただし ChX の `chx:` renderer は paint を前提にしているので
-(後の `color` が `ensurePaint` で paint に戻す)、ChX 側の扱いは置き換えるときに決める。
+`BfacColoring` に既存の `MultiGradient` を持たせる方向に決めた。C++ の変更になるので、別の plan
+[261107-bfac-multigradient-plan.md](261107-bfac-multigradient-plan.md) で進める。ChX の `open alphafold:` は
+paint の 50 色の近似を続ける (`chx:` の renderer は paint が前提)。
 
 ## 2. 確認とテスト
 
