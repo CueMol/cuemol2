@@ -11,6 +11,7 @@
 #include <qlib/mcutils.hpp>
 #include <qlib/Vector4D.hpp>
 #include <gfx/AbstractColor.hpp>
+#include <qsys/MultiGradient.hpp>
 
 #include "MolAtom.hpp"
 #include "ColoringScheme.hpp"
@@ -56,7 +57,19 @@ namespace molstr {
     double m_parAutoLo, m_parAutoHi;
 
     Vector4D m_vCenter;
-    
+
+    /// Multi-colour gradient over the parameter (absolute values). With two
+    /// nodes or more it colours the atoms; with fewer the two-colour ramp
+    /// (lowcol / highcol) does, as before.
+    qsys::MultiGradientPtr m_pGrad;
+
+    /// The parameter an atom is coloured by (B-factor, occupancy, or distance from the centre)
+    double getParam(MolAtomPtr pAtom) const;
+
+  protected:
+    /// Pass the root and the dotted name on to multi_grad, now that this has them
+    void parentDataChanged() override;
+
   public:
     enum {
       BFC_BFAC=1,
@@ -80,6 +93,13 @@ namespace molstr {
 
     bool isAutoMode() const {
       return m_nAuto!=BFA_NONE;
+    }
+
+    qsys::MultiGradientPtr getMultiGrad() const { return m_pGrad; }
+
+    /// Whether the gradient colours the atoms (two nodes or more)
+    bool isMultiGrad() const {
+      return !m_pGrad.isnull() && m_pGrad->getSize()>=2;
     }
   };
 

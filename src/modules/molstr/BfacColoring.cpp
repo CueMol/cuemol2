@@ -30,6 +30,9 @@ BfacColoring::BfacColoring()
   //m_parLow = 20.0;
 
   resetAllProps();
+  m_pGrad = qsys::MultiGradientPtr(MB_NEW qsys::MultiGradient());
+  // Until this is a renderer's property, the gradient's name is only its own.
+  setupParentData("multi_grad");
   MB_DPRINTLN("BfacColoring: new obj(%p) is created.", this);
 }
 
@@ -41,6 +44,12 @@ BfacColoring::BfacColoring(const BfacColoring &r)
   m_colHigh = r.m_colHigh;
   m_parLow = r.m_parLow;
   m_parHigh = r.m_parHigh;
+
+  // A copy owns its nodes: editing one coloring must not change another.
+  m_pGrad = qsys::MultiGradientPtr(MB_NEW qsys::MultiGradient());
+  if (!r.m_pGrad.isnull())
+    m_pGrad->copyFromImpl(r.m_pGrad.get());
+  setupParentData("multi_grad");
 
   MB_DPRINTLN("BfacColoring: copy obj(%p) of %p is created.", this, &r);
 }
@@ -75,14 +84,7 @@ bool BfacColoring::start(MolCoordPtr pMol, Renderer *pRend)
     double dmin = 1.0e100, dmax = -1.0e100, val;
     AtomIterator iter(pMol, pSel);
     for (iter.first(); iter.hasMore(); iter.next()) {
-      MolAtomPtr pAtom = iter.get();
-      if (m_nMode==BFC_OCC)
-        val = pAtom->getOcc();
-      else if (m_nMode==BFC_CENTER)
-        val = (pAtom->getPos()-m_vCenter).length();
-      else
-        val = pAtom->getBfac();
-      
+      val = getParam(iter.get());
       dmin = qlib::min(dmin, val);
       dmax = qlib::max(dmax, val);
     }
@@ -95,16 +97,31 @@ bool BfacColoring::start(MolCoordPtr pMol, Renderer *pRend)
   return true;
 }
 
+void BfacColoring::parentDataChanged()
+{
+  setupParentData("multi_grad");
+}
+
+double BfacColoring::getParam(MolAtomPtr pAtom) const
+{
+  if (m_nMode==BFC_OCC)
+    return pAtom->getOcc();
+  else if (m_nMode==BFC_CENTER)
+    return (pAtom->getPos()-m_vCenter).length();
+  else
+    return pAtom->getBfac();
+}
+
 bool BfacColoring::getAtomColor(MolAtomPtr pAtom, gfx::ColorPtr &col)
 {
-  double par;
-  
-  if (m_nMode==BFC_OCC)
-    par = pAtom->getOcc();
-  else if (m_nMode==BFC_CENTER)
-    par = (pAtom->getPos()-m_vCenter).length();
-  else
-    par = pAtom->getBfac();
+  const double par = getParam(pAtom);
+
+  // The gradient's nodes are absolute parameter values: auto and
+  // lowpar / highpar belong to the two-colour ramp below.
+  if (isMultiGrad()) {
+    col = m_pGrad->getColor(par);
+    return true;
+  }
 
   col = m_colLow;
   
