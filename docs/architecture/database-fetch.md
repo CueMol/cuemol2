@@ -93,6 +93,10 @@ libcuemol2 側で行う (`ObjReader::read` が入力を `qlib::GzipInStream` で
 取得:
 - 取得元 (`pdb` を含む) は `fetch_entry`。ID の形は `open` でも先に検査して、何かを走らせる前に断る。
 - `emdb` / `emdb_us` は WWPDB、`emdb_europe` は EBI、`emdb_japan` は PDBJ で `fetch_emdb`。
+- `rcsb_bio` / `pdbe_bio` (`open 3d6y from rcsb_bio maxAssemblies 1`) は、ChimeraX の `pdb_bio/fetch_pdb_bio.py` と同じ
+  生物学的会合体のファイル (RCSB は `https://files.rcsb.org/download/<id>-assembly<n>.cif`、PDBe は
+  `https://www.ebi.ac.uk/pdbe/static/entry/download/<id>-assembly-<n>.cif.gz`) を、1 番から順に `fetch_url` で開く
+  (`dbSources.ts` の `assemblyFetch`。ChX の扱いは [console-chimerax-dialect](console-chimerax-dialect.md) §6)。
 - `eds` (`open 1a0m from eds`、`eds:1a0m`) は、ChimeraX の `map/eds_fetch.py` と同じ PDBe の 2Fo-Fc の地図
   `https://www.ebi.ac.uk/pdbe/coordinates/files/<id>.ccp4` を `fetch_map_url` で開く (`dbSources.ts` の
   `edsMapFetch`)。`fetch_map` は使わない: 取得元を省くと RCSB の validation report の係数から地図を作り、

@@ -36,7 +36,9 @@ describe('ChX syntax', () => {
   it('resolves a command word by the first command in registration order it starts, then sub-commands', () => {
     expect(resolve('col byh')).toBe('color')
     expect(resolve('del /B')).toBe('delete')
-    expect(resolve('c :1-5')).toBe('cartoon')
+    // `camera` comes before `cartoon` in ChimeraX's order, so `c` is camera.
+    expect(resolve('c')).toBe('camera')
+    expect(resolve('car :1-5')).toBe('cartoon')
     expect(resolve('cartoon hide :1-5')).toBe('cartoon hide')
     expect(resolve('cartoon h')).toBe('cartoon hide')
     // ChimeraX's short forms, which bundle order decides.

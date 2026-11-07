@@ -15,7 +15,7 @@
  */
 
 import { edsMapFetch, emdbAccession, mapUrlFetch, STRUCTURE_SOURCES, structureFetch, urlFetch } from '@renderer/worker/shared/dbSources'
-import type { MapUrlSpec, StructureFetchSpec, StructureFormat, StructureSource } from '@renderer/worker/shared/dbSources'
+import type { AssemblySite, MapUrlSpec, StructureFetchSpec, StructureFormat, StructureSource } from '@renderer/worker/shared/dbSources'
 import { PDB_ID_RE, type EmdbServerType } from '@renderer/worker/shared/pdbUrls'
 
 export type OpenTarget =
@@ -27,6 +27,8 @@ export type OpenTarget =
   /** The URL of a density map (`.map`, `.mrc`, `.ccp4`): `fetch_map_url`. */
   | { kind: 'mapUrl'; spec: MapUrlSpec }
   | { kind: 'emdb'; id: string; mirror: EmdbServerType }
+  /** The biological assemblies of a PDB entry (`rcsb_bio` / `pdbe_bio`), fetched one by one. */
+  | { kind: 'assemblies'; site: AssemblySite; id: string }
   | { kind: 'error'; error: string }
 
 /** EMDB's ChimeraX names and the mirror `fetch_emdb` takes for each. */
@@ -41,6 +43,7 @@ const REFUSED: Readonly<Record<string, string>> = {
   pdbihm: 'integrative models cannot be read',
   pdbdev: 'integrative models cannot be read',
   smiles: 'it needs a web service to build 3D coordinates',
+  pdb_nmr: 'NMR-STAR restraint files cannot be read',
   alphafold_pae: 'predicted aligned error is not supported',
   alpha_missense: 'AlphaMissense scores are not supported',
   mavedb: 'MaveDB scores are not supported',
@@ -66,6 +69,10 @@ function fetchFrom(db: string, id: string, format: StructureFormat | null | 'oth
     const acc = emdbAccession(id)
     return acc ? { kind: 'emdb', id: acc, mirror } : { kind: 'error', error: `Error: open: "${id}" is not an EMDB id (1080, EMD-1080)` }
   }
+  if (db === 'rcsb_bio' || db === 'pdbe_bio') {
+    if (!PDB_ID_RE.test(id)) return { kind: 'error', error: `Error: open: "${id}" is not a PDB id` }
+    return { kind: 'assemblies', site: db === 'rcsb_bio' ? 'rcsb' : 'pdbe', id: id.toLowerCase() }
+  }
   if (db === 'eds') {
     // The PDBe 2Fo-Fc map file ChimeraX opens (`map/eds_fetch.py`), read as it is.
     const spec = edsMapFetch(id)
@@ -74,7 +81,7 @@ function fetchFrom(db: string, id: string, format: StructureFormat | null | 'oth
   const refused = REFUSED[db]
   if (refused) return { kind: 'error', error: `Error: open: ${db} is not supported (${refused})` }
   if (!(STRUCTURE_SOURCES as readonly string[]).includes(db)) {
-    const known = [...STRUCTURE_SOURCES, ...Object.keys(EMDB_MIRRORS), 'eds'].join(', ')
+    const known = [...STRUCTURE_SOURCES, ...Object.keys(EMDB_MIRRORS), 'eds', 'rcsb_bio', 'pdbe_bio'].join(', ')
     return { kind: 'error', error: `Error: open: unknown database "${db}" (${known})` }
   }
   if (format === 'other') return { kind: 'error', error: `Error: open: ${db} serves pdb or mmcif; give one of them as the format` }

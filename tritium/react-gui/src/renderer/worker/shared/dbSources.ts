@@ -254,3 +254,21 @@ export function edsMapFetch(id: string): MapUrlSpec | null {
   if (!PDB_ID_RE.test(pdbId)) return null
   return { url: `https://www.ebi.ac.uk/pdbe/coordinates/files/${pdbId}.ccp4`, readerName: 'ccp4map', gzip: false, name: pdbId }
 }
+
+/** The sites biological assemblies are fetched from (ChimeraX `rcsb_bio` / `pdbe_bio`). */
+export type AssemblySite = 'rcsb' | 'pdbe'
+
+/**
+ * The `n`th biological assembly of a PDB entry, as ChimeraX's `pdb_bio`
+ * fetches it (`fetch_pdb_bio.py`): mmCIF, `fetch_url` reads it. Null for a
+ * malformed id.
+ */
+export function assemblyFetch(site: AssemblySite, id: string, n: number): StructureFetchSpec | null {
+  const pdbId = id.trim().toLowerCase()
+  if (!PDB_ID_RE.test(pdbId)) return null
+  const url = site === 'rcsb'
+    ? `https://files.rcsb.org/download/${pdbId}-assembly${n}.cif`
+    : `https://www.ebi.ac.uk/pdbe/static/entry/download/${pdbId}-assembly-${n}.cif.gz`
+  const r = urlFetch(url)
+  return r.ok ? { ...r.spec, name: `${pdbId}-assembly${n}` } : null
+}
