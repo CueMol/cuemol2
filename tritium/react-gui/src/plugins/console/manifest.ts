@@ -14,7 +14,7 @@ export const consoleManifest: PluginManifest = {
   name: 'Console',
   version: '1.0.0',
   description:
-    'Experimental. A command line for CueMol. The PyMOL console and ChimeraX console plugins add their dialects to it.',
+    'Experimental. A command line for CueMol. The PyM console and ChX console plugins add their dialects to it.',
   // On by default: tritium_cli needs it, and a launch from the command line
   // cannot turn a plugin on.
   defaultEnabled: true,

@@ -2,7 +2,7 @@
  * @file worker/server/services/file/headlessOpen.test.ts
  * @description What a load without a dialog draws when it was not told.
  *
- * Every such load (native console, PyMOL console, MCP, agent) goes through
+ * Every such load (native console, PyM console, MCP, agent) goes through
  * this builder, so the default is pinned here once: a molecule gets the
  * PyMOL-like preset, and anything the caller chose -- a type, a selection --
  * or an object that is not a molecule keeps one renderer. A map given the

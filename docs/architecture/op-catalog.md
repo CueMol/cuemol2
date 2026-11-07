@@ -449,7 +449,7 @@ set は名前で指す。同じ名前があれば scene の set を global (syst
     scene reader の拡張子なら scene として開く。拡張子を受け持つ reader がちょうど 1 つならそれ、2 つ以上か
     無ければ中身で決める (sniff)。その後は `OpenObjByPath` と同じく、選んだ reader の既定のオプションで `loadObject`。
   - `load_file` (`load`) の引数は `path` / `rendererType` / `selection` / `name` だけで、オプションは reader の既定値。
-  - **renderer 未指定の load** (`load_file` / `load_<format>` / `fetch_pdb` / `fetch_url`、PyMOL console の
+  - **renderer 未指定の load** (`load_file` / `load_<format>` / `fetch_pdb` / `fetch_url`、PyM console の
     `load` / `fetch` も同じ `buildHeadlessFileOpenOptions` を通る): `rendererType` も `selection` も null の分子は
     preset `DefaultPymRendPreset` (`data/cuemol3_style.xml`) で描く。現行 PyMOL の `auto_show_classified`
     (load 時に residue を分類して表示を決める) に合わせたもので、protein -> `ribbon` (PyMOL の cartoon にあたる)、nucleic -> `nucl`、

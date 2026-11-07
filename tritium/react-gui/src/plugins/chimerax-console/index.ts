@@ -1,6 +1,6 @@
 /**
  * @file plugins/chimerax-console/index.ts
- * @description The ChimeraX console (ChX) plugin: adds a dialect to the Console.
+ * @description The ChX console plugin: adds a dialect to the Console.
  *
  * Nothing of its own is drawn. The manifest declares the dialect to the
  * Console's `console.dialect` extension point (its switch, prompt and

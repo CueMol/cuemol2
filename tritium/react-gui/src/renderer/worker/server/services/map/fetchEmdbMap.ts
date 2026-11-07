@@ -1,5 +1,5 @@
 // Runs in Web Worker thread. Fetch a cryo-EM map from EMDB without a dialog
-// in front of it: the op catalog's fetch_emdb and the PyMOL console's
+// in front of it: the op catalog's fetch_emdb and the PyM console's
 // `fetch EMD-xxxx` both come here. The Get PDB dialog reads the EMDB record
 // itself (to show it) and calls streamLoadDensityMap directly.
 

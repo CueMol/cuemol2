@@ -1,6 +1,6 @@
 /**
  * @file plugins/chimerax-console/manifest.ts
- * @description What the ChimeraX console (ChX) plugin contributes: a dialect for the Console.
+ * @description What the ChX console plugin contributes: a dialect for the Console.
  *
  * Separate from `index.ts` so the id can be imported without pulling the
  * plugin's module tree in with it.
@@ -12,7 +12,7 @@ import { CHIMERAX_META } from './shared/meta'
 
 export const chimeraxConsoleManifest: PluginManifest = {
   id: 'chimerax-console',
-  name: 'ChimeraX console (ChX)',
+  name: 'ChX console',
   version: '1.0.0',
   description: "Experimental. A ChimeraX dialect for the Console: ChimeraX's command names, arguments and atom specifications (open 1crn, color byhetero, show :ALA atoms), translated into CueMol. Needs the Console plugin.",
   // On by default, as the dialect was when it was part of the Console.

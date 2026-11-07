@@ -4,7 +4,7 @@
  *
  * `loadObject` and `streamLoadFromUrl` both take the `FileOpenOptions` the
  * File Open dialog produces. A caller with no dialog in front of it -- the AI
- * agent's load tool, the PyMOL console's `load` command -- assembles the same
+ * agent's load tool, the PyM console's `load` command -- assembles the same
  * defaults that dialog starts with: the reader's own values for the format
  * half (from C++, via `getReaderDefaultOptions`), and the standard renderer
  * row for the other.
