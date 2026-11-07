@@ -1,6 +1,6 @@
 /**
  * @file plugins/pymol-console/index.ts
- * @description The PyMOL console plugin: adds a dialect to the Console.
+ * @description The PyM console plugin: adds a dialect to the Console.
  *
  * Nothing of its own is drawn. The manifest declares the dialect to the
  * Console's `console.dialect` extension point (its switch, prompt and

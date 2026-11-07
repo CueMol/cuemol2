@@ -1,7 +1,7 @@
-# pym console 調査報告書
+# PyM console 調査報告書
 
 - **日付**: 2026-05-29
-- **対象**: PyMOL ユーザの移行を促進するための「pym console」(PyMOL コマンド言語に部分互換なコンソール) を cuemol3/tritium に導入する件
+- **対象**: PyMOL ユーザの移行を促進するための「PyM console」(PyMOL コマンド言語に部分互換なコンソール) を cuemol3/tritium に導入する件
 - **目的**: 完全互換ではなく、PyMOL 経験者が analogy で cuemol3/tritium を使えること
 - **目標**: 本書は調査結果の最終まとめ。planning/coding は含まない
 
@@ -510,7 +510,7 @@ selection を伴わず、cuemol API がほぼ 1:1 で存在するもの。echo c
 - 編集: `delete` / `set_name`
 
 ### Tier 1 — selection 翻訳が前提のコマンド (Phase 2 で sel_translate.py 投入後)
-selection 文字列を引数に取り、`sel_translate.py` がある前提で adapter を書く層。pym console の「本体」。
+selection 文字列を引数に取り、`sel_translate.py` がある前提で adapter を書く層。PyM console の「本体」。
 - 表現: `show` / `hide` / `as` / `cartoon`
 - 着色: `color` / `color_deep` / `recolor` / `set_color`
 - 選択: `select` (= setStrData alias) / `indicate` / `deselect`
@@ -548,7 +548,7 @@ selection 文字列を引数に取り、`sel_translate.py` がある前提で ad
 4. **`neighbor`/`extend`**: cuemol に token はあるが未実装 (false 返し)。drop で確定 (写像すると空結果の罠)
 
 ### 最大工数 new-impl の未解決問い
-5. **picking/対話編集基盤**: `edit`/`drag`/`mask`/`protect`/`invert`/`unpick`/`remove_picked` は cuemol に対話 picking がないためまとめて保留。pym console は「テキスト式の非対話 API」と割り切るのが自然
+5. **picking/対話編集基盤**: `edit`/`drag`/`mask`/`protect`/`invert`/`unpick`/`remove_picked` は cuemol に対話 picking がないためまとめて保留。PyM console は「テキスト式の非対話 API」と割り切るのが自然
 6. **配列アライメント (`align`/`super`)**: cuemol は構造ベース SSM のみ。配列アライナ (~2000 行) を実装するか、`cealign`->SSM 代替・`alignto`->ssm_fit ループで「構造整列のみ提供」と割り切るか
 7. **化学エンジン (`h_add`/`protonate`/`rebond`)**: RDKit 等外部ライブラリ統合の是非。embedded Python なので RDKit を引き込めるなら工数激減だが、依存とビルドの判断が要る
 
@@ -559,9 +559,9 @@ selection 文字列を引数に取り、`sel_translate.py` がある前提で ad
 
 ---
 
-## 8. 概念モデルの差分と pym console layer での吸収可能性
+## 8. 概念モデルの差分と PyM console layer での吸収可能性
 
-PyMOL と CueMol はデータモデル・状態モデルが根本的に異なる。pym console が「PyMOL ユーザに馴染む」ためには、コマンド名や引数の翻訳だけでなく、**概念のズレを pym layer がどこまで吸収できるか**を見極める必要がある。吸収可能性を次の 4 段階で分類する。
+PyMOL と CueMol はデータモデル・状態モデルが根本的に異なる。PyM console が「PyMOL ユーザに馴染む」ためには、コマンド名や引数の翻訳だけでなく、**概念のズレを pym layer がどこまで吸収できるか**を見極める必要がある。吸収可能性を次の 4 段階で分類する。
 
 - **◎ 吸収可能**: pym layer の翻訳/ラッパで PyMOL の挙動をほぼ再現できる
 - **○ 方針決めで吸収**: cuemol に対応概念はあるが写像方法に設計判断が要る (一度決めれば安定)
@@ -623,8 +623,8 @@ PyMOL は `isomesh name, mapname, level, sel` で map を参照する独立 mesh
 
 → **吸収方針 (○)**: `isomesh`/`isosurface` は対象 DensityMap に renderer を生成 + level 設定に写像 (direct)。ただし PyMOL の「selection 周辺だけ carve」は cuemol の対応機構を確認の上で写像 (carve 範囲指定の有無が要確認)。
 
-### 8.3 吸収できない概念 (✗) — pym console の非ゴール
-- **picking / 対話編集**: pk1-4、edit/drag、原子フラグ (protect/deprotect/flag/mask)、invert。cuemol に対話 picking の枠組みが無い。pym console は「テキスト式の非対話 API」と割り切る
+### 8.3 吸収できない概念 (✗) — PyM console の非ゴール
+- **picking / 対話編集**: pk1-4、edit/drag、原子フラグ (protect/deprotect/flag/mask)、invert。cuemol に対話 picking の枠組みが無い。PyM console は「テキスト式の非対話 API」と割り切る
 - **配列ベースアライメント**: align/super の配列依存部分。cuemol は構造ベース SSM のみ (構造整列としては partial 代替可)
 - **per-atom/per-state の細かな setting scope**: cuemol のプロパティモデルと粒度が合わない部分
 

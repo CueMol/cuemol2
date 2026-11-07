@@ -1,6 +1,6 @@
 /**
  * @file plugins/pymol-console/manifest.ts
- * @description What the PyMOL console plugin contributes: a dialect for the Console.
+ * @description What the PyM console plugin contributes: a dialect for the Console.
  *
  * Separate from `index.ts` so the id can be imported without pulling the
  * plugin's module tree in with it.
@@ -12,7 +12,7 @@ import { PYMOL_META } from './shared/meta'
 
 export const pymolConsoleManifest: PluginManifest = {
   id: 'pymol-console',
-  name: 'PyMOL console',
+  name: 'PyM console',
   version: '1.0.0',
   description: "Experimental. A PyMOL dialect for the Console: PyMOL's command names, arguments and selections (fetch 1crn, show sticks, resn LYS), translated into CueMol. Needs the Console plugin.",
   // On by default, as the dialect was when it was part of the Console.

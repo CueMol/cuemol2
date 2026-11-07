@@ -19,7 +19,7 @@ ChimeraX のソース (`~/ext/ChimeraX/src/bundles/`) のうち、写したも�
 
 ## 1. 位置づけ
 
-- built-in plugin `chimerax-console` (表示名「ChimeraX console (ChX)」、既定オン) として、console plugin に dialect を足す
+- built-in plugin `chimerax-console` (表示名「ChX console」、既定オン) として、console plugin に dialect を足す
   ([op-catalog.md](op-catalog.md) §5)。パーサとコマンドは TS で Web Worker に置く (`plugins/chimerax-console/worker/`)。
   plugin をオフにすると、console の切り替えと `tritium_cli` から消える。
 - **コマンドは ChimeraX の文法を読み、op catalog の op の列に変える層**。op は `invokeOp` で呼ぶ

@@ -5,7 +5,7 @@
  * Readline's rules, as pure functions: going up walks into the past, going
  * down walks back out, and the draft you had typed is waiting at the bottom.
  * Any input line that keeps a history behaves this way -- the AI agent's
- * composer and the PyMOL console prompt both do -- and the rules are worth
+ * composer and the PyM console prompt both do -- and the rules are worth
  * having in one place because the off-by-one at each end is the whole of it.
  *
  * Storage is the caller's: pass the list in. `createLruStringHistory` is the

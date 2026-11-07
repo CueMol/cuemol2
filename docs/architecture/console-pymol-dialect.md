@@ -11,7 +11,7 @@ runtime (1 submit = 1 txn、Stop、script、log)、引数パーサ、補完、he
 
 ## 1. 位置づけ
 
-- built-in plugin `pymol-console` (表示名「PyMOL console」、既定オン) として、console plugin に dialect を足す
+- built-in plugin `pymol-console` (表示名「PyM console」、既定オン) として、console plugin に dialect を足す
   ([op-catalog.md](op-catalog.md) §5)。オフにすると console の切り替えと `tritium_cli` から消える。外すときは
   `plugins/pymol-console/` と `plugins/index.ts` の 1 行を消す。
 - パーサとコマンドは **TS で Web Worker に置く**。embedded Python は使わない (C++ に PyMOL 用の
