@@ -1,22 +1,25 @@
 /**
  * @file plugins/chimerax-console/worker/commands/colorCommands.ts
  * @description `color`: [spec] [color | byhetero | byelement | bychain |
- * bymodel | random], target; and `rainbow`.
+ * bymodel], target; and `rainbow`.
  *
  * A colour is a paint entry put first in the paint table of each `chx:`
  * renderer the target reaches (`add_paint_at`), so a later `color` wins
- * over an earlier one where they overlap. The atom renderers all get the
+ * over an earlier one where they overlap. A colouring that covers a whole
+ * molecule (a colour, `bychain` or `bymodel` on `#1` or on everything)
+ * hides every entry before it, so those are cleared first: the table does
+ * not grow each time the molecule is coloured again. The atom renderers all get the
  * same entries, so a colour stays when an atom changes style. A renderer is
  * switched to per-selection colouring only when it is not one already
  * (`ensurePaint`): switching starts a new table.
  *
  * `byhetero` colours every atom but carbon by element (Jmol colours, as
  * ChimeraX) and leaves carbons and the cartoon as they are; `byelement`
- * colours carbons too. `bychain`, `bymodel` and `random` colour atoms,
- * cartoons and surfaces alike (`colorSchemes.ts`); `random` gives each
- * residue a colour, where ChimeraX gives each atom one (an entry per atom
- * would swamp the paint table). `bypolymer` and `byidentity` need
- * ChimeraX's seeded random colours and are refused.
+ * colours carbons too. `bychain` and `bymodel` colour atoms, cartoons and
+ * surfaces alike (`colorSchemes.ts`). `bypolymer` and `byidentity` need
+ * ChimeraX's seeded random colours and are refused. `random` (a colour per
+ * atom in ChimeraX) is refused too: an entry per atom, or even per residue,
+ * makes the paint table as long as the molecule and colouring slow.
  *
  * `rainbow` colours each chain's residues along a palette, in RAINBOW_STEPS
  * colours, one paint entry per run of residues of one colour.
@@ -29,17 +32,20 @@ import { chxCommand } from '../cli/command'
 import type { ChxCommand } from '../cli/command'
 import { ELEMENT_COLORS } from '../colorTables'
 import { splitColorArg } from '../colors'
-import { chainColor, modelColor, paletteColors, RAINBOW, rainbowRanges, randomColor, readPalette } from '../colorSchemes'
-import { atomRenderers, cartoonRenderers, emitContext, ensureOwned, ensurePaint, forEachAtom, intersect, runOp, targetsOf } from '../display'
+import { chainColor, modelColor, paletteColors, RAINBOW, rainbowRanges, readPalette } from '../colorSchemes'
+import { atomRenderers, cartoonRenderers, emitContext, ensureOwned, ensurePaint, forEachAtom, intersect, paintCount, runOp, targetsOf } from '../display'
 import type { Target } from '../display'
 import { surfacesOn } from '../surface'
 import { warnIgnored } from './warn'
 
 /** The colourings by name the console does. */
-const SPECIAL = ['byhetero', 'byelement', 'bychain', 'bymodel', 'random']
+const SPECIAL = ['byhetero', 'byelement', 'bychain', 'bymodel']
 
 /** Those that colour atoms only, leaving the cartoon as it is. */
 const ATOMS_ONLY = ['byhetero', 'byelement']
+
+/** Those that leave out some atoms of what they colour (carbons), so cannot replace the table. */
+const PARTIAL = ATOMS_ONLY
 
 /** ChimeraX's other colourings by name: refused, with the reason. */
 const REFUSED: Readonly<Record<string, string>> = {
@@ -50,6 +56,7 @@ const REFUSED: Readonly<Record<string, string>> = {
   fromatoms: 'not supported yet',
   fromcartoons: 'not supported yet',
   fromribbons: 'not supported yet',
+  random: 'a colour per atom makes the paint table as long as the molecule',
 }
 
 /**
@@ -101,13 +108,6 @@ function entriesFor(ctx: WorkerContext, cc: CmdContext, color: string, t: Target
     if (!c.exact) cc.warn(`color: #${t.obj.model} is past ChimeraX's model colours; its colour differs from ChimeraX's`)
     return [[t.sel, c.hex]]
   }
-  if (color === 'random') {
-    const out: PaintEntry[] = []
-    for (const [chain, residues] of residuesByChain(ctx, cc.sceneId, t.obj.uid, t.sel)) {
-      for (const r of residues) out.push([intersect(t.sel, `chain ${chain} and resi ${r}`), randomColor()])
-    }
-    return out
-  }
   return [[t.sel, color]]
 }
 
@@ -115,8 +115,11 @@ function entriesFor(ctx: WorkerContext, cc: CmdContext, color: string, t: Target
  * Put paint entries first in the tables of the renderers target letters
  * name on a molecule: a, b atoms; c, r cartoons (unless `atomsOnly`); s the
  * surfaces there are (colouring does not make one).
+ *
+ * @param replace - the entries colour every atom of the molecule, so the
+ *   entries already there can never show again: clear them first
  */
-export async function paintTarget(ctx: WorkerContext, cc: CmdContext, t: Target, target: string, entries: readonly PaintEntry[], atomsOnly = false): Promise<CmdOutcome> {
+export async function paintTarget(ctx: WorkerContext, cc: CmdContext, t: Target, target: string, entries: readonly PaintEntry[], atomsOnly = false, replace = false): Promise<CmdOutcome> {
   if (entries.length === 0) return { ok: true }
   const owned = await ensureOwned(ctx, cc, t.obj)
   if (!owned.ok) return owned
@@ -129,6 +132,10 @@ export async function paintTarget(ctx: WorkerContext, cc: CmdContext, t: Target,
   for (const id of rends) {
     const painted = await ensurePaint(ctx, cc, id)
     if (!painted.ok) return painted
+    if (replace && paintCount(ctx, cc.sceneId, id) > 0) {
+      const cleared = await runOp(ctx, cc, 'clear_paint', { nodeId: id, nodeType: 'renderer' })
+      if (!cleared.ok) return cleared
+    }
     for (const [selection, hex] of entries) {
       const res = await runOp(ctx, cc, 'add_paint_at', { nodeId: id, nodeType: 'renderer', selection, color: hex, at: 1 })
       if (!res.ok) return res
@@ -151,21 +158,22 @@ const color: ChxCommand = chxCommand({
     { name: 'halfbond', type: StringArg, role: 'keyword', ignored: true },
   ],
   mutates: true,
-  summary: 'Colour atoms, cartoons and surfaces: a colour, byhetero, byelement, bychain, bymodel or random.',
+  summary: 'Colour atoms, cartoons and surfaces: a colour, byhetero, byelement, bychain or bymodel.',
   async run(ctx, args, cc): Promise<CmdOutcome> {
     warnIgnored(cc, 'color', args, ['what', 'transparency', 'halfbond'])
-    if (args.color === '') return { ok: false, error: 'Error: color: give a colour or one of byhetero, byelement, bychain, bymodel, random' }
+    if (args.color === '') return { ok: false, error: 'Error: color: give a colour or one of byhetero, byelement, bychain, bymodel' }
     const refused = REFUSED[args.color]
     if (refused) return { ok: false, error: `Error: color: ${args.color} is not supported (${refused})` }
     // CueMol's paint has no alpha; a colour that states one is drawn opaque.
     const { hex: colorValue, alpha } = SPECIAL.includes(args.color) ? { hex: args.color, alpha: null } : splitColorArg(args.color)
     if (alpha !== null && alpha < 1) cc.warn('color: transparency in a colour is not supported yet; drawn opaque')
-    if (colorValue === 'random') cc.warn('color: random gives each residue a colour (ChimeraX gives each atom one)')
     const target = args.target === '' ? DEFAULT_TARGET : args.target
     const found = targetsOf(ctx, cc.sceneId, args.objects)
     if (!found.ok) return found
     for (const t of found.targets) {
-      const res = await paintTarget(ctx, cc, t, target, entriesFor(ctx, cc, colorValue, t), ATOMS_ONLY.includes(colorValue))
+      // On the whole molecule, every colouring but a partial one covers each atom.
+      const replace = t.sel === '*' && !PARTIAL.includes(colorValue)
+      const res = await paintTarget(ctx, cc, t, target, entriesFor(ctx, cc, colorValue, t), ATOMS_ONLY.includes(colorValue), replace)
       if (!res.ok) return res
     }
     return { ok: true }

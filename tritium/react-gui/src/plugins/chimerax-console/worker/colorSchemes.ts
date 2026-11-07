@@ -183,7 +183,3 @@ export function paletteColors(p: Palette, n: number): string[] {
   return Array.from({ length: n }, (_, i) => paletteColor(p, n === 1 ? 0 : i / (n - 1)))
 }
 
-/** A random opaque colour. */
-export function randomColor(): string {
-  return hex([0, 0, 0].map(() => Math.floor(Math.random() * 256)) as unknown as Rgb)
-}
