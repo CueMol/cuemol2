@@ -42,7 +42,9 @@ export const TOOLSETS: readonly Toolset[] = [
     id: 'files',
     description:
       'Files on this computer: opening a structure file the user named, and saving a PNG ' +
-      'of the view to the desktop. (Downloading from the PDB is always available.)',
+      'of the view to the desktop. Also downloading from other structure databases: PDBe, ' +
+      'PDBj, PDB-REDO, AlphaFold DB (by UniProt accession) and PubChem. (Downloading from the ' +
+      'RCSB PDB is always available.)',
   },
   {
     id: 'coloring',

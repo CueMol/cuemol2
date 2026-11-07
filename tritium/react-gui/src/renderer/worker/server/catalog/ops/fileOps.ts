@@ -7,6 +7,8 @@ import {
   streamLoadFromUrl,
 } from '@renderer/worker/server/services/file/streamLoadFromUrl'
 import { PDB_ID_RE, pickCoordUrl } from '@renderer/worker/shared/pdbUrls'
+import { STRUCTURE_SOURCES, structureFetch } from '@renderer/worker/shared/dbSources'
+import type { StreamLoadFromUrlArgs } from '@renderer/worker/server/services/file/streamLoadFromUrl'
 import { buildHeadlessFileOpenOptions } from '@renderer/worker/server/services/file/headlessOpen'
 import { defineOp } from '../op'
 import { LOAD_RENDERER_PARAMS, NULL_RENDERER_DOC, applyRendererArgs, loadObjectFile, openTarget, readerTarget, SCENE_FILE_RE } from '../fileLoad'
@@ -28,7 +30,12 @@ interface FetchArgs {
   centerView: boolean | null
 }
 
-/** Download `url`, read it with `readerName`, and add it as `name`. */
+/**
+ * Download `url`, read it with `readerName`, and add it as `name`.
+ *
+ * @param load - a gzip-compressed body, and the database entry to record the
+ *   download as (`fetch_entry`) rather than its URL
+ */
 async function fetchInto(
   ctx: WorkerContext,
   oc: OpContext,
@@ -37,7 +44,7 @@ async function fetchInto(
   name: string,
   args: FetchArgs,
   setFormat: (format: FileOpenOptions['format']) => FileOpenOptions['format'] = (f) => f,
-  gzip = false,
+  load: Pick<StreamLoadFromUrlArgs, 'gzip' | 'entry'> = {},
 ): Promise<OpOutcome> {
   const options = buildHeadlessFileOpenOptions(ctx, {
     readerName,
@@ -53,7 +60,7 @@ async function fetchInto(
   const reqId = oc.streamId('fetch')
   oc.noteStream(reqId)
 
-  const result = await streamLoadFromUrl(ctx, { reqId, url, readerName, objectName: name, sceneId: oc.sceneId, options, gzip })
+  const result = await streamLoadFromUrl(ctx, { reqId, url, readerName, objectName: name, sceneId: oc.sceneId, options, ...load })
   if (!result.ok) return { ok: false, error: result.error || `${url} could not be downloaded.` }
   return { ok: true, data: { objectId: result.objId, name } }
 }
@@ -127,7 +134,44 @@ export const fetchUrl = defineOp({
   group: 'files',
   async run(ctx, args, oc) {
     if (!/^https?:\/\//i.test(args.url.trim())) return { ok: false, error: `"${args.url}" is not an http or https URL.` }
-    return fetchInto(ctx, oc, args.url.trim(), args.reader, args.name.trim(), args, undefined, args.gzip === true)
+    return fetchInto(ctx, oc, args.url.trim(), args.reader, args.name.trim(), args, undefined, { gzip: args.gzip === true })
+  },
+})
+
+export const fetchEntry = defineOp({
+  name: 'fetch_entry',
+  description:
+    'Download an entry from a structure database by its accession code and add it to the scene: ' +
+    'pdb (RCSB PDB), pdbe (PDBe), pdbj (PDBj), redo (PDB-REDO, re-refined PDB entries), alphafold ' +
+    '(AlphaFold DB, by UniProt accession such as P29474) or pubchem (PubChem, by compound id; a small ' +
+    'molecule in 3D). Creates a new object AND a default renderer, so call get_scene_state afterwards ' +
+    'to learn their ids. For a cryo-EM map use fetch_emdb.',
+  params: {
+    source: enumOf(STRUCTURE_SOURCES, 'Which database.'),
+    id: string('Accession code: a PDB ID (1CRN) for pdb, pdbe, pdbj and redo; a UniProt accession (P29474, Q8N9C0-2) or AlphaFold id (AF-P29474-F1-v6) for alphafold; a compound id (2244) for pubchem.'),
+    format: optional(enumOf(['mmcif', 'pdb'], 'Which file to fetch. Null is mmcif. Give none for pubchem (SDF only).')),
+    rendererType: optional(
+      rendererType(`Renderer to create for it, for example cartoon. ${NULL_RENDERER_DOC}`),
+    ),
+    selection: optional(selection('Draw only this selection. Null draws everything.')),
+    name: optional(string('Name of the new object. Null uses the accession code (AF-<UniProt>-F1 for alphafold, pubchem_<id> for pubchem).')),
+    ...FETCH_RENDERER_PARAMS,
+  },
+  mutates: true,
+  describe: (a) => `Fetch ${a.source}:${a.id}`,
+  // fetch_pdb is the core one; the other databases are asked for less often.
+  expose: { tool: 'files', console: true },
+  group: 'files',
+  async run(ctx, args, oc) {
+    const r = structureFetch(args.source, args.id, args.format)
+    if (!r.ok) return { ok: false, error: r.error }
+    const { url, readerName, gzip, name: defaultName } = r.spec
+    const done = await fetchInto(ctx, oc, url, readerName, args.name?.trim() || defaultName, args, undefined, {
+      gzip,
+      entry: { source: args.source, id: args.id.trim(), format: args.format, defaultName },
+    })
+    if (!done.ok) return { ok: false, error: `${args.source}:${args.id} could not be downloaded: ${done.error}` }
+    return done
   },
 })
 
@@ -168,4 +212,4 @@ export const loadFile = defineOp({
   },
 })
 
-export const FILE_OPS = [fetchPdb, fetchUrl, loadFile]
+export const FILE_OPS = [fetchPdb, fetchEntry, fetchUrl, loadFile]

@@ -1,10 +1,9 @@
 # データベースからの取得 (取得元の表と ChX の `open`)
 
 accession ID と取得元のデータベースから、構造を取得して開く仕組み。取得元の知識 (ID の形・URL・reader・
-既定の名前) は core の共有モジュールに置き、今はこれを ChX console の `open` が使う
-(`open pdbe:1crn`、`open alphafold:P29474`、`open 1crn fromDatabase pdbj` など)。Get PDB ダイアログ・
-core の op・MCP への展開は [`../plans/261107-database-fetch-plan.md`](../plans/261107-database-fetch-plan.md)
-(Phase 2、未実装)。
+既定の名前) は core の共有モジュールに置き、op `fetch_entry` (native console・MCP・agent) と ChX console の
+`open` (`open pdbe:1crn`、`open alphafold:P29474`、`open 1crn fromDatabase pdbj` など) が使う。Get PDB
+ダイアログへの展開などの残りは [`../plans/261107-database-fetch-plan.md`](../plans/261107-database-fetch-plan.md)。
 
 URL は ChimeraX の取得処理に合わせた (`~/ext/ChimeraX/src/bundles/` の `mmcif`・`pdb`・`alphafold`・
 `pubchem`)。同じ接頭辞で同じものを取る。
@@ -36,11 +35,23 @@ URL は ChimeraX の取得処理に合わせた (`~/ext/ChimeraX/src/bundles/` �
   見ない。名前はファイル名から拡張子を除いたもの。地図の URL は扱わない。
 - `emdbAccession(text)`: `1080`、`emd_1080`、`EMD-1080` を `EMD-1080` にする (`fetch_emdb` の `id`)。
 
-## 2. `fetch_url` の `gzip`
+## 2. op `fetch_entry` と `fetch_url` の `gzip`
 
-`fetch_url` op に `gzip` (省略可の boolean) を足し、`streamLoadFromUrl` で reader の `compress` を `gzip` に
-する (地図の `streamLoadDensityMap` と同じやり方)。記録される `fetch_url` にも `gzip` が入るので、qax を再生
-しても展開して読む。
+**`fetch_entry`** (`catalog/ops/fileOps.ts`、group `files`。expose は console と、agent / MCP の `files` toolset。`fetch_pdb` は core のまま。core の一覧は短く保つ方針 (`catalog/toolsets.ts`) なので、他のデータベースは toolset を有効にしたときに出す。`files` の説明にデータベースからの取得を書いてある):
+`source` (表の取得元)、`id`、`format` (省略可。`mmcif` / `pdb`)、`name` と renderer の引数 (`fetch_pdb` と同じ)。
+表 (`structureFetch`) を引いて URL・reader・gzip を決め、`fetch_pdb` と同じ取得処理 (`fetchInto` ->
+`streamLoadFromUrl`) で開く。
+
+- **記録**: `streamLoadFromUrl` に `entry` (`source`・`id`・`format`・既定の名前) を渡すと、URL ではなくその entry
+  として `fetch_entry` を記録する (`recordFetch`)。名前は既定の名前と違うときだけ残す (再生で同じ名前になる)。
+  `entry` が無いときは今までどおり、RCSB の標準の URL は `fetch_pdb`、それ以外は `fetch_url`。
+- `fetch_pdb` は互換のためそのまま残す (`fetch_entry source=pdb` と同じものを取るが、reader の option を取る)。
+- EMDB の地図は `fetch_emdb` のまま (`fetch_entry` の取得元には入れない)。
+
+**`fetch_url` の `gzip`** (省略可の boolean): `streamLoadFromUrl` で reader の `compress` を `gzip` にする。展開は
+libcuemol2 側で行う (`ObjReader::read` が入力を `qlib::GzipInStream` で包む。地図の `streamLoadDensityMap` や
+ローカルの `.gz` を開くときと同じ)。ダウンロードしたバイト列は圧縮されたまま C++ に渡す。記録される
+`fetch_url` にも `gzip` が入るので、qax を再生しても展開して読む。
 
 ## 3. ChX の `open` (`plugins/chimerax-console/worker/openTarget.ts`)
 
@@ -56,9 +67,9 @@ URL は ChimeraX の取得処理に合わせた (`~/ext/ChimeraX/src/bundles/` �
 6. それ以外はファイル (無ければ読み込みのエラー)。
 
 取得:
-- `pdb` は `fetch_pdb` (記録に URL でなく entry が残る)。
+- 取得元 (`pdb` を含む) は `fetch_entry`。ID の形は `open` でも先に検査して、何かを走らせる前に断る。
 - `emdb` / `emdb_us` は WWPDB、`emdb_europe` は EBI で `fetch_emdb`。
-- それ以外の取得元と URL は、表の URL・reader・gzip で `fetch_url`。
+- URL は `urlFetch` の reader・gzip で `fetch_url`。
 
 `format` は `pdb` / `mmcif` (`cif` も) を PDB 系と AlphaFold で使う。それ以外の形式名をこれらに渡すと断る。
 URL と EMDB では使わない (warn)。ファイルを開くときは今までどおり無視して warn。
@@ -87,6 +98,9 @@ atom と cartoon の renderer に入れる (`colorSchemes.ts` の `plddtEntries`
 表に無い接頭辞は「unknown database」と、使える取得元の一覧を出す。
 
 ## 4. テスト
+
+- `renderer/__test__/streamLoadFromUrlService.test.ts`: `entry` を渡した取得は URL でなく `fetch_entry` として
+  記録され (既定の名前は残さない)、gzip の取得は reader の `compress` を `gzip` にする。
 
 - `renderer/worker/shared/dbSources.test.ts`: 取得元ごとの URL・reader・gzip・名前 (PDBj の gzip、AlphaFold の
   ID の分解、PubChem の SDF、URL の `.gz`)、断る ID。

@@ -19,10 +19,10 @@ import { PDB_ID_RE } from '@renderer/worker/shared/pdbUrls'
 
 export type OpenTarget =
   | { kind: 'file' }
-  /** From the RCSB: `fetch_pdb`, which records the entry rather than its URL. */
-  | { kind: 'pdb'; pdbId: string; format: StructureFormat }
-  /** From another database or a URL: `fetch_url`. */
-  | { kind: 'url'; source: StructureSource | 'url'; spec: StructureFetchSpec }
+  /** A database entry: `fetch_entry`, which records the entry rather than its URL. */
+  | { kind: 'entry'; source: StructureSource; id: string; format: StructureFormat | null }
+  /** A URL: `fetch_url`. */
+  | { kind: 'url'; spec: StructureFetchSpec }
   | { kind: 'emdb'; id: string; mirror: 'WWPDB' | 'EBI' }
   | { kind: 'error'; error: string }
 
@@ -72,10 +72,10 @@ function fetchFrom(db: string, id: string, format: StructureFormat | null | 'oth
   }
   if (format === 'other') return { kind: 'error', error: `Error: open: ${db} serves pdb or mmcif; give one of them as the format` }
   const source = db as StructureSource
+  // Checked here too, so a malformed id is refused before anything runs.
   const r = structureFetch(source, id, format)
   if (!r.ok) return { kind: 'error', error: `Error: open: ${r.error}` }
-  if (source === 'pdb') return { kind: 'pdb', pdbId: r.spec.name, format: format ?? 'mmcif' }
-  return { kind: 'url', source, spec: r.spec }
+  return { kind: 'entry', source, id, format }
 }
 
 /**
@@ -91,7 +91,7 @@ export function openTarget(name: string, fromDatabase: string, format: string, e
   if (exists(name)) return { kind: 'file' }
   if (/^https?:\/\//i.test(name)) {
     const r = urlFetch(name)
-    return r.ok ? { kind: 'url', source: 'url', spec: r.spec } : { kind: 'error', error: `Error: open: ${r.error}` }
+    return r.ok ? { kind: 'url', spec: r.spec } : { kind: 'error', error: `Error: open: ${r.error}` }
   }
   const prefixed = /^([A-Za-z][A-Za-z0-9_]+):(.+)$/.exec(name)
   if (prefixed) return fetchFrom(prefixed[1].toLowerCase(), prefixed[2], fmt)
