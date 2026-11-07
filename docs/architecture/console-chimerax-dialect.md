@@ -52,12 +52,17 @@ ChimeraX のソース (`~/ext/ChimeraX/src/bundles/`) のうち、写したも�
   コメント。引数の中の `#` は model (`#1`) か色 (`#ff0000`)。行末 `\` の継続は無い (Windows パスが壊れるため)。
 - **コマンド名** (`resolveWords`。cli.py の `_find_command_name`): 語ごとに完全一致、無ければ**登録順で最初の
   前方一致**を採る。ambiguous の error にはしない (`col` -> `color`、`del` -> `delete`、`c` -> `cartoon`)。続く語を
-  sub-command として探し (`cartoon hide`)、当たらない語でコマンド名は終わる。registry は ChimeraX の登録順に並べ、
+  sub-command として探し (`cartoon hide`)、当たらない語でコマンド名は終わる。打った語の大文字小文字は変えずに
+  比べる (cli.py の `subcommands.get(word)` / `startswith(word)`): `select C & :sti` の `C` (炭素) は `select clear` の
+  省略にならず、`Open` は知らないコマンド (ChimeraX と同じ)。registry は ChimeraX の登録順に並べ、
   `help` は名前順に出す。
 - **引数** (`bindLine`。cli.py:3010-3080): 必須の位置引数 -> 任意の位置引数 -> keyword の順。
   - 任意の位置引数は、読めない語か、keyword の前方一致の語で終わる。ただし atom specification の引数
     (`mayBeEmpty`。cli.py の `Or(ObjectsArg, EmptyArg)`) は、無くても次の任意の引数へ進む (`color red`、`col byh`)。
-  - keyword は大小を区別しない前方一致。候補が 1 つならそれ、複数なら camelCase の語数が最少のものが 1 つならそれ。
+  - keyword は前方一致。打った語の大文字小文字は変えず、keyword そのものか keyword を小文字にしたものが打った語で
+    始まれば当たる (cli.py の `_start_of_keywords`: 「`show O` を直すため」)。`color C & :ber red` の `C` や `show O` の
+    `O` は、`color` / `objects` の省略ではなく spec になる。候補が 1 つならそれ、複数なら camelCase の語数が最少の
+    ものが 1 つならそれ。
     同じ keyword を 2 回書くと error。
   - 失敗は行の下に caret を付けて示す。
 - **型** (`cli/argTypes.ts`): `StringArg` (escape を処理する)、`FileNameArg` (引用符を外すだけで escape を処理しない。
@@ -309,7 +314,10 @@ renderer で表し、**その selection と paint が表示の状態そのもの
 `plugins/chimerax-console/worker/`:
 
 - `cli/syntax.test.ts`: `;` と `#` の分け方、登録順の前方一致と sub-command、spec の省略と keyword の前方一致・
-  重複、ファイル名の `\` を escape しないこと
+  重複、ファイル名の `\` を escape しないこと、元素記号で始まる spec を keyword や sub-command の省略と取り違えない
+  こと (`color C & :ber red`、`show O`、`select C & :sti`)
+- `commands/viewCommands.test.ts`: spec を付けた `view` が `set_view` に引数を欠かさず渡すこと (欠けた引数は op に
+  `undefined` で届き、`rotation` が足されたときに `view sel` が例外で落ちた)
 - `spec/translate.test.ts`: 階層・insertion code・残基名・演算子の翻訳、model ごとの評価、16 進の色を spec にしないこと、
   未対応の語を断ること
 - `display.test.ts`: show / hide / style / cartoon の合成 (式は小さな原子の集合で評価して比べる)、他の renderer に

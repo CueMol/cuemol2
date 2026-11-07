@@ -56,6 +56,12 @@ describe('ChX syntax', () => {
       kind: 'args',
       args: { objects: '#1/A:10-20 & protein', what: 'atoms' },
     })
+    // An element symbol starting the spec is no keyword: `C` is not `color`, `O` not `objects`
+    // (the case of what was typed is kept, as in ChimeraX).
+    expect(bind('color C & :ber red')).toMatchObject({ kind: 'args', args: { objects: 'C & :ber', color: '#ff0000' } })
+    expect(bind('show O')).toMatchObject({ kind: 'args', args: { objects: 'O' } })
+    // Nor is it a sub-command: `select C` is not `select clear`.
+    expect(resolveWords('select C & :sti', CHX_COMMANDS)).toMatchObject({ spec: { name: 'select' }, taken: 1 })
     expect(bind('color #1 bogus')).toMatchObject({ kind: 'error' })
     expect(bind('color red target a target c')).toMatchObject({ kind: 'error', error: expect.stringMatching(/Repeated keyword/) })
   })

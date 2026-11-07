@@ -30,6 +30,7 @@ vi.mock('../camera', async (importOriginal) => ({
 }))
 
 import { VIEW_COMMANDS } from './viewCommands'
+import { MISC_COMMANDS } from './miscCommands'
 import { cameraMatrix, readCamera } from '../camera'
 import type { Quat } from '../camera'
 
@@ -65,6 +66,17 @@ beforeEach(() => {
 })
 
 describe('camera commands', () => {
+  it('view <spec> gives set_view every argument (one left out reaches the op as undefined)', async () => {
+    const cmd = MISC_COMMANDS.view
+    const args = Object.fromEntries(cmd.args.map((a) => [a.name, a.default ?? '']))
+    const res = await cmd.run(ctx, { ...args, objects: ':5' }, cc)
+    expect(res.ok).toBe(true)
+    const set = ops.find((o) => o.name === 'set_view')
+    expect(set).toBeDefined()
+    expect(Object.values(set!.args).some((v) => v === undefined)).toBe(false)
+    expect(set!.args).toHaveProperty('rotation', null)
+  })
+
   it('turn multiplies a finite frames count, and turns the way ChimeraX does', async () => {
     await VIEW_COMMANDS.turn.run(ctx, { axis: 'y', angle: '3', frames: '30' }, cc)
     const q = ops[0].args.rotation as Quat

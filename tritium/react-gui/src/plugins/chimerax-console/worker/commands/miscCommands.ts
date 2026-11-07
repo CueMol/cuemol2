@@ -33,8 +33,9 @@ const view = chxCommand({
     if (!found.ok) return found
     const framing = framingOf(ctx, cc.sceneId, cc.viewId, found.targets)
     if (!framing) return { ok: false, error: 'Error: view: nothing to show' }
+    // Every argument of set_view is given: one left out reaches the op as undefined, not null.
     const res = await runOp(ctx, cc, 'set_view', {
-      zoom: framing.zoom, slab: framing.slab, distance: null, center: framing.center, fitSlab: null, objId: null,
+      zoom: framing.zoom, slab: framing.slab, distance: null, center: framing.center, rotation: null, fitSlab: null, objId: null,
     })
     return res.ok ? { ok: true } : res
   },
