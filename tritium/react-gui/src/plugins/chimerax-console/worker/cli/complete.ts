@@ -5,7 +5,8 @@
  * The word before the caret is completed against what can stand there: a
  * command name (first word), else the command's keywords and the values its
  * arguments take (enum values, colour and selector names, files for a file
- * name). A chosen value is followed by a space -- ChimeraX separates
+ * name, model numbers after `#` in an atom specification). A chosen value
+ * is followed by a space -- ChimeraX separates
  * arguments by spaces and writes a keyword as a word, never `name=` or
  * `, `. A file name with a space in it is quoted.
  *
@@ -19,6 +20,7 @@ import type { CompletionContext, CompletionOutcome, Group, Offer } from '@plugin
 import { isChxCommand } from './command'
 import type { ChxArg, ChxCommand } from './command'
 import { keywordArgs, matchKeyword, resolveWords } from './syntax'
+import { numberedObjects } from '../models'
 
 /** A file name as typed in a ChimeraX argument: quoted when it holds a space. */
 function quotedPath(typedDir: string, name: string): string {
@@ -34,7 +36,7 @@ function startingWith(texts: readonly string[], pattern: string, kind: Offer['ki
 }
 
 /** Tab on a ChX console line. */
-export function completeChx(_ctx: WorkerContext, line: string, cc: CompletionContext): CompletionOutcome {
+export function completeChx(ctx: WorkerContext, line: string, cc: CompletionContext): CompletionOutcome {
   const messages: CompletionOutcome['messages'] = []
   const commands = cc.dialect.commands().filter(isChxCommand)
   // The word being typed starts after the last space (a quoted path keeps its own).
@@ -56,7 +58,9 @@ export function completeChx(_ctx: WorkerContext, line: string, cc: CompletionCon
   const spec: ChxCommand = r.spec
   const groups: Group[] = []
   // The word before this one, when it is a keyword: then only its values.
-  const before = line.slice(0, at).trim().split(/\s+/).pop() ?? ''
+  // The command's own words are not keywords (`color` the command vs its `color` keyword).
+  const typedWords = line.slice(0, at).trim().split(/\s+/)
+  const before = typedWords.length > r.taken ? typedWords[typedWords.length - 1] : ''
   const kwNames = keywordArgs(spec).map((a) => a.name)
   const prevKw = matchKeyword(before, kwNames)
   const valueOf: ChxArg | undefined =
@@ -66,6 +70,14 @@ export function completeChx(_ctx: WorkerContext, line: string, cc: CompletionCon
   const values = args.flatMap((a) => a.type.values?.() ?? [])
   if (values.length > 0) groups.push({ heading: 'values', pattern, regionStart: at, offers: startingWith(values, pattern, 'value') })
   if (!valueOf) groups.push({ heading: 'keywords', pattern, regionStart: at, offers: startingWith(kwNames, pattern, 'argument') })
+  // `#` or `#1` typed where a specification goes: the scene's models, listed
+  // with their names. No space follows, as `#1/A:10` usually goes on.
+  if (/^#\d*$/.test(pattern) && args.some((a) => a.type.isSpec)) {
+    const offers = numberedObjects(ctx, cc.sceneId)
+      .map((o) => ({ text: `#${o.model}`, label: `#${o.model} ${o.name}`, sep: '', kind: 'value' as const }))
+      .filter((o) => o.text.startsWith(pattern))
+    groups.push({ heading: 'models', pattern, regionStart: at, offers })
+  }
   if (args.some((a) => a.type.isPath)) {
     groups.push({ heading: 'files', pattern, regionStart: at, offers: fileOffers(pattern.replace(/^["']/, ''), cc.cwd, ' ', null, quotedPath), plain: true })
   }

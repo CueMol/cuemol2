@@ -271,6 +271,16 @@ export function cartoonRenderers(ids: Map<string, number>): { id: number; scope:
   return CARTOONS.map((k) => ({ id: ids.get(k.name) as number, scope: k.scope ?? '*' }))
 }
 
+/** How many entries a renderer's paint table has (0 when it is not painted). */
+export function paintCount(ctx: WorkerContext, sceneId: number, rendId: number): number {
+  const rend = getSceneOrNull(ctx, sceneId)?.getRenderer(rendId) as unknown as { coloring?: { size?: number } } | null | undefined
+  try {
+    return rend?.coloring?.size ?? 0
+  } catch {
+    return 0
+  }
+}
+
 /**
  * Make sure a renderer can take paint entries: switch it to a PaintColoring
  * only when it is not one yet, since switching starts a new table and would

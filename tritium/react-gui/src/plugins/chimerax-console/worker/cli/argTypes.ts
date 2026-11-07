@@ -49,6 +49,8 @@ export interface ArgType {
   values?: () => readonly string[]
   /** The value is a file path (Tab lists files). */
   isPath?: boolean
+  /** The value is an atom specification (Tab lists model numbers after `#`). */
+  isSpec?: boolean
   /**
    * An optional argument of this type may be absent without ending the
    * optional ones (cli.py `Or(ObjectsArg, EmptyArg)`): `color red` has no
@@ -154,6 +156,7 @@ export function Or(...types: ArgType[]): ArgType {
     name: types.map((t) => t.name).join(' or '),
     values: () => types.flatMap((t) => t.values?.() ?? []),
     isPath: types.some((t) => t.isPath),
+    isSpec: types.some((t) => t.isSpec),
     parse(text) {
       for (const t of types) {
         const r = t.parse(text)
@@ -190,6 +193,7 @@ export const ColorArg: ArgType = {
 export const SpecArg: ArgType = {
   name: 'an atom specification',
   values: selectorNames,
+  isSpec: true,
   mayBeEmpty: true,
   parse(text) {
     let read: ReturnType<typeof parseSpec>
