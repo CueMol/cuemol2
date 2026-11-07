@@ -222,8 +222,12 @@ object でない名前は named selection の参照のまま渡す。
 - `set_color name, [r, g, b]`: scene local の style set `pym` (無ければ作る) に色を定義する。0..1 か
   0..255 (どれかが 1 を超えたら)、`#rrggbb` / `0xrrggbb`。以後 `color name, sel` で使える。
 - `spectrum expr [, palette, selection, minimum, maximum]`: renderer 全体の coloring を置き換える。
-  `b` / `q` は 2 色の palette (`blue_red` や `blue red`) で `BfacColoring` (`minimum` / `maximum` で範囲を固定)、`count` / `resi` は
-  `rainbow` / `rainbow_rev` で `RainbowColoring` (残基番号単位)。3 色以上の palette や `pc` は断る。
+  `b` / `q` は `BfacColoring`。2 色の palette (`blue_red` や `blue red`) は 2 色の ramp (`minimum` / `maximum` で範囲を
+  固定、無ければ分子ごとの auto)。3 色以上 (`blue_white_red`、PyMOL の名前付き palette `rainbow` などは `viewing.py` の
+  `palette_colors_dict` の色) は多色のグラデーション: PyMOL の `spectrumany` と同じく色を `minimum`〜`maximum`
+  (無ければ塗る分子全部の原子の値の min〜max、float32 の精度に丸める) に等間隔に並べ、`set_multigrad_nodes ...
+  gradient=coloring` で書く ([bfac-multigradient](bfac-multigradient.md))。値が 1 つしか無ければ最初の色で塗る。
+  `count` / `resi` は `rainbow` / `rainbow_rev` で `RainbowColoring` (残基番号単位)。`pc` は断る。
   selection は object 名か `all` だけ (部分着色はできないので式は断る)。`color` (paint) とは上書きし合う。
 - `bg_color color`。
 

@@ -7,12 +7,12 @@
  * does not know as a named colour, so `color <name>, sel` finds it without
  * anything else changing.
  *
- * `spectrum` maps onto the two gradient colourings CueMol has, which colour a
- * whole renderer: `BfacColoring` (B-factor or occupancy between two colours)
- * and `RainbowColoring` (a hue sweep along the residue numbers). PyMOL
- * colours only the selected atoms and has many multi-stop palettes; what
- * does not map is refused by name rather than approximated with something
- * that would look different.
+ * `spectrum` maps onto the gradient colourings CueMol has, which colour a
+ * whole renderer: `BfacColoring` (B-factor or occupancy: two colours, or a
+ * multi-colour gradient for a palette of three or more) and `RainbowColoring`
+ * (a hue sweep along the residue numbers). PyMOL colours only the selected
+ * atoms; what does not map is refused by name rather than approximated with
+ * something that would look different.
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
@@ -20,6 +20,7 @@ import type { CmdContext, CmdOutcome, PymCommand } from './types'
 import { isAllSelection, isDefaulted, molecules, runOp, toNumber } from './helpers'
 import { OWNED, renderersOf } from './helpers'
 import { PYMOL_COLORS, toCueMolColor } from './pymolColors'
+import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver'
 
 /** The scene-local style set `set_color` writes into. */
 const PYM_STYLE_SET = 'pym'
@@ -83,39 +84,60 @@ const setColor: PymCommand = {
 /** How a `spectrum` request is carried out on one renderer. */
 type SpectrumPlan =
   | { kind: 'bfac'; mode: 'bfac' | 'occ'; low: string; high: string }
+  /** Three colours or more, evenly spaced over the range (`BfacColoring.multi_grad`). */
+  | { kind: 'bfacGrad'; mode: 'bfac' | 'occ'; colors: string[] }
   | { kind: 'rainbow'; startHue: number; endHue: number }
+
+/** PyMOL's named multi-colour palettes (`viewing.py` `palette_colors_dict`). */
+const PALETTE_COLORS: Readonly<Record<string, string>> = {
+  rainbow_cycle: 'magenta blue cyan green yellow orange red magenta',
+  rainbow_cycle_rev: 'magenta red orange yellow green cyan blue magenta',
+  rainbow: 'blue cyan green yellow orange red',
+  rainbow_rev: 'red orange yellow green cyan blue',
+  rainbow2: 'blue cyan green yellow orange red',
+  rainbow2_rev: 'red orange yellow green cyan blue',
+  gcbmry: 'green cyan blue magenta red yellow',
+  yrmbcg: 'yellow red magenta blue cyan green',
+  cbmr: 'cyan blue magenta red',
+  rmbc: 'red magenta blue cyan',
+}
 
 /**
  * What `spectrum <expression>, <palette>` becomes here, or why it cannot.
  *
  * - `b` / `q` with a two-colour palette (`blue_red`, `green_white`, ...):
  *   `BfacColoring`, low to high.
+ * - `b` / `q` with three colours or more (`blue_white_red`, `rainbow`, or the
+ *   colours themselves): `BfacColoring`'s multi-colour gradient, the colours
+ *   evenly spaced from the minimum to the maximum and interpolated in RGB in
+ *   between, as PyMOL's `spectrumany` does.
  * - `count` / `resi` with `rainbow` / `rainbow_rev`: `RainbowColoring` over
  *   residue numbers (PyMOL's `count` steps per atom; here it is per residue,
  *   as with `byres=1`).
  *
- * Everything else is refused: CueMol's gradients have two colours, or a hue
- * range, and a three-colour palette or a rainbow over B-factors would come
- * out as something else.
+ * Everything else is refused (a palette over residue numbers other than the
+ * rainbow, a colour PyMOL does not name, partial charges).
  */
 export function planSpectrum(expression: string, palette: string): SpectrumPlan | { error: string } {
   const expr = expression.trim().toLowerCase()
   const pal = palette.trim().toLowerCase()
 
   if (expr === 'b' || expr === 'q') {
-    // A palette name (`blue_red`) or the colours themselves, space separated
-    // (`blue red`), as PyMOL's spectrum takes either.
-    const parts = pal.includes(' ') ? pal.split(/\s+/) : pal.split('_')
-    const low = parts.length === 2 ? toCueMolColor(parts[0]) : null
-    const high = parts.length === 2 ? toCueMolColor(parts[1]) : null
-    if (low === null || high === null || parts.some((p) => PYMOL_COLORS[p] === undefined)) {
+    // A palette name (`blue_red`, `rainbow`) or the colours themselves, space
+    // separated (`blue red`), as PyMOL's spectrum takes either.
+    const named = pal.includes(' ') ? pal : (PALETTE_COLORS[pal] ?? pal.replace(/_/g, ' '))
+    const parts = named.split(/\s+/).filter((p) => p !== '')
+    const colors = parts.map((p) => (PYMOL_COLORS[p] === undefined ? null : toCueMolColor(p)))
+    if (parts.length < 2 || colors.some((c) => c === null)) {
       return {
         error:
           `Error: spectrum ${expr}: palette "${palette}" cannot be drawn here; ` +
-          'use a two-colour palette such as blue_red',
+          'give two colours or more PyMOL names, or a palette such as blue_red or rainbow',
       }
     }
-    return { kind: 'bfac', mode: expr === 'b' ? 'bfac' : 'occ', low, high }
+    const mode = expr === 'b' ? 'bfac' : 'occ'
+    if (colors.length === 2) return { kind: 'bfac', mode, low: colors[0] as string, high: colors[1] as string }
+    return { kind: 'bfacGrad', mode, colors: colors as string[] }
   }
   if (expr === 'count' || expr === 'resi') {
     if (pal === 'rainbow') return { kind: 'rainbow', startHue: 240, endHue: 0 }
@@ -128,6 +150,43 @@ export function planSpectrum(expression: string, palette: string): SpectrumPlan 
   return { error: `Error: unknown spectrum expression "${expression}" (one of b, q, count, resi)` }
 }
 
+/**
+ * The range of the B-factors (or occupancies) of `objIds`' atoms together,
+ * as PyMOL takes the selection's own range when no minimum / maximum is
+ * given; null when no atom has a value.
+ */
+function valueRange(ctx: WorkerContext, sceneId: number, objIds: number[], mode: 'bfac' | 'occ'): { min: number; max: number } | null {
+  const scene = getSceneOrNull(ctx, sceneId)
+  let min = Infinity
+  let max = -Infinity
+  for (const id of objIds) {
+    try {
+      const mol = scene?.getObject(id) as unknown as { getPropArray?: (p: string) => unknown } | null
+      const ba = mol?.getPropArray?.(mode)
+      if (!ba) continue
+      const bytes = ctx.svc.copyToTypedArray(ba) as Uint8Array
+      for (const v of new Float32Array(bytes.slice().buffer)) {
+        if (v < min) min = v
+        if (v > max) max = v
+      }
+    } catch {
+      continue
+    }
+  }
+  // The values are float32: round to their precision, so a record reads 3.38, not 3.380000114440918.
+  const f32 = (v: number) => Number(v.toPrecision(7))
+  return min <= max ? { min: f32(min), max: f32(max) } : null
+}
+
+/**
+ * The gradient nodes of a multi-colour plan: the colours evenly spaced from
+ * `min` to `max` (PyMOL's `spectrumany`), as `set_multigrad_nodes` takes them.
+ */
+export function spectrumNodes(colors: readonly string[], min: number, max: number): string {
+  const n = colors.length
+  return colors.map((c, i) => `${min + ((max - min) * i) / (n - 1)} ${c}`).join('; ')
+}
+
 /** Put `plan` on one renderer (`set_renderer_coloring`, then `set_coloring_prop` per property). */
 async function applySpectrum(
   ctx: WorkerContext,
@@ -136,9 +195,24 @@ async function applySpectrum(
   plan: SpectrumPlan,
   range: { min: number | null; max: number | null },
 ): Promise<boolean> {
-  const mode = plan.kind === 'bfac' ? 'paint-type-bfac' : 'paint-type-rainbow'
+  const mode = plan.kind === 'rainbow' ? 'paint-type-rainbow' : 'paint-type-bfac'
   const target = { nodeId: rendId, nodeType: 'renderer' }
   if (!(await runOp(ctx, cc, 'set_renderer_coloring', { ...target, mode, styleName: null })).ok) return false
+  if (plan.kind === 'bfacGrad') {
+    // `run` has filled in the range (the given one, or the atoms' own).
+    if (!(await runOp(ctx, cc, 'set_coloring_prop', { ...target, prop: 'mode', value: plan.mode })).ok) return false
+    const lo = range.min ?? 0
+    const hi = range.max ?? 0
+    if (!(hi > lo)) {
+      // One value everywhere: PyMOL colours it all with the first colour.
+      for (const prop of ['lowcol', 'highcol']) {
+        if (!(await runOp(ctx, cc, 'set_coloring_prop', { ...target, prop, value: plan.colors[0] })).ok) return false
+      }
+      return true
+    }
+    const nodes = spectrumNodes(plan.colors, lo, hi)
+    return (await runOp(ctx, cc, 'set_multigrad_nodes', { rendId, nodes, nodeType: 'renderer', gradient: 'coloring' })).ok
+  }
   const props: [string, string | number][] = []
   if (plan.kind === 'rainbow') {
     props.push(['incr_mode', 'resid'], ['start_hue', plan.startHue], ['end_hue', plan.endHue])
@@ -190,6 +264,18 @@ const spectrum: PymCommand = {
       cc.warn('spectrum: minimum / maximum apply to b and q only here')
     }
     if (!isDefaulted(args.byres, '0')) cc.warn('spectrum: byres is ignored (colouring is per renderer)')
+
+    if (plan.kind === 'bfacGrad' && (range.min === null || range.max === null)) {
+      // The gradient's nodes are absolute values: the range of every molecule
+      // coloured, together, where not given (PyMOL's own range).
+      const objs = isAllSelection(args.selection) ? molecules(ctx, cc.sceneId) : molecules(ctx, cc.sceneId, args.selection.trim())
+      const own = valueRange(ctx, cc.sceneId, objs.map((o) => o.uid), plan.mode)
+      if (own === null && objs.length > 0) return { ok: false, error: 'Error: spectrum: the atoms have no values to spread the colours over' }
+      if (own) {
+        range.min ??= own.min
+        range.max ??= own.max
+      }
+    }
 
     return colourOwnedRenderers(ctx, cc, args.selection, (rendId) =>
       applySpectrum(ctx, cc, rendId, plan, range))

@@ -103,6 +103,9 @@ style と qsc: どちらも `coloring` を XML の節点から作り (`LDom2Node
 - 再取得のフィルタ (`shouldRefetchMultiGrad`、`shouldRefetchColoring`) は `coloring.` で始まる名前も通す。2 段の
   入れ子の変更は `coloring.multi_grad` で届くので、Undo / Redo や op の後もエディタが node を読み直す。
 
+PyMOL dialect の `spectrum b` / `q` は、3 色以上の palette をこの多色のグラデーションで塗る
+([console-pymol-dialect](console-pymol-dialect.md) の `spectrum`)。
+
 ## 6. テスト
 
 C++ (`src/tests/modules/molstr/test_bfac_coloring.cpp`):
@@ -119,3 +122,5 @@ tritium:
   もう一方に書かない。object を対象にしても届く。`BfacColoring` でない coloring は拒否する。空の node が記録の
   文字列と往復する。`coloring.multi_grad` のイベントで再取得する。
 - `__test__/streamLoadFromUrlService.test.ts`: AlphaFold の entry だけが取得の中で pLDDT の style を当てる。
+- `plugins/pymol-console/worker/commands/colorCommands.test.ts`: `spectrum b, rainbow` / `q, blue_white_red` が多色の
+  plan になり、色が最小から最大に等間隔に並ぶ。
