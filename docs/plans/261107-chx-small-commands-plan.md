@@ -7,8 +7,13 @@
 方針は今の ChX と同じ: ChimeraX と意味が一致するものだけを移し、近似で違う結果になるものは理由を言って断る。
 書き込みはすべて op (`runOp`)。ChimeraX のソースは `~/ext/ChimeraX/src/bundles/`。
 
-対象の行数 (tutorial の再生で): `volume` 約 36、`lighting` 19、`preset` 約 12、`camera` 1、`ribbon` 1、`unitcell` 1、
-`open ... from rcsb_bio` 1。合わせて約 70 行 (知らないコマンドの約 3 割)。
+この方針の**例外は B2 の `lighting` だけ**: CueMol に光源の向き・強さ・影が無いので、ChimeraX の lighting を
+画面空間の AO の on / off で近似する (見た目を寄せる以外に使い道が無く、断ると tutorial の 19 行が止まるため)。
+近似する preset と keyword では必ず違いを warn する (B2)。
+
+対象の行数 (tutorial の再生で): `volume` 約 36、`lighting` 19、`preset` 約 12、`camera` 1、`ribbon` 1、
+`open ... from rcsb_bio` 1。合わせて約 70 行 (知らないコマンドの約 3 割)。`unitcell` は枠 (`unitcell outline`) だけを
+作り、tutorial の 1 行 (コピーで埋める `unitcell #1 cells 1,1,2`) は断る。
 
 ---
 
@@ -34,6 +39,10 @@ ChimeraX (`map/volumecommand.py`): `volume [spec] [level v] [style mesh|surface|
 - `transparency t` (0-1): `alpha = 1 - t` (`set_map_contour` の `alpha`)。
 - `step n`: CueMol の `lod` (`step1` `step2` `step4` `step8`) に写す。1・2・4・8 以外は断る
   (近い段に丸めない)。ChimeraX の `step` は方向ごとに 3 つ (`1,2,2`) も取れるが、3 つが同じときだけ受ける。
+  ただし `lod` が効くのは、`isosurf` と、表示範囲が全体 (`region_mode` が `full`、EM の地図の `auto` を含む) の
+  `contour` だけ (`MapMeshRenderer::generate` は box の範囲では間引きを 1 に固定する)。結晶の地図の box の
+  `contour` に `step > 1` を書いても何も変わらないので、その場合は書く前に断る (同じ行の `region all` で full に
+  なるなら受ける)。`step 1` はいつも受ける。
 - `region all`: `region_mode = full`。格子の範囲 (`0,0,145,279,279,164`) は断る (CueMol は中心 +- extent の箱か
   全体だけ)。
 - `show` / `hide` (値を取らない keyword): 地図の renderer の `set_visible`。
@@ -42,7 +51,9 @@ ChimeraX (`map/volumecommand.py`): `volume [spec] [level v] [style mesh|surface|
 - `volume zone <map spec> nearAtoms <spec> range r [newMap false]` と `volume unzone`: CueMol の地図の renderer の
   境界 (`bndry_molname`、`bndry_sel`、`bndry_rng`) に写す。境界は 1 つの molecule の selection なので、
   `nearAtoms` が 2 つ以上の molecule にまたがれば断る。`newMap true` は断る (地図を切り出す機能は無い)。
-  `unzone` は `bndry_sel` を空にする。
+  `unzone` は `bndry_molname` を空にする (`MapRenderer::setupMolBndry` は molecule の名前が空のときだけ境界を
+  外す。CueMol の空の選択式は「全原子」なので、`bndry_sel` を空にしても分子全体の周りに広がるだけ)。ChimeraX の
+  `volume unzone` は表示範囲も全体に戻すので、`region_mode` も `full` にする。
 - 地図の演算 (`gaussian` `subtract` `add` `scale` `box` `cover` `morph` `resample` など) と `enclose`
   (囲む体積から level を決める) は、`volume <演算>` の sub-command として登録し、理由を言って断る
   (知らないコマンドのままにしない)。
@@ -53,16 +64,17 @@ ChimeraX (`std_commands/lighting.py`): `lighting [default|simple|full|soft|gentl
 [multiShadow n] [depthCue t|f] [intensity ...] ...`。
 
 CueMol の scene が持つのは画面空間の ambient occlusion (`aoEnabled` ほか) と、renderer ごとの輪郭線だけ。
-光源の向き・強さ・影は持たない。preset は次のように写す:
+光源の向き・強さ・影は持たない。冒頭の例外として、preset を次のように**近似**する:
 
-| ChimeraX | 中身 | ChX |
-|---|---|---|
-| `default` / `simple` | 影なし、multishadow 0 | AO を切る |
-| `soft` / `gentle` | 影なし、multishadow 64 (AO 相当) | AO を入れる |
-| `full` | 影あり + multishadow | AO を入れ、影は無いと warn |
-| `flat` | 陰影なし + 輪郭線 | AO を切り、輪郭線を入れる (`graphics silhouettes true` と同じ処理)。陰影を消せないと warn |
+| ChimeraX | 中身 (`lighting.py`) | ChX | warn |
+|---|---|---|---|
+| `default` / `simple` | key 1・fill 0.5・ambient 0.4、影なし、multishadow 0 | AO を切る | しない (CueMol の既定の照明に最も近い) |
+| `soft` / `gentle` | key 0・fill 0 (方向のある光を消す)・ambient 1.5、multishadow 64 | AO を入れる | 方向のある光を消せず陰影が残る |
+| `full` | key 0.7・fill 0.3・ambient 0.8、影あり + multishadow | AO を入れる | 影が無く、光源の強さも変えられない |
+| `flat` | key 0・fill 0・ambient 1.45 + 輪郭線 | AO を切り、輪郭線を入れる (`graphics silhouettes true` と同じ処理) | 陰影を消せない |
 
-- `multiShadow n`: `n > 0` で AO を入れ、`0` で切る。`shadows true` は warn (影は無い)。
+- `multiShadow n`: `n > 0` で AO を入れ、`0` で切る。方向の数は写せないと warn する。`shadows true` は warn
+  (影は無い)。
 - `depthCue`、`intensity` `direction` `color` `fillIntensity` などの光源の設定は warn して無視。光源の向きや強さは
   [261103-chimerax-console-plan.md](261103-chimerax-console-plan.md) の CueMol 側の機能追加の範囲。
 - 引数無しは、AO の on / off を `Intensity ...` ではなく CueMol の言葉で 1 行出す。
@@ -77,13 +89,17 @@ ChimeraX の `preset` (`preset_mgr`) は、ChimeraX のコマンドの列を実�
 
 | category | preset | 中身 (ChimeraX) | ChX |
 |---|---|---|---|
-| Initial Styles | Original Look | 開いたときの auto style | `autoStyle.ts` を当て直す |
-| | Sticks、Cartoon、Space-Filling (chain colors / single color) | `atomic` bundle の preset | 中身を読んで、ChX のコマンドの列に移す |
+| Initial Styles | Original Look | 表示を初期化してから auto style | 初期化してから `autoStyle.ts` を当て直す (下記) |
+| | Sticks、Cartoon、Space-Filling (chain colors / single color) | 同じ初期化の後、`apply_auto_styling` の style 違い | 同じ初期化の後、中身を読んで ChX のコマンドの列に移す |
 | Cartoons/Nucleotides | ribbons/slabs、cylinders/stubs、licorice/ovals | `cartoon style ...` と `nucleotides ...` | 断る (`nucleotides` と `modeHelix tube` が無い。一部だけ実行すると違う見た目になる) |
 | Molecular Surfaces | ghostly white、chain ID coloring (opaque) | `surface`、`color ... targ s trans ...` | ChX のコマンドで実行 |
 | | atomic coloring (transparent) | `color fromatoms` | 断る (`fromatoms` が無い) |
-| Overall Look | publication 1 (silhouettes)、publication 2 (depth-cued)、interactive | `set bg`、`graphics silhouettes`、`lighting depthCue` | 実行。`depthCue` は B2 と同じく warn |
+| Overall Look | publication 1 (silhouettes)、publication 2 (depth-cued)、interactive | `set bg`、`graphics silhouettes`、`lighting depthCue` | 実行。`depthCue` は B2 と同じく warn する (近似の例外の範囲。publication 2 と interactive は depth cue が主なので、warn だけで見た目はほぼ変わらない) |
 
+- Initial Styles の初期化 (`atomic/presets.py` の `_execute`): ChimeraX は auto style の前に、分子表面を隠し、
+  原子の表示と ribbon の表示を一度戻す (`nucleotides atoms` も含む)。ChX も同じく、対象の molecule の
+  `chx:surface:*` の `showsel` を `none` にしてから当てる。`autoStyle.ts` は 5 つの `chx:` renderer の selection と
+  paint を全部書くので、原子と ribbon の初期化はそれで足りる。
 - 利用者定義の preset (`preset my_custom_style`) は「無い」と断る (ChimeraX の preset のフォルダは読まない)。
 - 中身の各コマンドは ChX の実装を通るので、ChX が断るもの (`style ... @@draw_mode=0`) があれば、その preset
   ごと断る。**実装の最初に、移す preset の中身を全部 ChX に流して、どれが通るかを確かめる**。通らないものは
@@ -95,9 +111,13 @@ ChimeraX の `preset` (`preset_mgr`) は、ChimeraX のコマンドの列を実�
   `cartoon ...` として実行する (`ribbon hide /A` は `cartoon hide /A`)。
 - `camera ortho` / `camera mono`: `set_projection` (`perspective: false` / `true`)。ChimeraX の `camera` の他の
   mode (`360`、`360tb`、`stereo`、`sbs`、`dome` など) と `fieldOfView` は断る。引数無しは今の投影を出す。
-- `unitcell [spec]`: 結晶の情報を持つ object に `show_unit_cell`。`cells`・`offset`・`origin` などは warn して
-  無視 (CueMol の単位胞は 1 つ)。`~unitcell` / `unitcell delete` は、`show_unit_cell` が作る renderer を
-  `delete_node` で消す (実装時に、その renderer の型と名前を確かめる)。
+- `unitcell outline [spec] [close true]`: 結晶の情報を持つ object に `show_unit_cell` (単位胞の枠)。`close true` は
+  `show_unit_cell` が作る renderer を `delete_node` で消す (実装時に、その renderer の型と名前を確かめる)。
+  `origin` は warn して無視。
+- `unitcell [spec]` (`unit_cell/unitcellcmd.py`) は枠ではなく、結晶の対称から分子のコピーを作って単位胞を埋める
+  コマンド (枠は `outline true` のときだけ)。CueMol の `show_symmetry` は描画だけの対称の表示で、ChimeraX の
+  コピーの model とは違うので、`unitcell` と `unitcell delete` (作ったコピーを消す) は理由を言って断る。
+  tutorial の `unitcell #1 cells 1,1,2` はこれに当たる (通らない)。
 
 ## B5. `open ... from rcsb_bio / pdbe_bio [maxAssemblies n]` (1 行)
 
@@ -124,6 +144,7 @@ ChimeraX (`pdb_bio/fetch_pdb_bio.py`): 生物学的会合体のファイルを 1
 - `morph` (9 行): CueMol の morph object と Animation で作れるが、ChimeraX の trajectory と再生 (`coordset`) の
   仕組みと合わせる設計が要る。
 - `sym #1 assembly n` (3 行): mmCIF の会合体の情報が要る。CueMol の `show_symmetry` は結晶の対称で、意味が違う。
+- `unitcell` (分子のコピーで単位胞を埋める、1 行): コピーを model として作る仕組みが要る (`sym` と一緒に検討)。
 - `clashes` / `contacts` / `interfaces` (6 行): 判定の基準が CueMol に無い。
 - `nucleotides` (2 行): CueMol の `nucl` renderer の塩基の描き方と、ChimeraX の `stubs` `slab` などの対応を
   調べてから。
@@ -133,13 +154,24 @@ ChimeraX (`pdb_bio/fetch_pdb_bio.py`): 生物学的会合体のファイルを 1
 - 調査の再生の仕組み (tutorial のコマンドを順に ChX に流して分類する) で、B1-B5 の行が通ることと、他の行の
   結果が悪くならないことを確かめる。
 - アプリで目視: `volume #1 level ... style mesh/surface color ... transparency ...`、`volume zone`、
-  `lighting soft` / `simple` / `flat`、`preset` の各 preset、`camera ortho`、`unitcell`、`open 3d6y from rcsb_bio`。
+  `lighting soft` / `simple` / `flat`、`preset` の各 preset、`camera ortho`、`unitcell outline`、`open 3d6y from rcsb_bio`。
 
 ## テスト (必要最小限)
 
-- `volume`: `level` が絶対値の property に、`transparency` が `alpha = 1 - t` に、`step` が `lod` に写り、
-  1・2・4・8 以外の `step` と複数の `level` を書く前に断る。
-- `volume zone`: `nearAtoms` が 1 つの molecule のとき境界の 3 つの property を書き、2 つ以上なら断る。
-- `lighting`: preset ごとの AO の on / off と、`flat` が輪郭線を入れること。
-- `preset`: 名前の照合 (category の有無、前方一致) と、断る preset が何も実行しないこと。
+- `volume`: `level` が絶対値の property に、`transparency` が `alpha = 1 - t` に写り、`step` は `isosurf` と full の
+  `contour` で `lod` に写り、box の `contour` の `step > 1`、1・2・4・8 以外の `step`、複数の `level` を書く前に
+  断る。
+- `volume zone` / `unzone`: `nearAtoms` が 1 つの molecule のとき境界の 3 つの property を書き、2 つ以上なら断る。
+  `unzone` は `bndry_molname` を空にし `region_mode` を `full` にする (`bndry_sel` を空にするだけでは外れない)。
+- `lighting`: preset ごとの AO の on / off、`flat` が輪郭線を入れること、近似する preset (`soft` `gentle` `full`
+  `flat`) と `multiShadow` が warn すること。
+- `preset`: 名前の照合 (category の有無、前方一致)、断る preset が何も実行しないこと、表面を表示した状態から
+  Original Look で表面が隠れること。
 - `open ... from rcsb_bio`: 1 番から順に取り、2 番以降の失敗で止まり、1 番の失敗は error。
+
+## review で決めたこと
+
+1. B2 (`lighting`): AO の on / off による近似を、冒頭に書いた明示的な例外とする (断ると tutorial の 19 行が
+   止まり、見た目を寄せる以外に使い道の無いコマンドのため)。`simple` / `default` 以外の preset と
+   `multiShadow` では違いを必ず warn する。Overall Look の preset も同じ基準 (`depthCue` を warn)。
+2. B4 (`unitcell`): 枠は `unitcell outline` に写し、分子のコピーで埋める `unitcell` は断る。

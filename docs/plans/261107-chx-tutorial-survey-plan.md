@@ -36,7 +36,7 @@ CueMol 側の機能追加が要るもの、断るもの、共通の対策) で�
 
 ## 2. 新しいコマンドのうち、CueMol の既存の機能で作れるもの
 
-`volume` (表示の設定と zone)、`lighting`、`preset`、`camera ortho`、`unitcell`、`ribbon`、`open ... from rcsb_bio` は
+`volume` (表示の設定と zone)、`lighting`、`preset`、`camera ortho`、`unitcell outline`、`ribbon`、`open ... from rcsb_bio` は
 [261107-chx-small-commands-plan.md](261107-chx-small-commands-plan.md) (提案 B) で進める。残りはその plan の「対象外」を参照。
 
 | コマンド | 使用 | 使う CueMol の機能 | 注意点 |
