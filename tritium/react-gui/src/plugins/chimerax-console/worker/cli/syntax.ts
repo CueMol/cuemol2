@@ -66,7 +66,9 @@ export function resolveWords(
     const level = commands.filter((c) => c.words.length > i && path.every((w, k) => c.words[k] === w))
     // The candidate words at this level, in registration order, each once.
     const names = [...new Set(level.map((c) => c.words[i]))]
-    const w = typed[i].toLowerCase()
+    // As typed, as ChimeraX looks a command word up (cli.py: `subcommands.get(word)`, then
+    // `startswith(word)`): `select C & :sti` is a selection of carbons, not `select clear`.
+    const w = typed[i]
     const word = names.find((n) => n === w) ?? (w === '' ? undefined : names.find((n) => n.startsWith(w)))
     if (word === undefined) break
     path = [...path, word]
@@ -94,10 +96,13 @@ function wordCount(kw: string): number {
  * @returns the keyword, null when `typed` is no keyword's prefix, or an error
  */
 export function matchKeyword(typed: string, names: readonly string[]): string | null | { error: string } {
-  const t = typed.toLowerCase()
-  const exact = names.find((n) => n.toLowerCase() === t)
+  // What was typed keeps its case, as ChimeraX's `user_kw` keeps it: a
+  // keyword matches when it, or its lower case, starts with the word. So
+  // `C` (carbon) or `O` is never taken for `color` / `objects` (cli.py
+  // `_start_of_keywords`: "Don't change case of what user types. Fixes 'show O'").
+  const exact = names.find((n) => n === typed || n.toLowerCase() === typed)
   if (exact) return exact
-  const hits = names.filter((n) => n.toLowerCase().startsWith(t))
+  const hits = names.filter((n) => n.startsWith(typed) || n.toLowerCase().startsWith(typed))
   if (hits.length === 0) return null
   if (hits.length === 1) return hits[0]
   const fewest = Math.min(...hits.map(wordCount))
