@@ -68,9 +68,15 @@ export function modelColor(model: number): { hex: string; exact: boolean } {
   return { hex: BUILTIN_COLORS[name], exact: i >= 0 && i < MODEL_COLOR_NAMES.length }
 }
 
-/** A palette: colours at ascending positions from 0 to 1. */
+/**
+ * A palette: colours at ascending positions, 0 to 1 unless the text gave
+ * them (`v1,c1:v2,c2`), when they are values of what is coloured
+ * (`Colormap.values_specified`).
+ */
 export interface Palette {
   stops: { at: number; rgb: Rgb }[]
+  /** The positions are values the text gave, not 0 to 1. */
+  valuesGiven?: boolean
 }
 
 /** Colours spaced evenly from 0 to 1. */
@@ -131,12 +137,17 @@ export function readPalette(text: string): { ok: true; palette: Palette } | { ok
     if (given !== 0 && given !== stops.length) return { ok: false, error: 'give a position for every colour of the palette or for none' }
     palette = given === 0
       ? { stops: stops.map((s, i) => ({ at: i / (stops.length - 1), rgb: s.rgb })) }
-      : { stops: stops.map((s) => ({ at: s.at as number, rgb: s.rgb })) }
+      : { stops: stops.map((s) => ({ at: s.at as number, rgb: s.rgb })), valuesGiven: true }
     if (palette.stops.some((s, i) => Number.isNaN(s.at) || (i > 0 && s.at < palette.stops[i - 1].at))) {
       return { ok: false, error: 'palette positions must be numbers in increasing order' }
     }
   }
-  if (reversed) palette = { stops: palette.stops.map((s) => ({ at: 1 - s.at, rgb: s.rgb })).reverse() }
+  if (reversed) {
+    // Reversed in place: the colours swap ends, the positions stay.
+    const first = palette.stops[0].at
+    const last = palette.stops[palette.stops.length - 1].at
+    palette = { ...palette, stops: palette.stops.map((s) => ({ at: first + last - s.at, rgb: s.rgb })).reverse() }
+  }
   return { ok: true, palette }
 }
 
@@ -163,15 +174,59 @@ const ALPHAFOLD_PALETTE: Palette = (() => {
 /** The pLDDT width of one colour of `plddtEntries`: 50 colours over 0-100, close to ChimeraX's continuous map. */
 export const PLDDT_STEP = 2
 
+/** How many colours `color byattribute` uses over its range. */
+export const VALUE_STEPS = 50
+
+/** A number as CueMol's selection reads it, without float noise. */
+function numText(x: number): string {
+  return String(Number(x.toPrecision(6)))
+}
+
+/**
+ * Paint entries colouring atoms by an atom value (`bfac`, `occ`) along a
+ * palette spread over `lo`..`hi`, in `steps` colours, lowest first: put
+ * first in a table one by one, the last (`bfac > ...`) ends on top and the
+ * first match wins. Values outside the range take the end colours.
+ *
+ * @param sel - the atoms coloured ('*' for all)
+ */
+export function valueEntries(kw: 'bfac' | 'occ', p: Palette, lo: number, hi: number, steps: number, sel = '*'): [string, string][] {
+  const first = p.stops[0].at
+  const last = p.stops[p.stops.length - 1].at
+  /** The palette's colour for value `v`. */
+  const colorAt = (v: number) => paletteColor(p, first + ((v - lo) / (hi - lo)) * (last - first))
+  const within = (expr: string) => (sel === '*' ? expr : `(${sel}) and (${expr})`)
+  const out: [string, string][] = [[sel, colorAt(lo)]]
+  const step = (hi - lo) / steps
+  for (let i = 0; i < steps; i++) {
+    const t = lo + i * step
+    out.push([within(`${kw} > ${numText(t)}`), colorAt(t + step / 2)])
+  }
+  return out
+}
+
 /**
  * Paint entries colouring atoms by pLDDT (the B-factor column of an AlphaFold
- * model) along ChimeraX's `alphafold` colormap, lowest first: put first in a
- * table one by one, the last (`bfac > 98`) ends on top and the first match wins.
+ * model) along ChimeraX's `alphafold` colormap (`valueEntries` over 0-100).
  */
 export function plddtEntries(): [string, string][] {
-  const out: [string, string][] = [['*', paletteColor(ALPHAFOLD_PALETTE, 0)]]
-  for (let t = 0; t < 100; t += PLDDT_STEP) out.push([`bfac > ${t}`, paletteColor(ALPHAFOLD_PALETTE, (t + PLDDT_STEP / 2) / 100)])
-  return out
+  return valueEntries('bfac', ALPHAFOLD_PALETTE, 0, 100, 100 / PLDDT_STEP)
+}
+
+/**
+ * The value range `color byattribute` colours over (`_value_colors`): the
+ * range given; else the palette's own values when it gave them; else the
+ * lowest to the highest value coloured. A range of one value is widened
+ * by 1 each way, as ChimeraX widens it.
+ *
+ * @param range - [lo, hi], 'full' (the values' own), or null (not given)
+ */
+export function valueRange(p: Palette, range: [number, number] | 'full' | null, min: number, max: number): [number, number] {
+  let r: [number, number]
+  if (Array.isArray(range)) r = range
+  else if (range === null && p.valuesGiven) r = [p.stops[0].at, p.stops[p.stops.length - 1].at]
+  else r = [min, max]
+  return r[0] === r[1] ? [r[0] - 1, r[1] + 1] : r
 }
 
 /** How many colours `rainbow residues` uses per chain: enough to look smooth, few enough for the paint table. */

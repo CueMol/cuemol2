@@ -23,16 +23,22 @@
  *
  * `rainbow` colours each chain's residues along a palette, in RAINBOW_STEPS
  * colours, one paint entry per run of residues of one colour.
+ *
+ * `color byattribute bfactor|occupancy` (and `color bfactor`) colours atoms
+ * by their value along a palette, in VALUE_STEPS colours: one paint entry
+ * per step (`bfac > t`), so a later `color` paints over it as over any
+ * other colour. The atoms and the range are ChimeraX's (all the atoms
+ * named, together); only the colours are stepped.
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { CmdContext, CmdOutcome } from '@plugins/console/worker/dialect-api'
-import { ColorArg, EnumOf, FloatArg, Or, SpecArg, StringArg } from '../cli/argTypes'
+import { ColorArg, EnumOf, FloatArg, ListOf, Or, SpecArg, StringArg } from '../cli/argTypes'
 import { chxCommand } from '../cli/command'
 import type { ChxCommand } from '../cli/command'
 import { ELEMENT_COLORS } from '../colorTables'
 import { splitColorArg } from '../colors'
-import { chainColor, modelColor, paletteColors, plddtEntries, RAINBOW, rainbowRanges, readPalette } from '../colorSchemes'
+import { chainColor, modelColor, paletteColors, plddtEntries, RAINBOW, rainbowRanges, readPalette, VALUE_STEPS, valueEntries, valueRange } from '../colorSchemes'
 import { atomRenderers, cartoonRenderers, emitContext, ensureOwned, ensurePaint, forEachAtom, intersect, paintCount, runOp, targetsOf } from '../display'
 import type { Target } from '../display'
 import type { NumberedObject } from '../models'
@@ -190,6 +196,81 @@ const color: ChxCommand = chxCommand({
   },
 })
 
+/** The atom values `color byattribute` colours by, and CueMol's selection keyword for each. */
+const VALUE_ATTRS: Readonly<Record<string, 'bfac' | 'occ'>> = {
+  bfactor: 'bfac', 'a:bfactor': 'bfac', occupancy: 'occ', 'a:occupancy': 'occ',
+}
+
+/** What `what` names, as target letters. */
+const WHAT_LETTERS: Readonly<Record<string, string>> = { atoms: 'a', cartoons: 'c', ribbons: 'r', surfaces: 's' }
+
+const BYATTR_IGNORED = ['average', 'noValueColor', 'transparency', 'key', 'logInfo']
+
+/** Read `range`: `full`, or `lo,hi`. */
+function readRange(text: string): { ok: true; range: [number, number] | 'full' | null } | { ok: false; error: string } {
+  if (text === '') return { ok: true, range: null }
+  if (text === 'full') return { ok: true, range: 'full' }
+  const r = text.split(',').map(Number)
+  if (r.length !== 2 || !r.every(Number.isFinite) || r[0] > r[1]) return { ok: false, error: 'range is full or lo,hi' }
+  return { ok: true, range: [r[0], r[1]] }
+}
+
+/** `color byattribute <attr> ...` (and `color bfactor`, its alias with the attribute fixed). */
+function colorByAttr(words: string[], attr: string | null): ChxCommand {
+  return chxCommand({
+    words,
+    args: [
+      ...(attr === null ? [{ name: 'attrName', type: StringArg, role: 'required' as const }] : []),
+      { name: 'atoms', type: SpecArg, role: 'optional' },
+      { name: 'what', type: ListOf(EnumOf(Object.keys(WHAT_LETTERS))), role: 'optional' },
+      { name: 'target', type: StringArg, role: 'keyword' },
+      { name: 'palette', type: StringArg, role: 'keyword' },
+      { name: 'range', type: StringArg, role: 'keyword' },
+      ...BYATTR_IGNORED.map((name) => ({ name, type: StringArg, role: 'keyword' as const, ignored: true })),
+    ],
+    mutates: true,
+    summary: attr === null
+      ? 'Colour atoms by bfactor or occupancy along a palette (blue-white-red).'
+      : `Colour atoms by ${attr} along a palette (blue-white-red).`,
+    async run(ctx, args, cc): Promise<CmdOutcome> {
+      const name = words.join(' ')
+      warnIgnored(cc, name, args, BYATTR_IGNORED)
+      const attrName = attr ?? args.attrName
+      const kw = VALUE_ATTRS[attrName]
+      if (!kw) return { ok: false, error: `Error: ${name}: attribute "${attrName}" is not supported (bfactor or occupancy)` }
+      const pal = readPalette(args.palette === '' ? 'blue-white-red' : args.palette)
+      if (!pal.ok) return { ok: false, error: `Error: ${name}: ${pal.error}` }
+      const range = readRange(args.range)
+      if (!range.ok) return { ok: false, error: `Error: ${name}: ${range.error}` }
+      const found = targetsOf(ctx, cc.sceneId, args.atoms)
+      if (!found.ok) return found
+      // One range over every atom named, in every model (ChimeraX `_value_colors`).
+      let min = Infinity
+      let max = -Infinity
+      let count = 0
+      for (const t of found.targets) {
+        forEachAtom(ctx, cc.sceneId, t.obj.uid, t.sel, (a) => {
+          const v = kw === 'bfac' ? a.bfac : a.occ
+          if (v < min) min = v
+          if (v > max) max = v
+          count++
+        })
+      }
+      if (count === 0) return { ok: false, error: `Error: ${name}: no atoms specified` }
+      const [lo, hi] = valueRange(pal.palette, range.range, min, max)
+      const letters = args.what === '' ? '' : args.what.split(',').map((w) => WHAT_LETTERS[w]).join('')
+      const target = args.target !== '' ? args.target : letters !== '' ? letters : DEFAULT_TARGET
+      if (/[cr]/.test(target)) cc.warn(`${name}: a cartoon takes the value of one atom of each residue (ChimeraX averages the residue)`)
+      cc.print(`${count} atoms, atom ${attrName.replace(/^a:/, '')} range ${Number(min.toPrecision(4))} to ${Number(max.toPrecision(4))}`)
+      for (const t of found.targets) {
+        const res = await paintTarget(ctx, cc, t, target, valueEntries(kw, pal.palette, lo, hi, VALUE_STEPS, t.sel), false, t.sel === '*')
+        if (!res.ok) return res
+      }
+      return { ok: true }
+    },
+  })
+}
+
 const LEVELS = ['residues', 'chains', 'polymers', 'structures']
 
 const rainbow: ChxCommand = chxCommand({
@@ -237,4 +318,13 @@ const rainbow: ChxCommand = chxCommand({
   },
 })
 
-export const COLOR_COMMANDS: Record<string, ChxCommand> = { color, rainbow }
+/** `colour`: ChimeraX's British spelling of `color`. */
+const colour: ChxCommand = chxCommand({ ...color, words: ['colour'] })
+
+export const COLOR_COMMANDS: Record<string, ChxCommand> = {
+  color,
+  colorByattribute: colorByAttr(['color', 'byattribute'], null),
+  colorBfactor: colorByAttr(['color', 'bfactor'], 'bfactor'),
+  colour,
+  rainbow,
+}

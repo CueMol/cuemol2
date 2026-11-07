@@ -93,6 +93,10 @@ libcuemol2 側で行う (`ObjReader::read` が入力を `qlib::GzipInStream` で
 取得:
 - 取得元 (`pdb` を含む) は `fetch_entry`。ID の形は `open` でも先に検査して、何かを走らせる前に断る。
 - `emdb` / `emdb_us` は WWPDB、`emdb_europe` は EBI、`emdb_japan` は PDBJ で `fetch_emdb`。
+- `eds` (`open 1a0m from eds`、`eds:1a0m`) は、ChimeraX の `map/eds_fetch.py` と同じ PDBe の 2Fo-Fc の地図
+  `https://www.ebi.ac.uk/pdbe/coordinates/files/<id>.ccp4` を `fetch_map_url` で開く (`dbSources.ts` の
+  `edsMapFetch`)。`fetch_map` は使わない: 取得元を省くと RCSB の validation report の係数から地図を作り、
+  `EBI_MTZ` でも PDBe の係数から作り直す別の経路で、ChimeraX が開くファイルと同じにならない。
 - URL は、地図 (`mapUrlFetch`) なら `fetch_map_url`、それ以外は `urlFetch` の reader・gzip で `fetch_url`。
 
 `format` は `pdb` / `mmcif` (`cif` も) を PDB 系と AlphaFold で使う。それ以外の形式名をこれらに渡すと断る。
@@ -159,7 +163,8 @@ AlphaFold のモデルは、Get PDB からでも `fetch_entry` からでも pLDD
 - `renderer/worker/shared/dbSources.test.ts`: 取得元ごとの URL・reader・gzip・名前 (PDBj の gzip、AlphaFold の
   ID の分解、PubChem の SDF、URL の `.gz`)、断る ID。
 - `plugins/chimerax-console/worker/openTarget.test.ts`: `fromDatabase` は同じ名前のファイルより優先、
-  `db:id` と `fromDatabase` が同じ取得になること、`C:\...` はファイル、断る取得元。
+  `db:id` と `fromDatabase` が同じ取得になること、`C:\...` はファイル、断る取得元、`eds` が PDBe の CCP4 の
+  URL を地図として開くこと。
 - `renderer/worker/shared/dbSources.test.ts` (`parseDbEntryInfo`): AlphaFold DB と PubChem の応答から名前と概要を読む。
 - `plugins/getpdb/renderer/GetPdbDialog.test.tsx`: AlphaFold DB の ID は形が正しければ照会結果を出して取得でき、
   PDB の照会結果が残っていても地図の欄を出さない。

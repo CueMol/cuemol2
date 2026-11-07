@@ -34,6 +34,7 @@ import type { CmdContext, OpRun } from '@plugins/console/worker/dialect-api'
 import { runOp as runConsoleOp } from '@plugins/console/worker/dialect-api'
 import { emitFor, NONE } from './spec/emit'
 import type { EmitContext } from './spec/emit'
+import type { SpecNode } from './spec/parse'
 import { parseSpec, SpecError } from './spec/parse'
 import { isSelector, withSceneSelectors } from './spec/selectors'
 import { selectionNames } from './names'
@@ -161,27 +162,50 @@ export function emitContext(ctx: WorkerContext, sceneId: number): EmitContext {
   }
 }
 
+/** A specification read into its tree, with the scene's named selections as selectors. */
+export function readSpec(ctx: WorkerContext, sceneId: number, spec: string): { ok: true; node: SpecNode } | { ok: false; error: string } {
+  try {
+    const names = selectionNames(ctx, sceneId)
+    const read = withSceneSelectors(names, () => parseSpec(spec, isSelector))
+    if (!read) return { ok: false, error: `Error: "${spec}" is not an atom specification` }
+    return { ok: true, node: read.node }
+  } catch (e) {
+    if (e instanceof SpecError) return { ok: false, error: specError(spec, e) }
+    throw e
+  }
+}
+
+/**
+ * The molecules a specification tree reaches, each with what it means there.
+ *
+ * @param text - the specification's text, for the caret of an error
+ */
+export function targetsOfNode(ctx: WorkerContext, sceneId: number, node: SpecNode, text: string): { ok: true; targets: Target[] } | { ok: false; error: string } {
+  const mols = numberedObjects(ctx, sceneId).filter(isMolecule)
+  try {
+    const ec = emitContext(ctx, sceneId)
+    const targets: Target[] = []
+    for (const obj of mols) {
+      const sel = emitFor(node, obj.model, ec)
+      if (sel !== NONE) targets.push({ obj, sel })
+    }
+    return { ok: true, targets }
+  } catch (e) {
+    if (e instanceof SpecError) return { ok: false, error: specError(text, e) }
+    throw e
+  }
+}
+
 /**
  * The molecules a specification reaches, each with what it means there.
  * An empty specification is every molecule, whole.
  */
 export function targetsOf(ctx: WorkerContext, sceneId: number, spec: string): { ok: true; targets: Target[] } | { ok: false; error: string } {
-  const mols = numberedObjects(ctx, sceneId).filter(isMolecule)
-  if (spec.trim() === '') return { ok: true, targets: mols.map((obj) => ({ obj, sel: '*' })) }
-  try {
-    const ec = emitContext(ctx, sceneId)
-    const read = withSceneSelectors(ec.namedSelections, () => parseSpec(spec, isSelector))
-    if (!read) return { ok: false, error: `Error: "${spec}" is not an atom specification` }
-    const targets: Target[] = []
-    for (const obj of mols) {
-      const sel = emitFor(read.node, obj.model, ec)
-      if (sel !== NONE) targets.push({ obj, sel })
-    }
-    return { ok: true, targets }
-  } catch (e) {
-    if (e instanceof SpecError) return { ok: false, error: specError(spec, e) }
-    throw e
+  if (spec.trim() === '') {
+    return { ok: true, targets: numberedObjects(ctx, sceneId).filter(isMolecule).map((obj) => ({ obj, sel: '*' })) }
   }
+  const read = readSpec(ctx, sceneId, spec)
+  return read.ok ? targetsOfNode(ctx, sceneId, read.node, spec) : read
 }
 
 /** The console's renderers on a molecule, by name, with their uids. */

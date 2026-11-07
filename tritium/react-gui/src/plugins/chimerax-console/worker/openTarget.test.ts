@@ -25,6 +25,10 @@ describe('openTarget', () => {
     expect(openTarget('C:\\data\\x.pdb', '', '', none)).toEqual({ kind: 'file' })
     expect(openTarget('emdb_japan:1080', '', '', none)).toEqual({ kind: 'emdb', id: 'EMD-1080', mirror: 'PDBJ' })
     expect(openTarget('https://example.org/m/x.mrc', '', '', none)).toMatchObject({ kind: 'mapUrl' })
+    // eds is the PDBe 2Fo-Fc file ChimeraX opens, read by its URL (not a map made from coefficients).
+    expect(openTarget('1A0M', 'eds', '', all)).toMatchObject({
+      kind: 'mapUrl', spec: { url: 'https://www.ebi.ac.uk/pdbe/coordinates/files/1a0m.ccp4', readerName: 'ccp4map' },
+    })
   })
 
   it('refuses a database it cannot open, saying why', () => {

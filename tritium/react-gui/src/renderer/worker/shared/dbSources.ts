@@ -243,3 +243,14 @@ export function mapUrlFetch(url: string): MapUrlSpec | null {
   if (dot <= 0 || !MAP_URL_EXTENSIONS.includes(file.slice(dot + 1).toLowerCase())) return null
   return { url: u, readerName: 'ccp4map', gzip, name: file.slice(0, dot) }
 }
+
+/**
+ * The PDBe 2Fo-Fc map of a PDB entry, as ChimeraX's `eds` fetcher opens it
+ * (`map/eds_fetch.py`): one CCP4 file per entry, read as it is. Null for a
+ * malformed id.
+ */
+export function edsMapFetch(id: string): MapUrlSpec | null {
+  const pdbId = id.trim().toLowerCase()
+  if (!PDB_ID_RE.test(pdbId)) return null
+  return { url: `https://www.ebi.ac.uk/pdbe/coordinates/files/${pdbId}.ccp4`, readerName: 'ccp4map', gzip: false, name: pdbId }
+}

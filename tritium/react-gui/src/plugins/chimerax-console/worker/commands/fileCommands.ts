@@ -20,7 +20,7 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { getCompatibleRendererNames } from '@renderer/worker/server/services/file/getCompatibleRendererNames'
 import type { CmdContext, CmdOutcome } from '@plugins/console/worker/dialect-api'
 import { resolvePath } from '@plugins/console/worker/dialect-api'
-import { BoolArg, FileNameArg, IntArg, SpecArg, StringArg } from '../cli/argTypes'
+import { BoolArg, FileNameArg, FileNamesArg, IntArg, SpecArg, splitRepeated, StringArg } from '../cli/argTypes'
 import { chxCommand } from '../cli/command'
 import type { ChxCommand } from '../cli/command'
 import { CARTOONS, emitContext, runOp, targetsOf } from '../display'
@@ -58,72 +58,106 @@ async function adopt(ctx: WorkerContext, cc: CmdContext, before: Set<number>, pl
   return { ok: true }
 }
 
+/** Open one name (`openTarget.ts` says what it is). */
+async function openOne(ctx: WorkerContext, cc: CmdContext, name: string, args: Record<string, string>): Promise<CmdOutcome> {
+  const objectName = args.name === '' ? null : args.name
+  const before = new Set(numberedObjects(ctx, cc.sceneId).map((o) => o.uid))
+  const target = openTarget(name, args.fromDatabase, args.format, (n) => fs.existsSync(resolvePath(cc.cwd, n)))
+  switch (target.kind) {
+    case 'error':
+      return { ok: false, error: target.error }
+    case 'entry': {
+      const res = await runOp(ctx, cc, 'fetch_entry', {
+        source: target.source, id: target.id, format: target.format, ...OPEN_CARTOON, name: objectName, preset: null, centerView: true,
+      })
+      if (!res.ok) return res
+      return adopt(ctx, cc, before, target.source === 'alphafold')
+    }
+    case 'url': {
+      if (args.format !== '') cc.warn('open: format is not used for a URL (its extension says it)')
+      const res = await runOp(ctx, cc, 'fetch_url', {
+        url: target.spec.url, reader: target.spec.readerName, name: objectName ?? target.spec.name,
+        gzip: target.spec.gzip ? true : null, ...OPEN_CARTOON, preset: null, centerView: true,
+      })
+      if (!res.ok) return res
+      return adopt(ctx, cc, before)
+    }
+    case 'mapUrl': {
+      if (args.format !== '') cc.warn('open: format is not used for a URL (its extension says it)')
+      const res = await runOp(ctx, cc, 'fetch_map_url', { url: target.spec.url, name: objectName, gzip: null })
+      if (!res.ok) return res
+      return adopt(ctx, cc, before)
+    }
+    case 'emdb': {
+      if (args.format !== '') cc.warn('open: format is not used for an EMDB map')
+      const res = await runOp(ctx, cc, 'fetch_emdb', { id: target.id, name: objectName, source: target.mirror, level: null })
+      if (!res.ok) return res
+      return adopt(ctx, cc, before)
+    }
+  }
+  warnIgnored(cc, 'open', args, ['format'])
+  if (/\.cxc$/i.test(name)) return cc.runScript(name)
+  const path = resolvePath(cc.cwd, name)
+  if (/\.qsc$/i.test(path)) {
+    return runOp(ctx, cc, 'load_file', {
+      path, rendererType: null, selection: null, name: null, rendererName: null, preset: null, centerView: null, mapCenterPolicy: null,
+    })
+  }
+  const molecule = getCompatibleRendererNames(ctx, { filePath: path }).types.includes('ribbon')
+  const res = await runOp(ctx, cc, 'load_file', {
+    path,
+    ...(molecule ? OPEN_CARTOON : { rendererType: null, selection: null, rendererName: null }),
+    name: objectName, preset: null, centerView: true, mapCenterPolicy: null,
+  })
+  if (!res.ok) return res
+  return adopt(ctx, cc, before)
+}
+
 const open = chxCommand({
   words: ['open'],
   args: [
-    { name: 'names', type: FileNameArg, role: 'required' },
+    { name: 'names', type: FileNamesArg, role: 'required' },
     { name: 'name', type: StringArg, role: 'keyword' },
     { name: 'format', type: StringArg, role: 'keyword' },
     { name: 'fromDatabase', type: StringArg, role: 'keyword' },
   ],
   mutates: true,
-  summary: 'Open a file, a .cxc script, or fetch an entry: a PDB id, db:id (pdbe, pdbj, redo, alphafold, pubchem, emdb), or a URL.',
+  summary: 'Open files, .cxc scripts, or fetch entries: PDB ids, db:id (pdbe, pdbj, redo, alphafold, pubchem, emdb, eds), or URLs.',
   completions: [{ source: 'files', description: 'file', files: 'openable' }],
   // A scene file replaces the scene: it cannot run inside the submission's transaction.
   outsideTxn: (args) => /\.qsc$/i.test(args.names ?? ''),
   async run(ctx, args, cc) {
-    const name = args.names
-    const objectName = args.name === '' ? null : args.name
-    const before = new Set(numberedObjects(ctx, cc.sceneId).map((o) => o.uid))
-    const target = openTarget(name, args.fromDatabase, args.format, (n) => fs.existsSync(resolvePath(cc.cwd, n)))
-    switch (target.kind) {
-      case 'error':
-        return { ok: false, error: target.error }
-      case 'entry': {
-        const res = await runOp(ctx, cc, 'fetch_entry', {
-          source: target.source, id: target.id, format: target.format, ...OPEN_CARTOON, name: objectName, preset: null, centerView: true,
-        })
-        if (!res.ok) return res
-        return adopt(ctx, cc, before, target.source === 'alphafold')
-      }
-      case 'url': {
-        if (args.format !== '') cc.warn('open: format is not used for a URL (its extension says it)')
-        const res = await runOp(ctx, cc, 'fetch_url', {
-          url: target.spec.url, reader: target.spec.readerName, name: objectName ?? target.spec.name,
-          gzip: target.spec.gzip ? true : null, ...OPEN_CARTOON, preset: null, centerView: true,
-        })
-        if (!res.ok) return res
-        return adopt(ctx, cc, before)
-      }
-      case 'mapUrl': {
-        if (args.format !== '') cc.warn('open: format is not used for a URL (its extension says it)')
-        const res = await runOp(ctx, cc, 'fetch_map_url', { url: target.spec.url, name: objectName, gzip: null })
-        if (!res.ok) return res
-        return adopt(ctx, cc, before)
-      }
-      case 'emdb': {
-        if (args.format !== '') cc.warn('open: format is not used for an EMDB map')
-        const res = await runOp(ctx, cc, 'fetch_emdb', { id: target.id, name: objectName, source: target.mirror, level: null })
-        if (!res.ok) return res
-        return adopt(ctx, cc, before)
-      }
+    // Each name in turn (ChimeraX opens them in order); the first failure stops the rest.
+    const names = splitRepeated(args.names)
+    if (names.length > 1) {
+      if (args.name !== '') return { ok: false, error: 'Error: open: name can be given for one file only' }
+      if (names.some((n) => /\.qsc$/i.test(n))) return { ok: false, error: 'Error: open: a scene (.qsc) is opened on its own' }
     }
-    warnIgnored(cc, 'open', args, ['format'])
-    if (/\.cxc$/i.test(name)) return cc.runScript(name)
-    const path = resolvePath(cc.cwd, name)
-    if (/\.qsc$/i.test(path)) {
-      return runOp(ctx, cc, 'load_file', {
-        path, rendererType: null, selection: null, name: null, rendererName: null, preset: null, centerView: null, mapCenterPolicy: null,
-      })
+    for (const n of names) {
+      const res = await openOne(ctx, cc, n, args)
+      if (!res.ok) return res
     }
-    const molecule = getCompatibleRendererNames(ctx, { filePath: path }).types.includes('ribbon')
-    const res = await runOp(ctx, cc, 'load_file', {
-      path,
-      ...(molecule ? OPEN_CARTOON : { rendererType: null, selection: null, rendererName: null }),
-      name: objectName, preset: null, centerView: true, mapCenterPolicy: null,
-    })
-    if (!res.ok) return res
-    return adopt(ctx, cc, before)
+    return { ok: true }
+  },
+})
+
+/**
+ * `alphafold fetch <UniProt>`: the AlphaFold DB model, as `open
+ * alphafold:<UniProt>` opens it (coloured by pLDDT).
+ */
+const alphafoldFetch = chxCommand({
+  words: ['alphafold', 'fetch'],
+  args: [
+    { name: 'uniprotId', type: StringArg, role: 'required' },
+    { name: 'pae', type: BoolArg, role: 'keyword' },
+    ...['alignTo', 'trim', 'ignoreCache', 'version'].map((name) => ({ name, type: StringArg, role: 'keyword' as const, ignored: true })),
+  ],
+  mutates: true,
+  summary: 'Fetch an AlphaFold DB model by UniProt id, coloured by pLDDT.',
+  run(ctx, args, cc) {
+    warnIgnored(cc, 'alphafold fetch', args, ['alignTo', 'trim', 'ignoreCache', 'version'])
+    if (args.pae === 'true') cc.warn('alphafold fetch: pae is not supported (predicted aligned error); ignored')
+    return openOne(ctx, cc, `alphafold:${args.uniprotId}`, { name: '', format: '', fromDatabase: '' })
   },
 })
 
@@ -151,6 +185,24 @@ const close = chxCommand({
     const found = objectsOf(ctx, cc.sceneId, args.models)
     if (!found.ok) return found
     for (const o of found.objs) {
+      const res = await runOp(ctx, cc, 'delete_node', { nodeId: o.uid, nodeType: 'object' })
+      if (!res.ok) return res
+    }
+    return { ok: true }
+  },
+})
+
+/**
+ * `close session`: every object closed. ChimeraX also resets its settings
+ * here; CueMol keeps no settings per session, so they stay as they are.
+ */
+const closeSession = chxCommand({
+  words: ['close', 'session'],
+  args: [],
+  mutates: true,
+  summary: 'Close every model (the settings are kept: CueMol has none per session).',
+  async run(ctx, _args, cc) {
+    for (const o of numberedObjects(ctx, cc.sceneId)) {
       const res = await runOp(ctx, cc, 'delete_node', { nodeId: o.uid, nodeType: 'object' })
       if (!res.ok) return res
     }
@@ -240,4 +292,4 @@ function imageSize(ctx: WorkerContext, cc: CmdContext, width: string, height: st
     : { width: Math.round((Number(height) * view.width) / view.height), height: Number(height) }
 }
 
-export const FILE_COMMANDS: Record<string, ChxCommand> = { open, close, delete: deleteAtoms, save }
+export const FILE_COMMANDS: Record<string, ChxCommand> = { open, close, closeSession, delete: deleteAtoms, save, alphafoldFetch }

@@ -157,6 +157,14 @@ export function bindLine(spec: ChxCommand, line: string): BindResult {
     const ok = read(a)
     if (typeof ok === 'string') return { kind: 'error', error: ok }
     if (!ok) return { kind: 'error', error: caret(full, at(), `Missing or invalid ${a.name} argument: expected ${a.type.name}`) }
+    // A repeating argument goes on to the next keyword.
+    while (a.type.repeats && rest !== '' && !startsKeyword(rest, spec)) {
+      const first = args[a.name]
+      const more = read(a)
+      if (typeof more === 'string') return { kind: 'error', error: more }
+      if (!more) break
+      args[a.name] = `${first}\n${args[a.name]}`
+    }
   }
   for (const a of spec.args.filter((x) => x.role === 'optional')) {
     rest = rest.replace(/^\s+/, '')

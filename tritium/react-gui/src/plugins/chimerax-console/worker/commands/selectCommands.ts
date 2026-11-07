@@ -22,14 +22,15 @@
 import type { CmdOutcome, CmdContext } from '@plugins/console/worker/dialect-api'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import { getGenericProps } from '@renderer/worker/server/services/props/read'
-import { BoolArg, RestOfLine, SpecArg, StringArg } from '../cli/argTypes'
+import { BoolArg, FloatArg, RestOfLine, SpecArg, StringArg } from '../cli/argTypes'
 import { chxCommand } from '../cli/command'
 import type { ChxCommand } from '../cli/command'
-import { forEachAtom, intersect, minus, runOp, targetsOf, union } from '../display'
+import { emitContext, forEachAtom, intersect, minus, readSpec, runOp, targetsOf, targetsOfNode, union } from '../display'
 import type { AtomView, Target } from '../display'
 import { isMolecule, numberedObjects } from '../models'
 import type { NumberedObject } from '../models'
 import { ALL, NONE } from '../spec/emit'
+import type { SpecNode } from '../spec/parse'
 import { namedSelections } from '../names'
 import { warnIgnored } from './warn'
 
@@ -65,28 +66,183 @@ async function applySelect(
     if (!found.ok) return found
     targets = found.targets
   }
-  let total = 0
+  const next = new Map<number, string>()
   for (const obj of mols) {
     let term = targets.find((t) => t.obj.uid === obj.uid)?.sel ?? NONE
     if (combine === 'subtract' && spec.trim() === '') term = ALL
     if (residues && term !== NONE && term !== ALL) term = `byres (${term})`
     const now = currentSel(ctx, cc.sceneId, obj.uid)
-    const next =
+    next.set(obj.uid,
       combine === 'replace' ? term
       : combine === 'add' ? union(now, term)
       : combine === 'subtract' ? minus(now, term)
-      : intersect(now, term)
-    if (next !== now) {
-      const res = await runOp(ctx, cc, 'set_mol_selection', { objId: obj.uid, selection: next === NONE ? '' : next })
+      : intersect(now, term))
+  }
+  return writeSelections(ctx, cc, next)
+}
+
+/**
+ * Write each molecule's new selection (`next`, by object uid; a molecule not
+ * in it keeps its own), and say how many atoms are selected.
+ */
+async function writeSelections(ctx: WorkerContext, cc: CmdContext, next: ReadonlyMap<number, string>): Promise<CmdOutcome> {
+  let total = 0
+  for (const obj of numberedObjects(ctx, cc.sceneId).filter(isMolecule)) {
+    const now = currentSel(ctx, cc.sceneId, obj.uid)
+    const sel = next.get(obj.uid) ?? now
+    if (sel !== now) {
+      const res = await runOp(ctx, cc, 'set_mol_selection', { objId: obj.uid, selection: sel === NONE ? '' : sel })
       if (!res.ok) return res
     }
-    if (next !== NONE) {
-      const counted = await runOp(ctx, cc, 'count_selection', { objId: obj.uid, selection: next })
+    if (sel !== NONE) {
+      const counted = await runOp(ctx, cc, 'count_selection', { objId: obj.uid, selection: sel })
       if (counted.ok) total += (counted.data as { atomCount?: number }).atomCount ?? 0
     }
   }
   cc.print(total === 0 ? 'Nothing selected' : `${total} atoms selected`)
   return { ok: true }
+}
+
+// --- select zone ---
+
+/** Every atom of every model, as a specification tree. */
+const EVERYTHING: SpecNode = { kind: 'hier', models: null, modelTests: null, chains: [] }
+
+/**
+ * `select zone near range [find] [extend] [residues]`, in the order
+ * ChimeraX's `zone_items` takes (`zonesel.py`): the targets less the
+ * reference atoms, those within `range` of them atom by atom, then the
+ * reference atoms added back (`extend`), and only last whole residues
+ * (`residues`). Widening to residues before the distance test would keep
+ * only the target atoms of a residue (`@CB` stays CB alone).
+ */
+const selectZone = chxCommand({
+  words: ['select', 'zone'],
+  args: [
+    { name: 'near', type: SpecArg, role: 'required' },
+    { name: 'range', type: FloatArg, role: 'required' },
+    { name: 'find', type: SpecArg, role: 'optional' },
+    { name: 'extend', type: BoolArg, role: 'keyword' },
+    { name: 'residues', type: BoolArg, role: 'keyword' },
+  ],
+  mutates: false,
+  summary: 'Select the atoms within a distance of others (whole residues with residues true).',
+  async run(ctx, args, cc) {
+    const near = readSpec(ctx, cc.sceneId, args.near)
+    if (!near.ok) return near
+    const nearAt = targetsOfNode(ctx, cc.sceneId, near.node, args.near)
+    if (!nearAt.ok) return nearAt
+    if (nearAt.targets.every((t) => !emitContext(ctx, cc.sceneId).anyHit(t.obj.model, t.sel))) {
+      return { ok: false, error: 'Error: select zone: no atoms specified' }
+    }
+    let find: SpecNode = EVERYTHING
+    if (args.find.trim() !== '') {
+      const read = readSpec(ctx, cc.sceneId, args.find)
+      if (!read.ok) return read
+      find = read.node
+    }
+    const zone: SpecNode = { kind: 'zone', term: near.node, level: '@', op: '<', dist: Number(args.range), pos: 0 }
+    let node: SpecNode = { kind: 'and', left: { kind: 'and', left: find, right: { kind: 'not', term: near.node } }, right: zone }
+    if (args.extend === 'true') node = { kind: 'or', left: node, right: near.node }
+    const found = targetsOfNode(ctx, cc.sceneId, node, `${args.near} ${args.find}`.trim())
+    if (!found.ok) return found
+    const next = new Map<number, string>()
+    for (const obj of numberedObjects(ctx, cc.sceneId).filter(isMolecule)) {
+      const sel = found.targets.find((t) => t.obj.uid === obj.uid)?.sel ?? NONE
+      next.set(obj.uid, args.residues === 'true' && sel !== NONE && sel !== ALL ? `byres (${sel})` : sel)
+    }
+    return writeSelections(ctx, cc, next)
+  },
+})
+
+// --- select up / down ---
+
+/** One `select up`: each molecule's selection before and after it. */
+interface Promotion {
+  before: Map<number, string>
+  after: Map<number, string>
+}
+
+/**
+ * The `select up` steps of each scene, so `select down` can go back.
+ * Worker memory, as the model numbers are: not scene state, not undone.
+ */
+const promotions = new Map<number, Promotion[]>()
+
+/** How many atoms `expr` matches in molecule `uid`. */
+function countAtoms(ctx: WorkerContext, sceneId: number, uid: number, expr: string): number {
+  let n = 0
+  forEachAtom(ctx, sceneId, uid, expr, () => { n++ })
+  return n
+}
+
+/**
+ * The next larger group around a molecule's selection (residues, then
+ * chains, then the molecule), with its depth; null when it is whole already.
+ */
+function promoted(ctx: WorkerContext, sceneId: number, obj: NumberedObject, sel: string): { depth: number; expr: string } | null {
+  const count = countAtoms(ctx, sceneId, obj.uid, sel)
+  const residues = `byres (${sel})`
+  if (countAtoms(ctx, sceneId, obj.uid, residues) > count) return { depth: 0, expr: residues }
+  const chains = emitContext(ctx, sceneId).chainsHit(obj.model, sel)
+  const chainExpr = `chain ${chains.join(',')}`
+  if (chains.length > 0 && countAtoms(ctx, sceneId, obj.uid, chainExpr) > count) return { depth: 1, expr: chainExpr }
+  if (countAtoms(ctx, sceneId, obj.uid, ALL) > count) return { depth: 2, expr: ALL }
+  return null
+}
+
+const selectUp = chxCommand({
+  words: ['select', 'up'],
+  args: [],
+  mutates: false,
+  summary: 'Widen the selection one level (atoms to residues, chains, models).',
+  async run(ctx, _args, cc) {
+    // As ChimeraX promotes: only the deepest level any molecule can widen at moves.
+    const steps = new Map<number, { depth: number; expr: string }>()
+    const before = new Map<number, string>()
+    for (const obj of numberedObjects(ctx, cc.sceneId).filter(isMolecule)) {
+      const sel = currentSel(ctx, cc.sceneId, obj.uid)
+      before.set(obj.uid, sel)
+      if (sel === NONE) continue
+      const p = promoted(ctx, cc.sceneId, obj, sel)
+      if (p) steps.set(obj.uid, p)
+    }
+    if (steps.size === 0) return writeSelections(ctx, cc, new Map())
+    const depth = Math.min(...[...steps.values()].map((p) => p.depth))
+    const next = new Map([...steps].filter(([, p]) => p.depth === depth).map(([uid, p]) => [uid, p.expr]))
+    const res = await writeSelections(ctx, cc, next)
+    if (!res.ok) return res
+    const after = new Map([...before.keys()].map((uid) => [uid, currentSel(ctx, cc.sceneId, uid)]))
+    promotions.set(cc.sceneId, [...(promotions.get(cc.sceneId) ?? []), { before, after }])
+    return res
+  },
+})
+
+const selectDown = chxCommand({
+  words: ['select', 'down'],
+  args: [],
+  mutates: false,
+  summary: 'Go back to the selection before the last select up.',
+  async run(ctx, _args, cc) {
+    const history = promotions.get(cc.sceneId) ?? []
+    const last = history[history.length - 1]
+    const mols = numberedObjects(ctx, cc.sceneId).filter(isMolecule)
+    // A selection changed some other way since: the steps no longer lead back to it.
+    const current = last !== undefined && mols.length === last.after.size &&
+      mols.every((o) => last.after.get(o.uid) === currentSel(ctx, cc.sceneId, o.uid))
+    if (!current) {
+      promotions.delete(cc.sceneId)
+      cc.print('Nothing to go back to (no select up since the selection last changed)')
+      return { ok: true }
+    }
+    history.pop()
+    return writeSelections(ctx, cc, last.before)
+  },
+})
+
+/** Forget the select up steps (tests). */
+export function resetPromotions(): void {
+  promotions.clear()
 }
 
 const select = chxCommand({
@@ -328,6 +484,9 @@ export const SELECT_COMMANDS: Record<string, ChxCommand> = {
   selectSubtract: selectCombine(['select', 'subtract'], 'subtract', false),
   selectIntersect: selectCombine(['select', 'intersect'], 'intersect', true),
   selectClear,
+  selectZone,
+  selectUp,
+  selectDown,
   unselect: selectCombine(['~select'], 'subtract', false),
   name,
   nameFrozen,
