@@ -2,11 +2,13 @@
  * @file plugins/chimerax-console/worker/commands/fileCommands.ts
  * @description `open`, `close` and `delete`.
  *
- * `open` reads a file, a `.cxc` script, or a 4-character PDB id (fetched as
- * mmCIF from the RCSB, as ChimeraX does). A molecule opens with the
- * console's renderers, styled as ChimeraX's automatic styling would style
- * it (`autoStyle.ts`).
- * Anything else (a map) opens as File > Open would open it.
+ * `open` reads a file, a `.cxc` script, or fetches an entry from a database:
+ * a bare PDB id (mmCIF from the RCSB, as ChimeraX does), `db:id` (`pdbe:`,
+ * `pdbj:`, `redo:`, `alphafold:`, `pubchem:`, `emdb:`), `id fromDatabase db`,
+ * or an http(s) URL (`openTarget.ts`). A molecule opens with the console's
+ * renderers, styled as ChimeraX's automatic styling would style it
+ * (`autoStyle.ts`); an AlphaFold model is then coloured by pLDDT, as
+ * ChimeraX colours it. Anything else (a map) opens as File > Open would.
  *
  * `save` writes an image (`.png`), the scene (`.qsc`, CueMol's session) or
  * one molecule (`.pdb`). A ChimeraX session (`.cxs`) cannot be written.
@@ -29,22 +31,29 @@ import { parseSpec, SpecError } from '../spec/parse'
 import { isSelector, withSceneSelectors } from '../spec/selectors'
 import { readCamera } from '../camera'
 import { applyAutoStyle } from '../autoStyle'
+import { openTarget } from '../openTarget'
+import { colorByPlddt } from './colorCommands'
 import { warnIgnored } from './warn'
-
-/** A PDB id, alone or as `pdb:1abc` (`likely_pdb_id`: 4 characters, a leading digit). */
-const PDB_ID = /^(?:pdb:)?([0-9][A-Za-z0-9]{3})$/i
 
 /** The ribbon renderer a molecule is opened with, by the load itself. */
 const OPEN_CARTOON = { rendererType: 'ribbon', rendererName: CARTOONS[0].name, selection: CARTOONS[0].scope ?? 'protein' }
 
-/** Style each newly opened molecule as ChimeraX would (`autoStyle.ts`), and say its number. */
-async function adopt(ctx: WorkerContext, cc: CmdContext, before: Set<number>): Promise<CmdOutcome> {
+/**
+ * Style each newly opened molecule as ChimeraX would (`autoStyle.ts`), and say its number.
+ *
+ * @param plddt - colour the molecules by pLDDT after styling (an AlphaFold model)
+ */
+async function adopt(ctx: WorkerContext, cc: CmdContext, before: Set<number>, plddt = false): Promise<CmdOutcome> {
   const added = numberedObjects(ctx, cc.sceneId).filter((o) => !before.has(o.uid))
   for (const obj of added) {
     cc.print(`Opened ${obj.name} as #${obj.model}`)
     if (!isMolecule(obj)) continue
     const styled = await applyAutoStyle(ctx, cc, obj)
     if (!styled.ok) return styled
+    if (plddt) {
+      const colored = await colorByPlddt(ctx, cc, obj)
+      if (!colored.ok) return colored
+    }
   }
   return { ok: true }
 }
@@ -54,29 +63,48 @@ const open = chxCommand({
   args: [
     { name: 'names', type: FileNameArg, role: 'required' },
     { name: 'name', type: StringArg, role: 'keyword' },
-    { name: 'format', type: StringArg, role: 'keyword', ignored: true },
-    { name: 'fromDatabase', type: StringArg, role: 'keyword', ignored: true },
+    { name: 'format', type: StringArg, role: 'keyword' },
+    { name: 'fromDatabase', type: StringArg, role: 'keyword' },
   ],
   mutates: true,
-  summary: 'Open a file, a .cxc script, or a PDB id (fetched from the RCSB).',
+  summary: 'Open a file, a .cxc script, or fetch an entry: a PDB id, db:id (pdbe, pdbj, redo, alphafold, pubchem, emdb), or a URL.',
   completions: [{ source: 'files', description: 'file', files: 'openable' }],
   // A scene file replaces the scene: it cannot run inside the submission's transaction.
   outsideTxn: (args) => /\.qsc$/i.test(args.names ?? ''),
   async run(ctx, args, cc) {
-    warnIgnored(cc, 'open', args, ['format', 'fromDatabase'])
     const name = args.names
-    if (/\.cxc$/i.test(name)) return cc.runScript(name)
     const objectName = args.name === '' ? null : args.name
     const before = new Set(numberedObjects(ctx, cc.sceneId).map((o) => o.uid))
-    const path = resolvePath(cc.cwd, name)
-    const pdb = PDB_ID.exec(name)
-    if (pdb && !fs.existsSync(path)) {
-      const res = await runOp(ctx, cc, 'fetch_pdb', {
-        pdbId: pdb[1], format: 'mmcif', ...OPEN_CARTOON, name: objectName, preset: null, centerView: true,
-      })
-      if (!res.ok) return res
-      return adopt(ctx, cc, before)
+    const target = openTarget(name, args.fromDatabase, args.format, (n) => fs.existsSync(resolvePath(cc.cwd, n)))
+    switch (target.kind) {
+      case 'error':
+        return { ok: false, error: target.error }
+      case 'pdb': {
+        const res = await runOp(ctx, cc, 'fetch_pdb', {
+          pdbId: target.pdbId, format: target.format, ...OPEN_CARTOON, name: objectName, preset: null, centerView: true,
+        })
+        if (!res.ok) return res
+        return adopt(ctx, cc, before)
+      }
+      case 'url': {
+        if (target.source === 'url' && args.format !== '') cc.warn('open: format is not used for a URL (its extension says it)')
+        const res = await runOp(ctx, cc, 'fetch_url', {
+          url: target.spec.url, reader: target.spec.readerName, name: objectName ?? target.spec.name,
+          gzip: target.spec.gzip ? true : null, ...OPEN_CARTOON, preset: null, centerView: true,
+        })
+        if (!res.ok) return res
+        return adopt(ctx, cc, before, target.source === 'alphafold')
+      }
+      case 'emdb': {
+        if (args.format !== '') cc.warn('open: format is not used for an EMDB map')
+        const res = await runOp(ctx, cc, 'fetch_emdb', { id: target.id, name: objectName, source: target.mirror, level: null })
+        if (!res.ok) return res
+        return adopt(ctx, cc, before)
+      }
     }
+    warnIgnored(cc, 'open', args, ['format'])
+    if (/\.cxc$/i.test(name)) return cc.runScript(name)
+    const path = resolvePath(cc.cwd, name)
     if (/\.qsc$/i.test(path)) {
       return runOp(ctx, cc, 'load_file', {
         path, rendererType: null, selection: null, name: null, rendererName: null, preset: null, centerView: null, mapCenterPolicy: null,

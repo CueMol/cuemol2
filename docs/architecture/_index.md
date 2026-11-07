@@ -265,6 +265,10 @@ architecture, it belongs here.
   結晶 (2Fo-Fc / Fo-Fc) と cryo-EM (EMDB map) に出し分ける。map 種類の判定と推奨 contour level の
   規則 (Mol* 準拠)、照会失敗時の fallback、`streamLoadDensityMap` の em 経路 (`map_type` を renderer
   作成前に確定、推奨 level を絶対値で設定)、推奨 level が高すぎる map の既知の問題。
+- [データベースからの取得](database-fetch.md) (日本語) --
+  取得元の表 (`worker/shared/dbSources.ts`: PDB / PDBe / PDBj / PDB-REDO / AlphaFold / PubChem の URL・reader・
+  gzip・名前、URL の形式判定、EMDB ID の正規化)、`fetch_url` の `gzip`、ChX の `open` での使い方 (`db:id`、
+  `fromDatabase` とファイルの優先順位、AlphaFold の pLDDT の色、断る取得元)。
 - [Get PDB のキーワード検索](get-pdb-keyword-search.md) (日本語) --
   ID 欄にキーワードも入れ、RCSB Search API の全文検索から entry を選んで取得する。1 入力欄で ID /
   キーワードを自動判定する UI、Method の絞り込みとサーバー側の Sort、More による追加と件数表示、

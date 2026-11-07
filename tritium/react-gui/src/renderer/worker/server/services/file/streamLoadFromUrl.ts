@@ -23,6 +23,8 @@ export interface StreamLoadFromUrlArgs {
     objectName: string;     // pdbid (lowercased)
     sceneId: number;
     options: FileOpenOptions;
+    /** The body is gzip-compressed (a `.gz` file, or a server that always compresses). */
+    gzip?: boolean;
 }
 
 /** `{ objId }` on success; a cancel is `fail(..., 'canceled')`. */
@@ -76,7 +78,7 @@ function recordFetch(ctx: WorkerContext, sceneId: number, args: StreamLoadFromUr
         });
         return;
     }
-    recordOp(ctx, sceneId, 'fetch_url', { url: args.url, reader: args.readerName, name, ...renderer });
+    recordOp(ctx, sceneId, 'fetch_url', { url: args.url, reader: args.readerName, name, gzip: args.gzip ? true : null, ...renderer });
 }
 
 export async function streamLoadFromUrl(
@@ -93,6 +95,10 @@ export async function streamLoadFromUrl(
     // Wire the dialog's format-specific reader options before streaming, the
     // same way the local file-open path does (readerName is the nickname).
     applyReaderOptions(reader, args.readerName, args.options.format);
+    if (args.gzip) {
+        // compress is enum-typed in the wrapper but accepts strings at runtime.
+        (reader as unknown as { compress: string }).compress = 'gzip';
+    }
 
     let fetched: Awaited<ReturnType<typeof streamFetchToReader>>;
     try {
