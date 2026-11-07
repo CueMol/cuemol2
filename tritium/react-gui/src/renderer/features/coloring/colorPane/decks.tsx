@@ -212,10 +212,17 @@ export const RainbowDeck: React.FC<RainbowDeckProps> = ({ params, onCommit }) =>
 interface BfacDeckProps {
     params: BfacParams
     onCommit: (propName: string, value: string | number) => void
+    /**
+     * The multi-colour gradient part (its switch, and the gradient editor
+     * when on), drawn under Mode. While the gradient colours the atoms the
+     * two-colour fields below do nothing, so they are hidden.
+     */
+    gradient?: React.ReactNode
+    gradientActive?: boolean
 }
 
-/** Mirrors UXP `coloring-deck-bfac.xul`. */
-export const BfacDeck: React.FC<BfacDeckProps> = ({ params, onCommit }) => {
+/** Mirrors UXP `coloring-deck-bfac.xul`, plus the multi-colour gradient. */
+export const BfacDeck: React.FC<BfacDeckProps> = ({ params, onCommit, gradient, gradientActive = false }) => {
     const manual = params.autoMode === 'none'
     return (
         <div className="color-deck-scroll">
@@ -228,6 +235,8 @@ export const BfacDeck: React.FC<BfacDeckProps> = ({ params, onCommit }) => {
                 ]}
                 onCommit={(v) => onCommit('mode', v)}
             />
+            {gradient}
+            {!gradientActive && <>
             <Field label="Low" inline>
                 <ColorField value={params.lowColor} onCommit={(v) => onCommit('lowcol', v)} />
             </Field>
@@ -252,6 +261,7 @@ export const BfacDeck: React.FC<BfacDeckProps> = ({ params, onCommit }) => {
                 label="High" value={params.highParam} disabled={!manual}
                 onCommit={(v) => onCommit('highpar', v)}
             />
+            </>}
         </div>
     )
 }

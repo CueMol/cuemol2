@@ -43,7 +43,7 @@ import { MOVE_DEST_PARAMS, moveTarget, moveText } from '../moveDest'
 import { NO_MOLCOORD, NO_OBJECT, NO_RENDERER } from '../errors'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
-import { atoms, boolean, coloringTarget, enumOf, integer, objectId, optional, path, propPath, real, rendererId, selection, string } from '../params'
+import { atoms, boolean, coloringTarget, enumOf, integer, nodeId, objectId, optional, path, propPath, real, rendererId, selection, string } from '../params'
 import type { AtomSpec } from '../params'
 import { outputPath } from '../outputFile'
 import { atomList } from '../cmlFormat'
@@ -501,11 +501,16 @@ export const addPaintAt = defineOp({
 export const setMultiGradNodesOp = defineOp({
   name: 'set_multigrad_nodes',
   description:
-    'Set the whole gradient of a renderer coloured by multigrad: each node a map value and the ' +
-    'colour at it, as "value colour; value colour; ...".',
+    'Set a whole multi-colour gradient: each node a value and the colour at it, as ' +
+    '"value colour; value colour; ...". Either the gradient of a map or surface renderer coloured by ' +
+    'multigrad (the default), or, with gradient "coloring", that of a B-factor coloring (bfac mode; on a ' +
+    'renderer, or with nodeType "object" on an object), whose values are B-factors (pLDDT for an ' +
+    'AlphaFold model). An empty nodes clears the gradient (a B-factor coloring then uses its two colours).',
   params: {
-    rendId: rendererId('Uid of the map or surface renderer coloured by multigrad.'),
-    nodes: string('The nodes, e.g. "-1 blue; 0 white; 1 red".'),
+    rendId: nodeId('Uid of the renderer, or of the object when nodeType is "object".', 'nodeType'),
+    nodes: string('The nodes, e.g. "-1 blue; 0 white; 1 red". Empty clears the gradient.'),
+    nodeType: optional(enumOf(['renderer', 'object'], 'What rendId refers to. Null is a renderer.')),
+    gradient: optional(enumOf(['renderer', 'coloring'], 'Which gradient: the renderer\'s own (map / surface colouring), or its B-factor coloring\'s. Null is the renderer\'s own.')),
   },
   mutates: true,
   describe: (_a, n) => `Set the gradient of ${n('rendId')}`,
@@ -515,7 +520,10 @@ export const setMultiGradNodesOp = defineOp({
   run(ctx, args, oc) {
     const nodes = parseMultiGradNodes(args.nodes)
     if ('error' in nodes) return { ok: false, error: `nodes: ${nodes.error}` }
-    const res = setMultiGradNodes(ctx, { sceneId: oc.sceneId, rendId: args.rendId, nodes })
+    const res = setMultiGradNodes(ctx, {
+      sceneId: oc.sceneId, rendId: args.rendId, nodes,
+      targetKind: args.nodeType ?? 'renderer', gradient: args.gradient ?? 'renderer',
+    })
     return res.ok ? { ok: true } : { ok: false, error: `The gradient could not be set: ${res.error}` }
   },
 })

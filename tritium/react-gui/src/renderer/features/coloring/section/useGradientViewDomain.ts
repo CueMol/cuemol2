@@ -30,6 +30,10 @@ export interface UseGradientViewDomainOptions {
     cm: AsyncCueMol | null;
     sceneId: number | undefined;
     rendId: number | null;
+    /** What `rendId` names: a renderer (default) or an object. */
+    targetKind?: 'renderer' | 'object';
+    /** Which gradient: the renderer's own (default) or its B-factor coloring's. */
+    gradient?: 'renderer' | 'coloring';
     state: GetMultiGradStateResult | null;
     canonicalStops: MultiGradStop[];
     /** Non-null while a drag is previewing; freezes the axis. */
@@ -39,7 +43,7 @@ export interface UseGradientViewDomainOptions {
 }
 
 export function useGradientViewDomain({
-    cm, sceneId, rendId, state, canonicalStops, previewStops, stripWidth,
+    cm, sceneId, rendId, targetKind, gradient, state, canonicalStops, previewStops, stripWidth,
 }: UseGradientViewDomainOptions) {
     // User zoom / pan; null means "follow the fit domain".
     const [viewOverride, setViewOverride] = useState<ValueDomain | null>(null);
@@ -113,6 +117,8 @@ export function useGradientViewDomain({
         cm,
         sceneId,
         rendId,
+        targetKind,
+        gradient,
         domain: viewDomain,
         widthPx: stripWidth,
         minBinWidth,

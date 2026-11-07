@@ -59,9 +59,13 @@ void LScrObjBase::setupParentData(const LString &propname)
   LScrObjBase *pNewPropCon = static_cast<LScrObjBase *>(pNewObjVal);
 
   pNewPropCon->m_rootuid = getRootUID();
-  pNewPropCon->m_thisname = m_thisname.str() + propname;
+  // A nested name is a dotted path from the root (`coloring.multi_grad`), as
+  // NestedPropHandler (undo) and StyleSheet::resolve3 read it.
+  const LString &parent = m_thisname.str();
+  pNewPropCon->m_thisname = parent.isEmpty() ? propname : parent + "." + propname;
 
-  // TO DO: travarse into the child properties of pNewPropCon
+  // Let the child pass the root and name on to its own object properties.
+  pNewPropCon->parentDataChanged();
 }
 
 

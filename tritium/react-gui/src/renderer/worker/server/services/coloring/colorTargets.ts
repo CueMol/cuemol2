@@ -17,7 +17,7 @@ import type { MultiGradient } from '@cuemol/core/src/wrappers/MultiGradient';
 import type { Scene } from '@cuemol/core/src/wrappers/Scene';
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext';
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
-import type { ColoringTargetKind } from './types';
+import type { ColoringTargetKind, MultiGradSource } from './types';
 
 /**
  * Resolve a coloring target (object or renderer) to a single wrapper that
@@ -225,6 +225,42 @@ export function getMultiGradOrNull(rend: Renderer): MultiGradient | null {
     } catch {
         return null;
     }
+}
+
+/**
+ * The gradient a multi-gradient call edits, and the node it hangs on.
+ *
+ * Chosen by what the caller says, never by which property happens to exist:
+ * a surface renderer has its own `multi_grad` (map / potential colouring) and
+ * a `coloring` that may be a `BfacColoring` with another one, so picking the
+ * first that exists would write a B-factor edit into the map gradient.
+ *
+ * @returns the host (renderer or object) and its gradient, or why there is none
+ */
+export function resolveMultiGrad(
+    scene: Scene,
+    args: { rendId: number; targetKind?: ColoringTargetKind; gradient?: MultiGradSource },
+): { host: Renderer; mg: MultiGradient } | { error: string; code: 'not-found' | 'unsupported' | 'invalid-args' } {
+    const host = resolveColoringTarget(scene, args.targetKind, args.rendId);
+    if (!host) return { error: `${args.targetKind ?? 'renderer'} not found`, code: 'not-found' };
+    if (args.gradient === 'coloring') {
+        let coloring: ColoringScheme | null = null;
+        try {
+            coloring = (host as unknown as { coloring: ColoringScheme | null }).coloring;
+        } catch {
+            coloring = null;
+        }
+        if (!coloring || coloring.getClassName() !== 'BfacColoring') {
+            return { error: 'its coloring is not a B-factor coloring (BfacColoring)', code: 'unsupported' };
+        }
+        const mg = (coloring as unknown as { multi_grad?: MultiGradient }).multi_grad;
+        return mg ? { host, mg } : { error: 'its coloring has no gradient', code: 'unsupported' };
+    }
+    if (args.targetKind === 'object') {
+        return { error: 'an object has no gradient of its own; give gradient "coloring"', code: 'invalid-args' };
+    }
+    const mg = getMultiGradOrNull(host);
+    return mg ? { host, mg } : { error: 'renderer has no multi-gradient coloring', code: 'unsupported' };
 }
 
 /** Renderers eligible for the Multi-gradient deck. */

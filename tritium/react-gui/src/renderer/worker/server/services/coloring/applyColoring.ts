@@ -90,10 +90,17 @@ function forceMoleculeColormode(scene: Scene, rend: Renderer): void {
 }
 
 /**
+ * The colouring styles in a renderer's style list: Paint ones (`*Paint`) and
+ * the others (`*Coloring`: CPK, pLDDT). A renderer has one colouring, so a
+ * new one replaces all of them.
+ */
+const COLORING_STYLE_RE = /(Paint|Coloring)$/;
+
+/**
  * Apply a `style-XXX` coloring style.
  *
  * Steps mirror UXP:
- *   1. strip existing `*Paint$` entries from rend.style,
+ *   1. strip existing colouring styles (`*Paint$`, `*Coloring$`) from rend.style,
  *   2. push the new style name,
  *   3. on molsurf / isosurf, force colormode = "molecule" (the surface
  *      ignores coloring when colormode != "molecule"),
@@ -102,12 +109,27 @@ function forceMoleculeColormode(scene: Scene, rend: Renderer): void {
  */
 function applyStyleColoring(scene: Scene, rend: Renderer, styleName: string): void {
     const curStyle = rend.style ?? '';
-    const stripped = styleRemove(curStyle, /Paint$/);
+    const stripped = styleRemove(curStyle, COLORING_STYLE_RE);
     const newStyle = stylePush(stripped, styleName);
 
     forceMoleculeColormode(scene, rend);
     rend.resetProp('coloring');
     rend.applyStyles(newStyle);
+}
+
+/**
+ * Colour every renderer of `obj` that has a colouring with `styleName` (the
+ * same steps as the Coloring submenu's styles). Run inside the caller's undo
+ * transaction; records nothing (the caller's op stands for it).
+ */
+export function applyColoringStyleToObject(scene: Scene, obj: unknown, styleName: string): void {
+    const o = obj as { getRendCount?: () => number; getRendererByIndex?: (i: number) => Renderer | null };
+    if (typeof o.getRendCount !== 'function' || typeof o.getRendererByIndex !== 'function') return;
+    const n = o.getRendCount();
+    for (let i = 0; i < n; i++) {
+        const rend = o.getRendererByIndex(i);
+        if (rend && getColoringClassName(rend) !== '') applyStyleColoring(scene, rend, styleName);
+    }
 }
 
 /**

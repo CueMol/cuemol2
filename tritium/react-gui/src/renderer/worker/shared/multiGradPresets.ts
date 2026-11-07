@@ -7,7 +7,7 @@
  */
 
 /** Preset identifiers, matching the UXP menu values. */
-export type MultiGradPresetId = 'rainbow1' | 'resmap1' | 'heatmap1';
+export type MultiGradPresetId = 'rainbow1' | 'resmap1' | 'heatmap1' | 'plddt';
 
 /** Density statistics of the color-map object. */
 export interface MapStats {
@@ -31,6 +31,27 @@ export const MULTIGRAD_PRESETS: { id: MultiGradPresetId; label: string }[] = [
 ];
 
 /**
+ * Presets over fixed values, for a B-factor coloring only: the values mean
+ * the same in every molecule, so the range is not used.
+ */
+export const BFAC_MULTIGRAD_PRESETS: { id: MultiGradPresetId; label: string }[] = [
+  { id: 'plddt', label: 'AlphaFold pLDDT' },
+];
+
+/**
+ * ChimeraX's `alphafold` colormap (core/colors.py) over pLDDT, which an
+ * AlphaFold model holds in its B-factors; the same nodes as the
+ * `AlphaFoldPlddtColoring` style in data/cuemol3_style.xml.
+ */
+export const PLDDT_NODES: readonly GradNode[] = [
+  { value: 0, color: '#FF0000' },
+  { value: 50, color: '#FFA500' },
+  { value: 70, color: '#FFFF00' },
+  { value: 90, color: '#6495ED' },
+  { value: 100, color: '#0000FF' },
+];
+
+/**
  * Build the node list for a preset over the map's [min, max] range.
  * Ported 1:1 from UXP multigrad_editor.js onPresetSel.
  *
@@ -41,6 +62,7 @@ export function buildPresetNodes(
   preset: MultiGradPresetId,
   stats: Pick<MapStats, 'min' | 'max'>,
 ): GradNode[] | null {
+  if (preset === 'plddt') return PLDDT_NODES.map((n) => ({ ...n }));
   const dmin = stats.min;
   const dmax = stats.max;
   if (!(dmax - dmin >= 0.001)) return null;
@@ -78,5 +100,7 @@ export function buildPresetNodes(
         { value: dmax, color: 'White' },
       ];
     }
+    default:
+      return null;
   }
 }

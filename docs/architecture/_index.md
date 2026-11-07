@@ -265,6 +265,9 @@ architecture, it belongs here.
   結晶 (2Fo-Fc / Fo-Fc) と cryo-EM (EMDB map) に出し分ける。map 種類の判定と推奨 contour level の
   規則 (Mol* 準拠)、照会失敗時の fallback、`streamLoadDensityMap` の em 経路 (`map_type` を renderer
   作成前に確定、推奨 level を絶対値で設定)、推奨 level が高すぎる map の既知の問題。
+- [B-factor の多色グラデーション](bfac-multigradient.md) (日本語) --
+  `BfacColoring` の `multi_grad` (`MultiGradient`。node が 2 つ以上なら絶対値のグラデーション、無ければ従来の 2 色)、
+  2 段の入れ子の通知のための `setupParentData` の `.` 区切りの名前と `parentDataChanged()`。
 - [データベースからの取得](database-fetch.md) (日本語) --
   取得元の表 (`worker/shared/dbSources.ts`: PDB / PDBe / PDBj / PDB-REDO / AlphaFold / PubChem の URL・reader・
   gzip・名前、URL の形式判定、EMDB ID の正規化)、`fetch_url` の `gzip`、ChX の `open` での使い方 (`db:id`、

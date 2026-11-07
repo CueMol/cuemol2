@@ -127,4 +127,20 @@
   <color id="tableau10_9" value="#9C755F"/>
   <color id="tableau10_10" value="#BAB0AC"/>
 
+  <!-- AlphaFold confidence: the B-factor column of an AlphaFold model holds
+       pLDDT (0-100), coloured along ChimeraX's "alphafold" colormap
+       (core/colors.py): 0 red, 50 orange, 70 yellow, 90 cornflowerblue,
+       100 blue, interpolated in between. -->
+  <style id="AlphaFoldPlddtColoring" type="renderer" desc="AlphaFold pLDDT">
+    <coloring type="BfacColoring" mode="bfac" auto="none">
+      <multi_grad>
+        <gradnode par="0" col="#FF0000"/>
+        <gradnode par="50" col="#FFA500"/>
+        <gradnode par="70" col="#FFFF00"/>
+        <gradnode par="90" col="#6495ED"/>
+        <gradnode par="100" col="#0000FF"/>
+      </multi_grad>
+    </coloring>
+  </style>
+
 </styles>

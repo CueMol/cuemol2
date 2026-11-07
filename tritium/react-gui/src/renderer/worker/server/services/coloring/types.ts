@@ -474,9 +474,20 @@ export interface MultiGradPercentiles {
     hi: number;
 }
 
+/** Which gradient a multi-gradient call is about (see `resolveMultiGrad`). */
+export type MultiGradSource = 'renderer' | 'coloring';
+
 export interface GetMultiGradStateArgs {
     sceneId: number;
     rendId: number;
+    /** What `rendId` names: a renderer (default) or an object (its own coloring). */
+    targetKind?: ColoringTargetKind;
+    /**
+     * Which gradient: the renderer's own `multi_grad` (map / surface colouring,
+     * default) or its coloring's (`BfacColoring.multi_grad`). A surface renderer
+     * has both, so the caller says which.
+     */
+    gradient?: MultiGradSource;
 }
 
 export interface GetMultiGradStateResult {
@@ -508,6 +519,14 @@ export interface GetMultiGradStateResult {
 export interface GetMultiGradHistogramArgs {
     sceneId: number;
     rendId: number;
+    /** What `rendId` names: a renderer (default) or an object (its own coloring). */
+    targetKind?: ColoringTargetKind;
+    /**
+     * Which gradient: the renderer's own `multi_grad` (map / surface colouring,
+     * default) or its coloring's (`BfacColoring.multi_grad`). A surface renderer
+     * has both, so the caller says which.
+     */
+    gradient?: MultiGradSource;
     /** Histogram domain lower bound (density units). */
     min: number;
     /** Histogram domain upper bound. */
@@ -535,6 +554,14 @@ export interface GetMultiGradHistogramResult {
 export interface SetMultiGradNodesArgs {
     sceneId: number;
     rendId: number;
+    /** What `rendId` names: a renderer (default) or an object (its own coloring). */
+    targetKind?: ColoringTargetKind;
+    /**
+     * Which gradient: the renderer's own `multi_grad` (map / surface colouring,
+     * default) or its coloring's (`BfacColoring.multi_grad`). A surface renderer
+     * has both, so the caller says which.
+     */
+    gradient?: MultiGradSource;
     /** Full replacement node set. */
     nodes: MultiGradWriteNode[];
     /**

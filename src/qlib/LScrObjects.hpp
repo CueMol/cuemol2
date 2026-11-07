@@ -81,6 +81,13 @@ namespace qlib {
     bool removePropListener(LPropEventListener *pL);
     void setupParentData(const LString &propname);
 
+  protected:
+    /// Called on a property object when setupParentData() has just given it
+    /// its root uid and name, so that it can pass them on to object
+    /// properties of its own (its children were set up before it had them).
+    /// The default does nothing.
+    virtual void parentDataChanged() {}
+
   };
 
   ////////////////////////////////////////

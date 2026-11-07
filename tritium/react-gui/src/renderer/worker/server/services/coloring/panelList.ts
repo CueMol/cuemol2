@@ -76,12 +76,18 @@ export function getPaintColoringStyles(
 const CPK_COLORING_STYLES: readonly string[] = ['DefaultCPKColoring', 'DarkCPKColoring', 'LightCPKColoring'];
 
 /**
+ * The B-factor gradient style an AlphaFold model is coloured with (pLDDT,
+ * ChimeraX's colormap; `data/cuemol3_style.xml`).
+ */
+export const PLDDT_COLORING_STYLE = 'AlphaFoldPlddtColoring';
+
+/**
  * Every colouring style name a renderer can be given by name: the Paint
- * styles and the CPK ones, as the Coloring submenu offers them.
+ * styles, the CPK ones (as the Coloring submenu offers them) and the pLDDT one.
  */
 export function coloringStyleNames(ctx: WorkerContext, sceneId: number): string[] {
     const paint = getPaintColoringStyles(ctx, { sceneId });
-    return [...(paint.ok ? paint.entries.map((e) => e.name) : []), ...CPK_COLORING_STYLES];
+    return [...(paint.ok ? paint.entries.map((e) => e.name) : []), ...CPK_COLORING_STYLES, PLDDT_COLORING_STYLE];
 }
 
 /**

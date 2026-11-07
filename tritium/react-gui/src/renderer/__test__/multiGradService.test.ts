@@ -10,13 +10,18 @@
  *     returned JSON ignored.
  *   - setRendererColoring 'paint-type-multigrad': color_mapname default +
  *     colormode string write + empty-gradient heatmap seed, one txn.
+ *   - which gradient a call edits (`gradient`, `targetKind`): a surface has
+ *     its own and its B-factor coloring's, and they must not be mixed up;
+ *     an empty node list round-trips through the recorded op text.
+ *   - the editor refetches on the nested `coloring.multi_grad` event.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 
 import { services } from '@renderer/worker/server/services/coloring/coloring.service'
-import { histogramPercentileRange } from '@renderer/worker/server/services/coloring/multiGrad'
+import { histogramPercentileRange, multiGradNodesText, parseMultiGradNodes } from '@renderer/worker/server/services/coloring/multiGrad'
+import { shouldRefetchMultiGrad } from '@renderer/features/coloring/useMultiGradState'
 
 const {
     getMultiGradState,
@@ -488,5 +493,61 @@ describe("setRendererColoring 'paint-type-multigrad'", () => {
         })
         expect(res.ok).toBe(false)
         expect(scene.startUndoTxn).not.toHaveBeenCalled()
+    })
+})
+
+// --- Which gradient: the renderer's own or its B-factor coloring's ---
+
+describe('setMultiGradNodes target', () => {
+    /** A surface-like renderer with both gradients, its coloring a BfacColoring. */
+    function surfaceWithBfac() {
+        const own = { setNodesJSON: vi.fn(), getNodesJSON: vi.fn(() => '[]') }
+        const bfac = { setNodesJSON: vi.fn(), getNodesJSON: vi.fn(() => '[]') }
+        const coloring = { getClassName: () => 'BfacColoring', multi_grad: bfac }
+        return { rend: { multi_grad: own, coloring, getClientObj: vi.fn(() => null) }, own, bfac, coloring }
+    }
+
+    it('writes the gradient the caller names, never the other one, for a renderer or an object', () => {
+        const scene = makeUndoScene(100)
+        const s1 = surfaceWithBfac()
+        scene.getRenderer = vi.fn(() => s1.rend)
+        expect(setMultiGradNodes(makeCtx(scene), { sceneId: 100, rendId: 1, nodes: NODES, gradient: 'coloring' }).ok).toBe(true)
+        expect(s1.bfac.setNodesJSON).toHaveBeenCalledTimes(1)
+        expect(s1.own.setNodesJSON).not.toHaveBeenCalled()
+
+        expect(setMultiGradNodes(makeCtx(scene), { sceneId: 100, rendId: 1, nodes: NODES }).ok).toBe(true)
+        expect(s1.own.setNodesJSON).toHaveBeenCalledTimes(1)
+        expect(s1.bfac.setNodesJSON).toHaveBeenCalledTimes(1)
+
+        // An object's own coloring.
+        const s2 = surfaceWithBfac()
+        scene.getObject = vi.fn(() => ({ coloring: s2.coloring }))
+        expect(setMultiGradNodes(makeCtx(scene), {
+            sceneId: 100, rendId: 7, nodes: NODES, targetKind: 'object', gradient: 'coloring',
+        }).ok).toBe(true)
+        expect(scene.getObject).toHaveBeenCalledWith(7)
+        expect(s2.bfac.setNodesJSON).toHaveBeenCalledTimes(1)
+
+        // A coloring that is not a B-factor one is refused, not written elsewhere.
+        scene.getRenderer = vi.fn(() => ({ ...s1.rend, coloring: { getClassName: () => 'CPKColoring' } }))
+        const res = setMultiGradNodes(makeCtx(scene), { sceneId: 100, rendId: 1, nodes: NODES, gradient: 'coloring' })
+        expect(res.ok).toBe(false)
+        expect(s1.own.setNodesJSON).toHaveBeenCalledTimes(1)
+    })
+
+    it('an empty node list (back to the two colours) is recorded as text the op reads back', () => {
+        expect(multiGradNodesText([])).toBe('')
+        expect(parseMultiGradNodes('')).toEqual([])
+        expect(parseMultiGradNodes(multiGradNodesText(NODES))).toEqual(NODES)
+    })
+})
+
+describe('shouldRefetchMultiGrad', () => {
+    it("refetches on a B-factor coloring's nested gradient event and a new coloring", () => {
+        const ev = (propname: string) => ({ obj: { propname } })
+        expect(shouldRefetchMultiGrad(ev('coloring.multi_grad'))).toBe(true)
+        expect(shouldRefetchMultiGrad(ev('coloring'))).toBe(true)
+        expect(shouldRefetchMultiGrad(ev('multi_grad'))).toBe(true)
+        expect(shouldRefetchMultiGrad(ev('width'))).toBe(false)
     })
 })

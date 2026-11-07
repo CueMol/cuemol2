@@ -34,6 +34,10 @@ export interface UseMultiGradHistogramOptions {
     cm: AsyncCueMol | null
     sceneId: number | undefined
     rendId: number | null
+    /** What `rendId` names: a renderer (default) or an object. */
+    targetKind?: 'renderer' | 'object'
+    /** Which gradient: the renderer's own (default) or its B-factor coloring's. */
+    gradient?: 'renderer' | 'coloring'
     /** View domain; null when there is nothing to show. */
     domain: { min: number; max: number } | null
     /** Measured strip width in CSS px; 0/undefined -> default bin count. */
@@ -58,6 +62,8 @@ export function useMultiGradHistogram({
     cm,
     sceneId,
     rendId,
+    targetKind = 'renderer',
+    gradient = 'renderer',
     domain,
     widthPx,
     minBinWidth = 0,
@@ -89,7 +95,7 @@ export function useMultiGradHistogram({
         const token = guard.next()
         const timer = setTimeout(() => {
             cm.invokeService('getMultiGradHistogram', {
-                sceneId, rendId,
+                sceneId, rendId, targetKind, gradient,
                 min: grid.min, max: grid.max, nbins: grid.nbins,
             })
                 .then((res) => {
@@ -111,7 +117,7 @@ export function useMultiGradHistogram({
                 })
         }, DOMAIN_DEBOUNCE_MS)
         return () => clearTimeout(timer)
-    }, [cm, enabled, paused, sceneId, rendId,
+    }, [cm, enabled, paused, sceneId, rendId, targetKind, gradient,
         grid?.min, grid?.max, grid?.nbins, guard])
 
     return histogram

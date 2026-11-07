@@ -4,6 +4,7 @@
 //
 
 #include "ColoringScheme.qif"
+#include <qsys/MultiGradient.qif>
 
 runtime_class BfacColoring extends ColoringScheme
 {
@@ -43,5 +44,9 @@ runtime_class BfacColoring extends ColoringScheme
 
   property real highpar => m_parHigh;
   default highpar = 80.0;
+
+  /// Multi-colour gradient over the parameter (absolute values). Two nodes or
+  /// more colour the atoms by it; fewer leave the lowcol / highcol ramp.
+  property object<MultiGradient$> multi_grad => redirect(getMultiGrad, xxx) (readonly);
 };
 
