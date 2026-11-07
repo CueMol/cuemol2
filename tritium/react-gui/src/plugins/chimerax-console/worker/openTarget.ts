@@ -10,10 +10,11 @@
  *
  * Where each database's files are is core's (`worker/shared/dbSources.ts`);
  * this file only reads ChimeraX's words for them and refuses the ones the
- * console cannot open, saying why.
+ * console cannot open, saying why. `eds` (PDBe's 2Fo-Fc map of a PDB entry)
+ * is opened by its URL, as a map at a URL is.
  */
 
-import { emdbAccession, mapUrlFetch, STRUCTURE_SOURCES, structureFetch, urlFetch } from '@renderer/worker/shared/dbSources'
+import { edsMapFetch, emdbAccession, mapUrlFetch, STRUCTURE_SOURCES, structureFetch, urlFetch } from '@renderer/worker/shared/dbSources'
 import type { MapUrlSpec, StructureFetchSpec, StructureFormat, StructureSource } from '@renderer/worker/shared/dbSources'
 import { PDB_ID_RE, type EmdbServerType } from '@renderer/worker/shared/pdbUrls'
 
@@ -65,10 +66,15 @@ function fetchFrom(db: string, id: string, format: StructureFormat | null | 'oth
     const acc = emdbAccession(id)
     return acc ? { kind: 'emdb', id: acc, mirror } : { kind: 'error', error: `Error: open: "${id}" is not an EMDB id (1080, EMD-1080)` }
   }
+  if (db === 'eds') {
+    // The PDBe 2Fo-Fc map file ChimeraX opens (`map/eds_fetch.py`), read as it is.
+    const spec = edsMapFetch(id)
+    return spec ? { kind: 'mapUrl', spec } : { kind: 'error', error: `Error: open: "${id}" is not a PDB id` }
+  }
   const refused = REFUSED[db]
   if (refused) return { kind: 'error', error: `Error: open: ${db} is not supported (${refused})` }
   if (!(STRUCTURE_SOURCES as readonly string[]).includes(db)) {
-    const known = [...STRUCTURE_SOURCES, ...Object.keys(EMDB_MIRRORS)].join(', ')
+    const known = [...STRUCTURE_SOURCES, ...Object.keys(EMDB_MIRRORS), 'eds'].join(', ')
     return { kind: 'error', error: `Error: open: unknown database "${db}" (${known})` }
   }
   if (format === 'other') return { kind: 'error', error: `Error: open: ${db} serves pdb or mmcif; give one of them as the format` }

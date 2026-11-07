@@ -57,6 +57,17 @@ export interface ArgType {
    * specification, and `red` goes on to the colour.
    */
   mayBeEmpty?: boolean
+  /**
+   * The argument takes values of this type until a keyword (cli.py
+   * `OpenFileNamesArg`: `open 7kkj 7kkl name x`). The values are handed on
+   * joined by `\n` (`splitRepeated`).
+   */
+  repeats?: boolean
+}
+
+/** The values of a repeating argument (`ArgType.repeats`); none for ''. */
+export function splitRepeated(value: string): string[] {
+  return value === '' ? [] : value.split('\n')
 }
 
 const trimStart = (s: string) => s.replace(/^\s+/, '')
@@ -67,6 +78,17 @@ export const StringArg: ArgType = {
   parse(text) {
     const t = nextToken(text)
     return t ? { value: t.quoted ? unescape(t.value) : t.value, rest: t.rest } : null
+  },
+}
+
+/** File names up to a keyword (cli.py `OpenFileNamesArg`), each as `FileNameArg` reads it. */
+export const FileNamesArg: ArgType = {
+  name: 'file names',
+  isPath: true,
+  repeats: true,
+  parse(text) {
+    const t = nextToken(text)
+    return t ? { value: t.value, rest: t.rest } : null
   },
 }
 
@@ -208,7 +230,28 @@ export const SpecArg: ArgType = {
   },
 }
 
-/** Comma-separated values of one type, given as one argument (`a,b,c`, spaces allowed after commas). */
+/** The index of the first `sep` outside quotes, or -1. */
+function separatorAt(text: string, sep: string): number {
+  let quote: string | null = null
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (quote) {
+      if (c === quote) quote = null
+    } else if (c === '"' || c === "'") {
+      quote = c
+    } else if (c === sep) {
+      return i
+    }
+  }
+  return -1
+}
+
+/**
+ * Comma-separated values of one type, given as one argument (`a,b,c`, spaces
+ * allowed after commas). As cli.py `Aggregate.parse`, each value is read from
+ * the text up to the next comma only, so a type reading a whole word
+ * (`EnumOf`) does not take `atoms,ribbon` as one value.
+ */
 export function ListOf(type: ArgType): ArgType {
   return {
     name: `a list of ${type.name}`,
@@ -217,11 +260,21 @@ export function ListOf(type: ArgType): ArgType {
       const values: string[] = []
       let rest = text
       for (;;) {
-        const r = type.parse(rest)
+        const i = separatorAt(rest, ',')
+        if (i < 0) {
+          const r = type.parse(rest)
+          if (!r) return null
+          values.push(r.value)
+          return { value: values.join(','), rest: r.rest }
+        }
+        const r = type.parse(rest.slice(0, i))
         if (!r) return null
         values.push(r.value)
-        if (!r.rest.startsWith(',')) return { value: values.join(','), rest: r.rest }
-        rest = trimStart(r.rest.slice(1))
+        if (r.rest.trim() !== '') {
+          // A later comma belongs to another argument: stop after this value.
+          return { value: values.join(','), rest: trimStart(r.rest + rest.slice(i)) }
+        }
+        rest = trimStart(rest.slice(i + 1))
       }
     },
   }

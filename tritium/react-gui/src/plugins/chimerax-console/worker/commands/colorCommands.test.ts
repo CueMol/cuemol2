@@ -7,6 +7,9 @@
  * coloured again (a long table made colouring and drawing slow). A colour
  * over part of the molecule, or one that leaves carbons alone, must keep
  * the entries under it.
+ *
+ * `color bfactor` takes one value range over every atom named, in every
+ * model: a range per model would give one value two colours.
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -18,6 +21,8 @@ const { state } = vi.hoisted(() => ({
     ops: [] as { name: string; args: Record<string, unknown> }[],
     /** What the specification means in the molecule. */
     sel: '*',
+    /** The B-factors of each molecule's atoms; two molecules when set. */
+    bfac: null as Record<number, number[]> | null,
   },
 }))
 
@@ -33,7 +38,13 @@ vi.mock('../display', async (importOriginal) => ({
   ensurePaint: async () => ({ ok: true }),
   // Every renderer already has entries from an earlier colour.
   paintCount: () => 3,
-  targetsOf: () => ({ ok: true, targets: [{ obj: { uid: 10, model: 1, name: 'm', className: 'MolCoord' }, sel: state.sel }] }),
+  targetsOf: () => ({
+    ok: true,
+    targets: (state.bfac ? [10, 20] : [10]).map((uid) => ({ obj: { uid, model: uid, name: 'm', className: 'MolCoord' }, sel: state.sel })),
+  }),
+  forEachAtom: (_ctx: unknown, _s: number, uid: number, _expr: string, visit: (a: { bfac: number; occ: number }) => void) => {
+    for (const b of state.bfac?.[uid] ?? []) visit({ bfac: b, occ: 1 })
+  },
 }))
 vi.mock('../surface', () => ({ surfacesOn: () => [] }))
 
@@ -54,6 +65,7 @@ async function color(given: Record<string, string>): Promise<string[]> {
 beforeEach(() => {
   state.ops.length = 0
   state.sel = '*'
+  state.bfac = null
 })
 
 describe('color', () => {
@@ -67,5 +79,24 @@ describe('color', () => {
     state.ops.length = 0
     state.sel = 'chain A'
     expect(await color({ objects: '/A', color: 'red', target: 'a' })).toEqual(['add_paint_at 1', 'add_paint_at 2', 'add_paint_at 3'])
+  })
+})
+
+describe('color bfactor', () => {
+  it('spreads the palette over one range of every atom named, in every model', async () => {
+    state.bfac = { 10: [10, 20], 20: [30, 40] }
+    const cmd = COLOR_COMMANDS.colorBfactor
+    const res = await cmd.run(ctx, Object.fromEntries(cmd.args.map((a) => [a.name, a.name === 'target' ? 'a' : ''])), cc)
+    expect(res.ok).toBe(true)
+    // The stick renderer of each model: the lowest value blue, the steps from 10 up to 40.
+    const entries = (uid: number) => state.ops
+      .filter((o) => o.name === 'add_paint_at' && o.args.nodeId === 1)
+      .slice(uid === 10 ? 0 : 51, uid === 10 ? 51 : 102)
+      .map((o) => [o.args.selection, o.args.color])
+    for (const uid of [10, 20]) {
+      expect(entries(uid)[0]).toEqual(['*', '#0000ff'])
+      expect(entries(uid)[1][0]).toBe('bfac > 10')
+      expect(entries(uid)[50]).toEqual(['bfac > 39.4', '#ff0505'])
+    }
   })
 })

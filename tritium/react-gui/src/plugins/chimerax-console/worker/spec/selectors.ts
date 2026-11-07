@@ -47,6 +47,12 @@ const KNOWN_ONLY = new Set([
 export const CURRENT_SELECTION = 'sel'
 
 /**
+ * The selected atoms, or every atom when nothing is selected in the scene
+ * (`selAtoms`, ChimeraX `shortcuts.py`).
+ */
+export const SELECTED_OR_ALL = 'selAtoms'
+
+/**
  * The scene's named selections, which are selectors too while a line is
  * read (`withSceneSelectors`): a name `name` defined is used as `site`.
  */
@@ -68,12 +74,12 @@ export function withSceneSelectors<T>(names: ReadonlySet<string>, f: () => T): T
 
 /** Whether `name` is a selector (an element symbol, `sel`, a named selection of the scene included). */
 export function isSelector(name: string): boolean {
-  return name in TRANSLATED || KNOWN_ONLY.has(name) || name in ELEMENT_COLORS || name === CURRENT_SELECTION || sceneNames.has(name)
+  return name in TRANSLATED || KNOWN_ONLY.has(name) || name in ELEMENT_COLORS || name === CURRENT_SELECTION || name === SELECTED_OR_ALL || sceneNames.has(name)
 }
 
 /** Every selector name, for Tab. */
 export function selectorNames(): string[] {
-  return [...Object.keys(TRANSLATED), CURRENT_SELECTION, ...sceneNames, ...Object.keys(ELEMENT_COLORS)]
+  return [...Object.keys(TRANSLATED), CURRENT_SELECTION, SELECTED_OR_ALL, ...sceneNames, ...Object.keys(ELEMENT_COLORS)]
 }
 
 /** The CueMol expression of a selector, or null when it is not supported yet. */

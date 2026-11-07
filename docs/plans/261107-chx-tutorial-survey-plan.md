@@ -1,9 +1,9 @@
 # ChX console: ChimeraX の tutorial に基づく調査と、後で検討するもの
 
 ChimeraX の公式 tutorial で実際に打たれているコマンドを集め、ChX console に流して、何が通り、何が足りないかを
-調べた記録。足りないもののうち、既存のコマンドの書き方の対応 (提案 A) は
-[261107-chx-tutorial-syntax-plan.md](261107-chx-tutorial-syntax-plan.md) で進める。ここに残すのはそれ以外
-(新しいコマンド、CueMol 側の機能追加が要るもの、断るもの、共通の対策) で、別途検討する。
+調べた記録。足りないもののうち、既存のコマンドの書き方の対応 (提案 A) は実装済み (仕様は
+[console-chimerax-dialect](../architecture/console-chimerax-dialect.md))。ここに残すのはそれ以外 (新しいコマンド、
+CueMol 側の機能追加が要るもの、断るもの、共通の対策) で、別途検討する。
 
 関連: [261103-chimerax-console-plan.md](261103-chimerax-console-plan.md) (lighting・windowsize・clip など、CueMol 側の
 機能追加が先に要るものを既に挙げている)。
@@ -21,6 +21,7 @@ ChimeraX の公式 tutorial で実際に打たれているコマンドを集め�
   「動いた / 知らないコマンド / エラー / 一部を無視 / 断った」に分けた。手元のファイルが前提の行 (`~/...`、
   `cd browse` など) は除いた。
 - 結果 (845 行、PR #733 の修正後): 動いた 410、知らないコマンド 257、エラー 112、一部を無視・断った 44、除外 22。
+  提案 A の実装後: 動いた 453、知らないコマンド 250、エラー 54、一部を無視・断った 66、除外 22。
   エラーには、前の行の失敗に引きずられたもの (`open 7kkj 7kkl` が通らず次の `matchmaker` が失敗) を含む。
 - 再現するには、上の一覧から同じ tutorial を取り、同じ形で流す。集めたコマンドと再生の script は作業用の場所に
   あり、リポジトリには入れていない。
@@ -28,8 +29,8 @@ ChimeraX の公式 tutorial で実際に打たれているコマンドを集め�
 ### よく使われるのに ChX に無いコマンド (使われた tutorial の本数 / 行数)
 
 `volume` 10 / 49 (`vol` を含む)、`lighting` 9 / 22、`hbonds` 7 / 11、`morph` 7 / 9、`fitmap` (`fit`) 8 / 9、
-`preset` 6 / 17、`mlp` 6 / 9、`clip` 5 / 11、`alphafold` 5 / 8 (`fetch` は提案 A で対応)、`movie` 4 / 8、
-`coulombic` 4 / 8、`ui` 4 / 9、`mousemode` 4 / 8、`sequence` (`seq`) 6 / 8、`coordset` 3 / 5、`size` 3 / 3 (提案 A)、
+`preset` 6 / 17、`mlp` 6 / 9、`clip` 5 / 11、`alphafold` 5 / 8 (`fetch` は対応済み)、`movie` 4 / 8、
+`coulombic` 4 / 8、`ui` 4 / 9、`mousemode` 4 / 8、`sequence` (`seq`) 6 / 8、`coordset` 3 / 5、`size` 3 / 3 (`stickRadius` は対応済み)、
 `log` 3 / 3、`2dlabels` / `key` 3 / 6、`sym` 2、`measure` 2、`swapaa` 2、`windowsize` 2、`camera` 2、`interfaces` 2、
 `mseries` 2、`blast` 2、ほか 1 本だけのもの多数。
 

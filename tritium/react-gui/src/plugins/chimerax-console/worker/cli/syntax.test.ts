@@ -6,7 +6,8 @@
  * abbreviation resolved as ambiguous (ChimeraX takes the first in
  * registration order), a `#` taken as a comment inside the arguments, an
  * absent specification ending the optional arguments (`col byh` would then
- * fail), a Windows path's `\U` read as an escape.
+ * fail), a Windows path's `\U` read as an escape, a comma list read as
+ * one word.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -64,6 +65,12 @@ describe('ChX syntax', () => {
     expect(resolveWords('select C & :sti', CHX_COMMANDS)).toMatchObject({ spec: { name: 'select' }, taken: 1 })
     expect(bind('color #1 bogus')).toMatchObject({ kind: 'error' })
     expect(bind('color red target a target c')).toMatchObject({ kind: 'error', error: expect.stringMatching(/Repeated keyword/) })
+  })
+
+  it('reads each value of a comma list on its own, and several file names up to a keyword', () => {
+    // An enum reads a whole word, so the list must split at the comma first.
+    expect(bind('hide atoms,ribbon')).toMatchObject({ kind: 'args', args: { what: 'atoms,ribbons' } })
+    expect(bind('open 7kkj 7kkl name x')).toMatchObject({ kind: 'args', args: { names: '7kkj\n7kkl', name: 'x' } })
   })
 
   it('keeps the backslashes of a quoted file name', () => {

@@ -21,7 +21,7 @@
 
 import { SpecError } from './parse'
 import type { AttrTest, ChainGroup, ModelRange, ResidueGroup, ResiduePart, SpecNode } from './parse'
-import { CURRENT_SELECTION, selectorExpr } from './selectors'
+import { CURRENT_SELECTION, SELECTED_OR_ALL, selectorExpr } from './selectors'
 
 /** CueMol's expression for nothing. */
 export const NONE = 'none'
@@ -322,6 +322,11 @@ export function emitFor(node: SpecNode, model: number, ec?: EmitContext): string
       if (node.name === CURRENT_SELECTION) {
         if (!ec) throw new SpecError('"sel" needs the scene', node.pos)
         return ec.currentSelection(model)
+      }
+      if (node.name === SELECTED_OR_ALL) {
+        if (!ec) throw new SpecError(`"${SELECTED_OR_ALL}" needs the scene`, node.pos)
+        const anySelected = ec.models.some((m) => ec.currentSelection(m.model) !== NONE)
+        return anySelected ? ec.currentSelection(model) : ALL
       }
       const expr = selectorExpr(node.name)
       if (expr !== null) return expr

@@ -320,7 +320,55 @@ function labelDeleteCommand(words: string[]): ChxCommand {
   })
 }
 
+// --- size ---
+
+/**
+ * `size [spec] stickRadius r`: the stick radius of the `chx:stick` and
+ * `chx:ball` bonds (`bondw`; a stick's atoms are as thick as its bonds).
+ * `bondw` is one value per renderer, so whole molecules only, as for
+ * transparency. `ballScale` and `atomRadius` are refused: CueMol's ball is
+ * one radius for every element, so no factor on the atom radius, and a
+ * per-atom radius has no renderer to go to.
+ */
+const size = chxCommand({
+  words: ['size'],
+  args: [
+    { name: 'objects', type: SpecArg, role: 'optional' },
+    { name: 'stickRadius', type: FloatArg, role: 'keyword' },
+    { name: 'atomRadius', type: StringArg, role: 'keyword' },
+    { name: 'ballScale', type: StringArg, role: 'keyword' },
+    { name: 'pseudobondRadius', type: StringArg, role: 'keyword', ignored: true },
+    { name: 'verbose', type: StringArg, role: 'keyword', ignored: true },
+  ],
+  mutates: true,
+  summary: 'Set the stick radius of whole molecules.',
+  async run(ctx, args, cc) {
+    warnIgnored(cc, 'size', args, ['pseudobondRadius', 'verbose'])
+    if (args.ballScale !== '') return { ok: false, error: 'Error: size: ballScale is not supported (a CueMol ball has one radius for every element, not a factor on the atom radius)' }
+    if (args.atomRadius !== '') return { ok: false, error: 'Error: size: atomRadius is not supported (CueMol has no radius per atom to set)' }
+    if (args.stickRadius === '') return { ok: false, error: 'Error: size: give stickRadius' }
+    const r = Number(args.stickRadius)
+    if (!(r > 0)) return { ok: false, error: 'Error: size: stickRadius must be positive' }
+    const found = targetsOf(ctx, cc.sceneId, args.objects)
+    if (!found.ok) return found
+    const part = found.targets.find((t) => t.sel !== '*')
+    if (part) return { ok: false, error: `Error: size: the stick radius is set for whole models only (CueMol has one per renderer); "${args.objects}" is part of #${part.obj.model}` }
+    for (const t of found.targets) {
+      const owned = await ensureOwned(ctx, cc, t.obj)
+      if (!owned.ok) return owned
+      const ids = atomRenderers(owned.ids)
+      const value = String(r)
+      const res = await setEach(ctx, cc, [ids.stick, ids.ball], 'bondw', value)
+      if (!res.ok) return res
+      const sphere = await setEach(ctx, cc, [ids.stick], 'sphr', value)
+      if (!sphere.ok) return sphere
+    }
+    return { ok: true }
+  },
+})
+
 export const REPR_COMMANDS: Record<string, ChxCommand> = {
+  size,
   surface,
   surfaceHidePatches: hidePatchesCommand(['surface', 'hidePatches']),
   surfaceClose,
