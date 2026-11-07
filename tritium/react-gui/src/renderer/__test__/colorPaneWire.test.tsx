@@ -204,6 +204,13 @@ function makeCm(coloringState: ColoringState): MockCm {
             if (name === 'listElePotMapObjects') {
                 return Promise.resolve({ ok: true, objects: [] })
             }
+            if (name === 'getMultiGradState') {
+                // A B-factor coloring with no gradient nodes (the two-colour ramp).
+                return Promise.resolve({
+                    ok: true, capable: true, colormode: '', colorMapName: '', nodes: [], mapObjects: [],
+                    mapStats: null, mapPercentiles: null, mapVoxelCount: null, mapPeakCount: null,
+                })
+            }
             // All mutation services resolve ok (fire-and-forget).
             return Promise.resolve({ ok: true })
         }),
@@ -239,6 +246,7 @@ function mutationCalls(cm: MockCm): Array<[string, unknown]> {
         'getRendererColoringState',
         'listElePotMapObjects',
         'getPaintColoringStyles',
+        'getMultiGradState',
     ])
     return cm.invokeService.mock.calls.filter(
         (c) => !reads.has(c[0] as string),

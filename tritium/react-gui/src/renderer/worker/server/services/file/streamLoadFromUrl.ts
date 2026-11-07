@@ -13,6 +13,8 @@ import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result'
 import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { formatLoad, recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { pickCoordUrl } from '@renderer/worker/shared/pdbUrls';
+import { applyColoringStyleToObject } from '@renderer/worker/server/services/coloring/applyColoring';
+import { PLDDT_COLORING_STYLE } from '@renderer/worker/server/services/coloring/panelList';
 
 const log = console;
 
@@ -27,7 +29,8 @@ export interface StreamLoadFromUrlArgs {
     gzip?: boolean;
     /**
      * The database entry the URL was built for (`fetch_entry`): recorded as
-     * that entry rather than as its URL. `defaultName` is the name the entry
+     * that entry rather than as its URL. An `alphafold` entry is also
+     * coloured by pLDDT (`AlphaFoldPlddtColoring`). `defaultName` is the name the entry
      * opens as when none is given, so a recorded name is kept only when it differs.
      */
     entry?: { source: string; id: string; format: string | null; defaultName: string };
@@ -138,6 +141,9 @@ export async function streamLoadFromUrl(
             (obj as any).name = args.options.renderer.objectName;
         }
         setupRenderer(ctx, obj, args.options.renderer);
+        // An AlphaFold model opens coloured by pLDDT (its B-factors), as in
+        // ChimeraX. Part of the fetch: replaying fetch_entry colours it again.
+        if (args.entry?.source === 'alphafold') applyColoringStyleToObject(scene, obj, PLDDT_COLORING_STYLE);
         return ok({ objId: (obj as unknown as { uid: number }).uid });
     });
 }

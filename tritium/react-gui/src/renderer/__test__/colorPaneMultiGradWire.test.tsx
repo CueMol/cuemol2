@@ -226,6 +226,8 @@ describe('ColorPane multigrad wire', () => {
         expect(cm.invokeService).toHaveBeenCalledWith('setMultiGradNodes', {
             sceneId: SCENE_ID,
             rendId: REND_ID,
+            targetKind: 'renderer',
+            gradient: 'renderer',
             mode: 'commit',
             originalNodes: undefined,
             label: 'Add gradient node',
@@ -248,6 +250,8 @@ describe('ColorPane multigrad wire', () => {
         expect(cm.invokeService).toHaveBeenCalledWith('setMultiGradNodes', {
             sceneId: SCENE_ID,
             rendId: REND_ID,
+            targetKind: 'renderer',
+            gradient: 'renderer',
             mode: 'commit',
             originalNodes: undefined,
             label: 'Delete all gradient nodes',
@@ -271,6 +275,8 @@ describe('ColorPane multigrad wire', () => {
         expect(cm.invokeService).toHaveBeenCalledWith('setMultiGradNodes', {
             sceneId: SCENE_ID,
             rendId: REND_ID,
+            targetKind: 'renderer',
+            gradient: 'renderer',
             mode: 'commit',
             originalNodes: undefined,
             label: 'Apply gradient preset',
@@ -315,6 +321,8 @@ describe('ColorPane multigrad wire', () => {
         expect(cm.invokeService).toHaveBeenCalledWith('getMultiGradHistogram', {
             sceneId: SCENE_ID,
             rendId: REND_ID,
+            targetKind: 'renderer',
+            gradient: 'renderer',
             min: expect.closeTo(-2.6, 5),
             max: expect.closeTo(12.6, 5),
             nbins: 76,
@@ -336,6 +344,8 @@ describe('ColorPane multigrad wire', () => {
         expect(cm.invokeService).toHaveBeenCalledWith('getMultiGradHistogram', {
             sceneId: SCENE_ID,
             rendId: REND_ID,
+            targetKind: 'renderer',
+            gradient: 'renderer',
             min: expect.closeTo(2.5, 5),
             max: expect.closeTo(12.5, 5),
             nbins: 100,
@@ -365,6 +375,8 @@ describe('ColorPane multigrad wire', () => {
         expect(cm.invokeService).toHaveBeenCalledWith('getMultiGradHistogram', {
             sceneId: SCENE_ID,
             rendId: REND_ID,
+            targetKind: 'renderer',
+            gradient: 'renderer',
             min: expect.closeTo(0.5, 5),
             max: expect.closeTo(9.5, 5),
             nbins: 90,

@@ -31,7 +31,13 @@ vi.mock('@renderer/worker/server/actions/serviceOps', async (importOriginal) => 
     recordOp: vi.fn(),
 }))
 
+vi.mock('@renderer/worker/server/services/coloring/applyColoring', async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    applyColoringStyleToObject: vi.fn(),
+}))
+
 import { services } from '@renderer/worker/server/services/file/file.service'
+import { applyColoringStyleToObject } from '@renderer/worker/server/services/coloring/applyColoring'
 import { setupRenderer } from '@renderer/worker/server/services/rend/setupRenderer'
 import { applyReaderOptions } from '@renderer/worker/server/services/helpers/applyReaderOptions'
 import { recordOp } from '@renderer/worker/server/actions/serviceOps'
@@ -196,6 +202,19 @@ describe('streamLoadFromUrl service', () => {
         expect(op).toBe('fetch_entry')
         // The default name is not recorded, so a replay names it the same way.
         expect(opArgs).toMatchObject({ source: 'pdbj', id: '1CRN', format: null, name: null })
+    })
+
+    it('colours an AlphaFold entry by pLDDT inside the fetch, and no other entry', async () => {
+        for (const source of ['pdbj', 'alphafold']) {
+            const env = makeEnv()
+            globalThis.fetch = fetchYieldingChunks([new Uint8Array([1])]) as unknown as typeof fetch
+            await streamLoadFromUrl(env.ctx, {
+                reqId: `req-${source}`, url: 'https://example.org/x.cif', readerName: 'mmcif', objectName: 'x',
+                sceneId: 7, options: makeOptions(), entry: { source, id: 'x', format: null, defaultName: 'x' },
+            })
+        }
+        expect(applyColoringStyleToObject).toHaveBeenCalledTimes(1)
+        expect(vi.mocked(applyColoringStyleToObject).mock.calls[0][2]).toBe('AlphaFoldPlddtColoring')
     })
 
     it('cancel path: aborts fetch, drains IOThread via waitLoadAsync, does NOT add to scene', async () => {

@@ -161,3 +161,23 @@ TEST(BfacColoringMultiGrad, NodesSurviveQscAndCopiesOwnTheirNodes)
     copy.getMultiGrad()->clear();
     EXPECT_EQ(f.pBfac->getMultiGrad()->getSize(), 5);
 }
+
+// The nodes as a style file writes them (attributes: par / col) are read.
+TEST(BfacColoringMultiGrad, NodesReadFromStyleLikeXml)
+{
+    const char *xml =
+        "<renderer type=\"simple\">"
+        "<coloring type=\"BfacColoring\" mode=\"bfac\" auto=\"none\">"
+        "<multi_grad>"
+        "<gradnode par=\"0\" col=\"#FF0000\"/>"
+        "<gradnode par=\"100\" col=\"#0000FF\"/>"
+        "</multi_grad>"
+        "</coloring>"
+        "</renderer>";
+    qsys::RendererPtr pRend = surftest::loadFromXML(qsys::RendererFactory::getInstance(), "simple", xml);
+    auto *pHolder = dynamic_cast<molstr::ColSchmHolder *>(pRend.get());
+    auto *pBfac = dynamic_cast<BfacColoring *>(pHolder->getColSchm().get());
+    ASSERT_NE(pBfac, nullptr);
+    ASSERT_EQ(pBfac->getMultiGrad()->getSize(), 2);
+    EXPECT_EQ(rgb(*pBfac, 100.0), 0x0000FFu);
+}

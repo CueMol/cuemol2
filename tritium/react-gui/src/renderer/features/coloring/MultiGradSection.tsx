@@ -55,11 +55,19 @@ import {
     keepRatioRescale,
     moveStopFree,
 } from '@renderer/h3-kit/gradient'
-import { MULTIGRAD_PRESETS, buildPresetNodes } from '@renderer/worker/shared/multiGradPresets'
+import { BFAC_MULTIGRAD_PRESETS, MULTIGRAD_PRESETS, buildPresetNodes } from '@renderer/worker/shared/multiGradPresets'
 interface MultiGradSectionProps {
     cm: AsyncCueMol | null
     sceneId: number | undefined
     rendId: number | null
+    /** What `rendId` names: a renderer (default) or an object (its own coloring). */
+    targetKind?: 'renderer' | 'object'
+    /**
+     * Which gradient: the renderer's own (map / surface colouring, default)
+     * or its B-factor coloring's, whose values are atom values and which has
+     * no colour-map object to choose.
+     */
+    gradient?: 'renderer' | 'coloring'
 }
 
 /**
@@ -70,8 +78,10 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
     cm,
     sceneId,
     rendId,
+    targetKind = 'renderer',
+    gradient = 'renderer',
 }) => {
-    const { state, refetch } = useMultiGradState({ cm, sceneId, rendId })
+    const { state, refetch } = useMultiGradState({ cm, sceneId, rendId, targetKind, gradient })
 
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
     const [keepRatio, setKeepRatio] = useState(false)
@@ -133,7 +143,7 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
         viewDomain, histogram,
         handleZoom, handlePan, setViewOverride, isViewOverridden, frozenDomainRef,
     } = useGradientViewDomain({
-        cm, sceneId, rendId, state, canonicalStops, previewStops, stripWidth,
+        cm, sceneId, rendId, targetKind, gradient, state, canonicalStops, previewStops, stripWidth,
     })
 
     // --- write paths ---
@@ -150,7 +160,7 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
             }
             busy = true
             cm.invokeService('setMultiGradNodes', {
-                sceneId, rendId, nodes, mode: 'preview',
+                sceneId, rendId, targetKind, gradient, nodes, mode: 'preview',
             })
                 .catch(() => undefined)
                 .finally(() => {
@@ -161,7 +171,7 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
                 })
         }
         return send
-    }, [cm, sceneId, rendId])
+    }, [cm, sceneId, rendId, targetKind, gradient])
 
     /**
      * Post one committed write and keep the UI on `stops` (optimistic
@@ -184,12 +194,12 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
                 setPreviewStops(null)
             }, PENDING_SAFETY_MS)
             fireService(cm, 'setMultiGradNodes', {
-                sceneId, rendId, nodes: toWriteNodes(stops), mode: 'commit',
+                sceneId, rendId, targetKind, gradient, nodes: toWriteNodes(stops), mode: 'commit',
                 originalNodes, label,
             })
             refetch()
         },
-        [cm, sceneId, rendId, refetch, clearPendingTimer],
+        [cm, sceneId, rendId, targetKind, gradient, refetch, clearPendingTimer],
     )
 
     // --- GradientStopBar wiring ---
@@ -263,11 +273,11 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
             setPreviewStops(null)
         }, PENDING_SAFETY_MS)
         fireService(cm, 'setMultiGradNodes', {
-            sceneId, rendId, nodes: [], mode: 'abort',
+            sceneId, rendId, targetKind, gradient, nodes: [], mode: 'abort',
             originalNodes: original,
         })
         refetch()
-    }, [cm, sceneId, rendId, refetch, clearPendingTimer])
+    }, [cm, sceneId, rendId, targetKind, gradient, refetch, clearPendingTimer])
 
     // --- selected stop editors ---
 
@@ -382,8 +392,8 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
 
     const handlePreset = useCallback(
         (presetId: (typeof MULTIGRAD_PRESETS)[number]['id']) => {
-            if (!state?.mapStats) return
-            const nodes = buildPresetNodes(presetId, state.mapStats)
+            // A fixed-value preset (pLDDT) does not need the range.
+            const nodes = buildPresetNodes(presetId, state?.mapStats ?? { min: 0, max: 0 })
             if (!nodes) return
             setSelectedIndex(null)
             commitNodes(
@@ -417,7 +427,8 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
 
     return (
         <>
-            <Field label="Color map" inline>
+            {/* A B-factor coloring's gradient is over the atom values: no map to choose. */}
+            {gradient !== 'coloring' && <Field label="Color map" inline>
                 <SelectField
                     value={colorMapName}
                     disabled={mapObjects.length === 0}
@@ -435,7 +446,7 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
                         </option>
                     ))}
                 </SelectField>
-            </Field>
+            </Field>}
 
             <div className="mg-zoom-row">
                 <span className="type-caption mg-zoom-label">View range</span>
@@ -490,7 +501,10 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
 
             {displayStops.length === 0 && (
                 <p className="mg-guide-note type-caption">
-                    {mapUnresolved
+                    {gradient === 'coloring'
+                        ? 'No gradient nodes: the B-factor coloring uses its two colours. ' +
+                          'Apply a preset to start.'
+                        : mapUnresolved
                         ? 'No color map is resolved. Pick a map above.'
                         : 'No gradient nodes: the object renders black. ' +
                           'Apply a preset to start.'}
@@ -534,6 +548,14 @@ export const MultiGradSection: React.FC<MultiGradSectionProps> = ({
                                     key={p.id}
                                     text={p.label}
                                     disabled={mapUnresolved}
+                                    onClick={() => handlePreset(p.id)}
+                                />
+                            ))}
+                            {/* Fixed-value presets need no range, so they work without stats. */}
+                            {gradient === 'coloring' && BFAC_MULTIGRAD_PRESETS.map((p) => (
+                                <MenuItem
+                                    key={p.id}
+                                    text={p.label}
                                     onClick={() => handlePreset(p.id)}
                                 />
                             ))}

@@ -114,7 +114,9 @@ function shouldRefetchColoring(args: unknown): boolean {
         propname === 'defaultcolor' ||
         DECK_REFETCH_PROPS.has(propname) ||
         // nested multi_grad event names (e.g. "multi_grad.<child>")
-        propname.startsWith('multi_grad')
+        propname.startsWith('multi_grad') ||
+        // a coloring's own nested properties (`coloring.multi_grad` of a B-factor coloring)
+        propname.startsWith('coloring.')
     )
 }
 

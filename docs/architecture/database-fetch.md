@@ -3,8 +3,7 @@
 accession ID と取得元のデータベースから、構造を取得して開く仕組み。取得元の知識 (ID の形・URL・reader・
 既定の名前) は core の共有モジュールに置き、op `fetch_entry` (native console・MCP・agent)、Get PDB ダイアログ、
 ChX console の `open` (`open pdbe:1crn`、`open alphafold:P29474`、`open 1crn fromDatabase pdbj` など) が使う。
-残り (pLDDT の色の preset) は
-[`../plans/261107-database-fetch-plan.md`](../plans/261107-database-fetch-plan.md)。
+AlphaFold のモデルは開くと pLDDT で塗る ([bfac-multigradient](bfac-multigradient.md) §4)。
 
 URL は ChimeraX の取得処理に合わせた (`~/ext/ChimeraX/src/bundles/` の `mmcif`・`pdb`・`alphafold`・
 `pubchem`)。同じ接頭辞で同じものを取る。
@@ -107,7 +106,9 @@ URL と EMDB では使わない (warn)。ファイルを開くときは今まで
 `core/colors.py`: 0 赤、50 オレンジ、70 黄、90 cornflowerblue、100 青の連続な補間)。ChX は auto style の
 後に、これを pLDDT 2 刻みの 50 色の paint entry (`bfac > 98` ... `bfac > 0`、最後に `*` を赤) で近似して、
 atom と cartoon の renderer に入れる (`colorSchemes.ts` の `plddtEntries`、`colorCommands.ts` の
-`colorByPlddt`)。分子全体を塗るので、先に表を消してから入れる。
+`colorByPlddt`)。分子全体を塗るので、先に表を消してから入れる。`fetch_entry` の取得処理は先に
+`AlphaFoldPlddtColoring` (B-factor の多色グラデーション) を当てるが、ChX の `chx:` renderer は paint が前提
+(後の `color` が paint に戻す) なので、ChX はその上から paint の近似で塗り直す。
 
 **断る取得元** (理由を言う):
 
@@ -147,7 +148,8 @@ Entry 欄の先頭に **Database** の切り替え (`SegmentField`: PDB / EMDB�
 - 結果 (`GetPdbDialogResult`) は `entryId` (PDB / EMDB の accession、または AlphaFold / PubChem の ID) と
   `coord: { source, format }`。地図の取得は PDB / EMDB のときだけ。
 
-既知の制約: Get PDB で開いた AlphaFold のモデルは pLDDT で塗らない (ChX の `open` だけが塗る。plan §1)。
+AlphaFold のモデルは、Get PDB からでも `fetch_entry` からでも pLDDT の style で塗られる
+([bfac-multigradient](bfac-multigradient.md) §4)。
 
 ## 5. テスト
 

@@ -38,6 +38,7 @@ import type { ColoringTargetKind } from '@renderer/worker/server/services/colori
 import type { SceneObjectEntry } from '@renderer/worker/server/services/scene/listSceneObjects'
 import { ColorPickerProvider } from '@renderer/h3-kit/colorpicker'
 import { MultiGradSection } from './MultiGradSection'
+import { BfacColoringDeck } from './BfacColoringDeck'
 import { usePaintCapableRenderers } from './usePaintCapableRenderers'
 import { usePaintColoringStyles } from './usePaintColoringStyles'
 import { useRendererColoringState } from './useRendererColoringState'
@@ -62,7 +63,6 @@ import { useColorPaneActions } from '@renderer/features/coloring/colorPane/useCo
 import { PaintTable } from '@renderer/features/coloring/colorPane/PaintTable'
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 import {
-    BfacDeck,
     CpkDeck,
     DeferredDeck,
     ElepotDeck,
@@ -404,7 +404,16 @@ export const ColorPane: React.FC<ColorPaneProps> = ({ collapsed, onToggleCollaps
                 return <RainbowDeck params={state.rainbowParams} onCommit={onSetColoringProp} />
             }
             if (className === 'BfacColoring' && state.bfacParams) {
-                return <BfacDeck params={state.bfacParams} onCommit={onSetColoringProp} />
+                return (
+                    <BfacColoringDeck
+                        cm={cm}
+                        sceneId={sceneId}
+                        id={target.id}
+                        targetKind={target.targetKind}
+                        params={state.bfacParams}
+                        onCommit={onSetColoringProp}
+                    />
+                )
             }
             return <DeferredDeck className={className} />
         }

@@ -48,13 +48,17 @@ const MULTIGRAD_REFETCH_PROPS = new Set<string>([
  * so filtering after it loses a whitelisted event whenever an unrelated one
  * opens the same window (see `useRendererColoringState`).
  */
-function shouldRefetchMultiGrad(args: unknown): boolean {
+export function shouldRefetchMultiGrad(args: unknown): boolean {
     const payload = args as { obj?: { propname?: string } } | undefined
     const propname = payload?.obj?.propname
     if (propname === undefined) return true
     return (
         MULTIGRAD_REFETCH_PROPS.has(propname) ||
-        propname.startsWith('multi_grad')
+        propname.startsWith('multi_grad') ||
+        // A B-factor coloring's gradient is nested in `coloring`: its edits
+        // arrive as `coloring.multi_grad`, and a new coloring as `coloring`.
+        propname === 'coloring' ||
+        propname.startsWith('coloring.')
     )
 }
 
@@ -62,6 +66,10 @@ export interface UseMultiGradStateOptions {
     cm: AsyncCueMol | null
     sceneId: number | undefined
     rendId: number | null
+    /** What `rendId` names: a renderer (default) or an object. */
+    targetKind?: 'renderer' | 'object'
+    /** Which gradient: the renderer's own (default) or its B-factor coloring's. */
+    gradient?: 'renderer' | 'coloring'
     /** When false the hook idles (deck not visible). */
     enabled?: boolean
 }
@@ -79,10 +87,14 @@ export function useMultiGradState({
     cm,
     sceneId,
     rendId,
+    targetKind = 'renderer',
+    gradient = 'renderer',
     enabled = true,
 }: UseMultiGradStateOptions): UseMultiGradStateResult {
     const sceneIdRef = useRef(sceneId)
     const rendIdRef = useRef(rendId)
+    const targetRef = useRef({ targetKind, gradient })
+    targetRef.current = { targetKind, gradient }
     const enabledRef = useRef(enabled)
     sceneIdRef.current = sceneId
     rendIdRef.current = rendId
@@ -99,14 +111,14 @@ export function useMultiGradState({
                 return null
             }
             return cm
-                .invokeService('getMultiGradState', { sceneId: sid, rendId: rid })
+                .invokeService('getMultiGradState', { sceneId: sid, rendId: rid, ...targetRef.current })
                 .then((res) => res ?? EMPTY_STATE)
                 .catch((err: unknown) => {
                     console.warn('getMultiGradState failed:', err)
                     return EMPTY_STATE
                 })
         },
-        fetchDeps: [sceneId, rendId, enabled],
+        fetchDeps: [sceneId, rendId, targetKind, gradient, enabled],
         listeners: [
             {
                 enabled: enabled && sceneId !== undefined && rendId !== null,

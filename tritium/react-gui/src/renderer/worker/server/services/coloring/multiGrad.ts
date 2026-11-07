@@ -20,7 +20,7 @@ import { getSceneOrNull } from '@renderer/worker/server/services/helpers/sceneRe
 import { undoTxnResult, withUndoTxn } from '@renderer/worker/server/services/withUndoTxn';
 import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { ok, fail, failFrom } from '@renderer/worker/shared/result';
-import { getMultiGradOrNull } from './colorTargets';
+import { getMultiGradOrNull, resolveMultiGrad } from './colorTargets';
 import type {
     GetMultiGradStateArgs,
     GetMultiGradStateResult,
@@ -228,6 +228,55 @@ export function histogramPercentileRange(
     return { lo: valueAt(loFrac), hi: valueAt(hiFrac) };
 }
 
+// --- Atom values: a B-factor coloring's gradient is over these, not a map ---
+
+/**
+ * The values a `BfacColoring` colours `host`'s atoms by (B-factor or
+ * occupancy, one per atom), read in one call (`MolCoord.getPropArray`).
+ * Null for the distance-from-centre mode (no per-atom array) or when the
+ * molecule cannot be reached.
+ */
+function readAtomValues(ctx: WorkerContext, host: Renderer, targetKind: 'object' | 'renderer' | undefined): Float32Array | null {
+    try {
+        const coloring = (host as unknown as { coloring?: unknown }).coloring;
+        const mode = safeReadString(coloring, 'mode');
+        if (mode !== 'bfac' && mode !== 'occ') return null;
+        const mol = targetKind === 'object'
+            ? (host as unknown)
+            : (host as unknown as { getClientObj: () => unknown }).getClientObj();
+        const ba = (mol as { getPropArray?: (p: string) => unknown } | null)?.getPropArray?.(mode);
+        if (!ba) return null;
+        const bytes = ctx.svc.copyToTypedArray(ba) as Uint8Array;
+        // A copy of its own, so the float view starts at offset 0.
+        return new Float32Array(bytes.slice().buffer);
+    } catch {
+        return null;
+    }
+}
+
+/** min / max / mean / sigma of the atom values, as a map's stats read (continuous: no quant step). */
+function atomStats(v: Float32Array): MultiGradMapStats | null {
+    if (v.length === 0) return null;
+    let min = Infinity, max = -Infinity, sum = 0;
+    for (const x of v) { if (x < min) min = x; if (x > max) max = x; sum += x; }
+    const mean = sum / v.length;
+    let ss = 0;
+    for (const x of v) ss += (x - mean) * (x - mean);
+    return { min, max, mean, sigma: Math.sqrt(ss / v.length), quantStep: 0 };
+}
+
+/** Counts of the atom values in `nbins` equal bins over [min, max] (max in the last bin). */
+function atomHistogram(v: Float32Array, min: number, max: number, nbins: number): { histo: number[]; nmax: number } | null {
+    if (!(max > min) || nbins <= 0) return null;
+    const histo = new Array<number>(nbins).fill(0);
+    const w = (max - min) / nbins;
+    for (const x of v) {
+        if (x < min || x > max) continue;
+        histo[Math.min(nbins - 1, Math.floor((x - min) / w))]++;
+    }
+    return { histo, nmax: Math.max(...histo) };
+}
+
 /** Bin count for the percentile estimate (rebin of the cached base). */
 const PERCENTILE_NBINS = 256;
 
@@ -262,12 +311,28 @@ export function getMultiGradState(
 ): GetMultiGradStateResult {
     const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return FAIL_STATE;
-    const rend = scene.getRenderer(args.rendId) as Renderer | null;
-    if (!rend) return FAIL_STATE;
+    const target = resolveMultiGrad(scene, args);
+    if ('error' in target) return target.code === 'not-found' ? FAIL_STATE : { ...FAIL_STATE, ok: true };
+    const { host: rend, mg } = target;
 
-    const mg = getMultiGradOrNull(rend);
-    if (!mg) return { ...FAIL_STATE, ok: true };
-
+    // A coloring's gradient (B-factor) is over the atom values, not a map.
+    if (args.gradient === 'coloring') {
+        const values = readAtomValues(ctx, rend, args.targetKind);
+        const stats = values ? atomStats(values) : null;
+        const h = values && stats ? atomHistogram(values, stats.min, stats.max, PERCENTILE_NBINS) : null;
+        return {
+            ok: true,
+            capable: true,
+            colormode: '',
+            colorMapName: '',
+            nodes: readNodes(mg),
+            mapObjects: [],
+            mapStats: stats,
+            mapPercentiles: h && stats ? histogramPercentileRange(h.histo, stats.min, stats.max, 0.025, 0.975) : null,
+            mapVoxelCount: values ? values.length : null,
+            mapPeakCount: h ? h.nmax : null,
+        };
+    }
     const mapObj = getColorMapObjOrNull(rend);
     const mapStats = mapObj ? readMapStats(mapObj) : null;
     let mapPercentiles: MultiGradPercentiles | null = null;
@@ -318,9 +383,24 @@ export function getMultiGradHistogram(
     };
     const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return fail;
-    const rend = scene.getRenderer(args.rendId) as Renderer | null;
-    if (!rend) return fail;
-    const mapObj = getColorMapObjOrNull(rend);
+    const target = resolveMultiGrad(scene, args);
+    if ('error' in target) return fail;
+    if (args.gradient === 'coloring') {
+        const values = readAtomValues(ctx, target.host, args.targetKind);
+        const h = values ? atomHistogram(values, args.min, args.max, args.nbins) : null;
+        if (!values || !h) return fail;
+        // Same bin width and origin-0 alignment over the full value range, as for a map.
+        const stats = atomStats(values);
+        const w = (args.max - args.min) / args.nbins;
+        let globalNmax: number | null = null;
+        if (stats && stats.max > stats.min && w > 0) {
+            const i0 = Math.floor(stats.min / w + 1e-9);
+            const i1 = Math.ceil(stats.max / w - 1e-9);
+            if (i1 > i0 && i1 - i0 <= GLOBAL_NMAX_BIN_CAP) globalNmax = atomHistogram(values, i0 * w, i1 * w, i1 - i0)?.nmax ?? null;
+        }
+        return { ok: true, histo: h.histo, nmax: h.nmax, globalNmax };
+    }
+    const mapObj = getColorMapObjOrNull(target.host);
     if (!mapObj) return fail;
     const h = readHistogramRange(mapObj, args.min, args.max, args.nbins);
     if (!h) return fail;
@@ -350,7 +430,11 @@ export function multiGradNodesText(nodes: readonly MultiGradWriteNode[]): string
     return nodes.map((n) => `${n.value} ${n.color}`).join('; ');
 }
 
-/** The nodes `multiGradNodesText` wrote, or why the text is not such a list. */
+/**
+ * The nodes `multiGradNodesText` wrote, or why the text is not such a list.
+ * Empty text is no nodes: it clears the gradient (a `BfacColoring` then
+ * colours by its two-colour ramp again), as the deck's Delete all writes it.
+ */
 export function parseMultiGradNodes(text: string): MultiGradWriteNode[] | { error: string } {
     const out: MultiGradWriteNode[] = [];
     for (const part of text.split(';')) {
@@ -361,7 +445,7 @@ export function parseMultiGradNodes(text: string): MultiGradWriteNode[] | { erro
         if (!m || !Number.isFinite(value)) return { error: `"${t}" is not "<value> <colour>"` };
         out.push({ value, color: m[2].trim() });
     }
-    return out.length > 0 ? out : { error: 'no nodes given' };
+    return out;
 }
 
 function nodesToJSON(nodes: MultiGradWriteNode[]): string {
@@ -387,10 +471,9 @@ export function setMultiGradNodes(
 ): SetMultiGradNodesResult {
     const scene = getSceneOrNull(ctx, args.sceneId);
     if (!scene) return fail('scene not found', 'not-found');
-    const rend = scene.getRenderer(args.rendId) as Renderer | null;
-    if (!rend) return fail('renderer not found', 'not-found');
-    const mg = getMultiGradOrNull(rend);
-    if (!mg) return fail('renderer has no multi-gradient coloring', 'unsupported');
+    const target = resolveMultiGrad(scene, args);
+    if ('error' in target) return fail(target.error, target.code);
+    const { mg } = target;
 
     const mode = args.mode ?? 'commit';
 
@@ -422,7 +505,13 @@ export function setMultiGradNodes(
         }
     }
     return undoTxnResult(scene, args.label ?? DEFAULT_LABEL, () => {
-        recordOp(ctx, scene.uid, 'set_multigrad_nodes', { rendId: args.rendId, nodes: multiGradNodesText(args.nodes) }, ['rendId']);
+        // The defaults (a renderer, its own gradient) are left out, as older records have them.
+        recordOp(ctx, scene.uid, 'set_multigrad_nodes', {
+            rendId: args.rendId,
+            nodes: multiGradNodesText(args.nodes),
+            nodeType: args.targetKind === 'object' ? 'object' : null,
+            gradient: args.gradient === 'coloring' ? 'coloring' : null,
+        }, ['rendId']);
         mg.setNodesJSON(nodesToJSON(args.nodes));
         return ok();
     });
