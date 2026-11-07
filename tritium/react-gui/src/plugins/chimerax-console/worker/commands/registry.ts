@@ -17,6 +17,8 @@ import { ALIAS_COMMANDS, setAliasCommandList } from './aliasCommands'
 import { SELECT_COMMANDS } from './selectCommands'
 import { REPR_COMMANDS } from './reprCommands'
 import { ANALYSIS_COMMANDS } from './analysisCommands'
+import { LOOK_COMMANDS } from './lookCommands'
+import { MAP_COMMANDS, MAP_OPERATION_COMMANDS } from './mapCommands'
 
 /** Every command, in ChimeraX's registration order. */
 export const CHX_COMMANDS: readonly ChxCommand[] = [
@@ -25,6 +27,7 @@ export const CHX_COMMANDS: readonly ChxCommand[] = [
   ALIAS_COMMANDS.aliasDelete,
   ALIAS_COMMANDS.unalias,
   ANALYSIS_COMMANDS.align,
+  LOOK_COMMANDS.camera,
   DISPLAY_COMMANDS.cartoon,
   DISPLAY_COMMANDS.cartoonHide,
   DISPLAY_COMMANDS.cartoonStyle,
@@ -38,9 +41,12 @@ export const CHX_COMMANDS: readonly ChxCommand[] = [
   FILE_COMMANDS.delete,
   VIEW_COMMANDS.graphicsSilhouettes,
   DISPLAY_COMMANDS.hide,
+  LOOK_COMMANDS.lighting,
   VIEW_COMMANDS.move,
   FILE_COMMANDS.open,
   COLOR_COMMANDS.rainbow,
+  LOOK_COMMANDS.ribbon,
+  LOOK_COMMANDS.unribbon,
   SELECT_COMMANDS.select,
   SELECT_COMMANDS.selectAdd,
   SELECT_COMMANDS.selectSubtract,
@@ -67,7 +73,7 @@ export const CHX_COMMANDS: readonly ChxCommand[] = [
   MISC_COMMANDS.viewInitial,
   VIEW_COMMANDS.zoom,
   // Other bundles' commands, after std_commands: label, surface,
-  // matchmaker, distance, list_info, save_command, basic_actions, alphafold.
+  // matchmaker, distance, list_info, save_command, basic_actions, alphafold, map, preset_mgr, unit_cell.
   REPR_COMMANDS.label,
   REPR_COMMANDS.labelDelete,
   REPR_COMMANDS.unlabel,
@@ -91,6 +97,14 @@ export const CHX_COMMANDS: readonly ChxCommand[] = [
   SELECT_COMMANDS.nameDelete,
   SELECT_COMMANDS.nameList,
   FILE_COMMANDS.alphafoldFetch,
+  MAP_COMMANDS.volume,
+  MAP_COMMANDS.volumeZone,
+  MAP_COMMANDS.volumeUnzone,
+  ...MAP_OPERATION_COMMANDS,
+  LOOK_COMMANDS.preset,
+  LOOK_COMMANDS.unitcell,
+  LOOK_COMMANDS.unitcellOutline,
+  LOOK_COMMANDS.unitcellDelete,
   MISC_COMMANDS.help,
 ]
 

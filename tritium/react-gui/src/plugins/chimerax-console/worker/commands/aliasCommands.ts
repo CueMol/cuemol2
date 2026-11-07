@@ -80,28 +80,40 @@ function aliasCaller(name: string): ChxCommand {
       const text = expandAlias(aliases.get(name) ?? '', args.rest)
       expanding.push(name)
       try {
-        const lines = splitLines(text)
-        // Refuse a command that must run outside the transaction, before anything runs.
-        for (const line of lines) {
-          const read = readLine(ctx, cc, line.text)
-          if ('error' in read) continue
-          if (read.spec.undoStack || read.spec.outsideTxn?.(read.args)) {
-            return { ok: false, error: `Error: alias ${name}: ${read.spec.name} cannot run inside an alias; run it on its own line` }
-          }
-        }
-        for (const line of lines) {
-          // Bound again just before it runs: an earlier command may have named a selection.
-          const read = readLine(ctx, cc, line.text)
-          if ('error' in read) return { ok: false, error: read.error }
-          const outcome = await read.spec.run(ctx, read.args, cc)
-          if (!outcome.ok) return outcome
-        }
-        return { ok: true }
+        return await runChxLines(ctx, cc, text, `alias ${name}`)
       } finally {
         expanding.pop()
       }
     },
   })
+}
+
+/**
+ * Run ChX command text (`;` and lines split as typed) inside the current
+ * command, in its transaction: an alias's body, a preset's commands.
+ * A command that must run outside the transaction (`save x.qsc`, `undo`)
+ * is refused before anything runs; the first failure stops the rest.
+ *
+ * @param label - who runs them, for the refusal (`alias rc`, `preset sticks`)
+ * @param kind - what runs them, for the refusal's wording
+ */
+export async function runChxLines(ctx: WorkerContext, cc: CmdContext, text: string, label: string, kind: 'an alias' | 'a preset' = 'an alias'): Promise<CmdOutcome> {
+  const lines = splitLines(text)
+  for (const line of lines) {
+    const read = readLine(ctx, cc, line.text)
+    if ('error' in read) continue
+    if (read.spec.undoStack || read.spec.outsideTxn?.(read.args)) {
+      return { ok: false, error: `Error: ${label}: ${read.spec.name} cannot run inside ${kind}; run it on its own line` }
+    }
+  }
+  for (const line of lines) {
+    // Bound again just before it runs: an earlier command may have named a selection.
+    const read = readLine(ctx, cc, line.text)
+    if ('error' in read) return { ok: false, error: read.error }
+    const outcome = await read.spec.run(ctx, read.args, cc)
+    if (!outcome.ok) return outcome
+  }
+  return { ok: true }
 }
 
 /**

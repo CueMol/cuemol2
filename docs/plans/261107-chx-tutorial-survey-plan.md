@@ -34,17 +34,25 @@ CueMol 側の機能追加が要るもの、断るもの、共通の対策) で�
 `log` 3 / 3、`2dlabels` / `key` 3 / 6、`sym` 2、`measure` 2、`swapaa` 2、`windowsize` 2、`camera` 2、`interfaces` 2、
 `mseries` 2、`blast` 2、ほか 1 本だけのもの多数。
 
-## 2. 新しいコマンドのうち、CueMol の既存の機能で作れるもの
+## 2. 新しいコマンドのうち、CueMol の既存の機能で一部は作れるもの
 
-| コマンド | 使用 | 使う CueMol の機能 | 注意点 |
+`volume` (表示の設定と zone)、`lighting` (AO による近似)、`preset`、`camera ortho`、`unitcell outline`、`ribbon`、
+`open ... from rcsb_bio / pdbe_bio` は実装済み (提案 B。仕様は
+[console-chimerax-dialect](../architecture/console-chimerax-dialect.md) §6)。再生の結果は、動いた 509、知らないコマンド
+158、エラー 64、一部を無視・断った 92。
+
+残りは、既存の機能で一部は作れるが、近似で ChimeraX と違う結果になるか、合わせる設計が要るもの。扱いを決めてから
+別に行う。
+
+| コマンド | 行数 | 使える CueMol の機能 | 決めること |
 |---|---|---|---|
-| **`volume`** (`level`、`style mesh/surface`、`step`、`transparency`、`zone`、`region`、`hide/show`、`color`) | 10 本 / 49 行 (最多) | 地図の contour の op (`set_map_contour` ほか)、地図の renderer の property | 地図の演算 (`gaussian`、`subtract`、`morph`、`box`、`scale`、`cover`) は対象外として断る |
-| **`lighting`** (`soft`、`simple`、`full`、`default`、`flat`) | 9 本 | 画面空間の AO の on / off | ChimeraX の `soft` は AO 主体なので見た目は近い。影 (`full`、`multiShadow`) は CueMol に無いので warn。光源の向きや強さは 261103 の plan の範囲 |
-| **`hbonds`** (`reveal`、`restrict`、`~hbonds`) | 7 本 | `analyze_interactions` (水素結合と塩橋の解析と表示) | 判定の基準は ChimeraX と違いうる |
-| `coulombic` | 4 本 | `calc_elepot` と表面の静電ポテンシャルの色付け | 数秒〜数分かかる。ChimeraX の Coulomb 計算と方法が違う (APBS / pdb2pqr) |
-| `morph #1,2` | 7 本 | MorphMol (`add_morph_frame`) | 再生の仕組みが違う (ChimeraX は `coordset`、CueMol は Animation panel) |
-| `preset` (`original`、`cartoon`、`sticks`、`publication` など) | 6 本 | 表示・色・lighting・輪郭線の組み合わせ | ChimeraX の preset の中身を移す必要がある |
-| `sym` (`assembly`)、`unitcell`、`camera ortho` | 2 本ずつ | 対称操作のコピー、単位胞、投影法 | 優先度は低い |
+| `hbonds` (`reveal`、`restrict`、`~hbonds`) | 12 | `analyze_interactions` | CueMol は極性原子の間の距離だけで接触を拾う (角度の判定が無い)。ChimeraX は距離と角度 (`distSlop`、`angleSlop`) で判定するので、拾う対が違う |
+| `coulombic` | 8 | `calc_elepot` と表面の静電ポテンシャルの色付け | CueMol は APBS (ポアソン・ボルツマン、APBS が要る)、ChimeraX は Coulomb の和 (距離依存の誘電率)。値も見た目も違う |
+| `morph #1,2` | 9 | MorphMol (`add_morph_frame`) | ChimeraX の trajectory と再生 (`coordset`) の仕組みと、CueMol の Animation を合わせる設計 |
+| `sym #1 assembly n` | 3 | (無い) | mmCIF の会合体の情報が要る。CueMol の `show_symmetry` は結晶の対称で意味が違う |
+| `unitcell` (分子のコピーで単位胞を埋める) | 1 | (無い) | コピーを model として作る仕組み (`sym` と一緒に検討) |
+| `clashes` / `contacts` / `interfaces` | 6 | (一部 `analyze_interactions`) | 判定の基準が CueMol に無い |
+| `nucleotides` | 2 | `nucl` renderer の塩基の描き方 | ChimeraX の `stubs` `slab` などとの対応を調べる。Cartoons/Nucleotides の preset もこれ待ち |
 
 ## 3. CueMol 側の機能追加が必要なもの
 
@@ -56,7 +64,7 @@ CueMol 側の機能追加が要るもの、断るもの、共通の対策) で�
 | `movie record/encode` と `wait` | 4 本 | コマンドの実行を録画する仕組み (CueMol の動画は Animation から作る) |
 | `2dlabels` / `key` | 3 本 | 画面上の 2D の文字と色の凡例 |
 | `coordset` / `mseries` | 3 本 | 複数モデル (NMR、morph) を順に表示する仕組み |
-| `open ... from rcsb_bio` (生物学的会合体)、`from pdb_nmr` | 2 本 | 会合体の取得の経路 (PyM console の `fetch` の assembly は `fetch_url` で取っているので、流用を検討) |
+| `open ... from pdb_nmr` | 1 本 | NMR-STAR の拘束の reader (今は理由を言って断る) |
 
 ## 4. 断る対象 (実用性が低いか、CueMol の設計と合わない)
 

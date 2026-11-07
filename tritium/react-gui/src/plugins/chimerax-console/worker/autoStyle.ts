@@ -128,19 +128,25 @@ interface Shown {
   nucl: string
 }
 
-/** Style a molecule just opened, as ChimeraX's automatic styling would. */
-export async function applyAutoStyle(ctx: WorkerContext, cc: CmdContext, obj: NumberedObject): Promise<CmdOutcome> {
+/**
+ * Style a molecule as ChimeraX's automatic styling would: when it is opened,
+ * and for the Initial Styles presets (`apply_auto_styling(style=...)`).
+ *
+ * @param given - the style to apply (a preset); by the molecule's size when absent
+ */
+export async function applyAutoStyle(ctx: WorkerContext, cc: CmdContext, obj: NumberedObject, given?: AutoStyle): Promise<CmdOutcome> {
   const owned = await ensureOwned(ctx, cc, obj)
   if (!owned.ok) return owned
   const size = sizeOf(ctx, cc.sceneId, obj.uid)
-  const style = autoStyleOf(size)
+  const style = given ?? autoStyleOf(size)
   const model = modelColor(obj.model)
   if (!model.exact) cc.warn(`open: #${obj.model} is past ChimeraX's model colours; its colour differs from ChimeraX's`)
   const none = NONE
   let shown: Shown
   // Paint entries per target letters, painted in order (a later entry wins).
   let paints: [string, PaintEntry[]][]
-  if (style === 'non-polymer' || (style === 'small polymer' && size.residues <= MIN_RIBBON_THRESHOLD)) {
+  // A short peptide is drawn as sticks, unless the style was asked for (ChimeraX's `explicit_style`).
+  if (style === 'non-polymer' || (style === 'small polymer' && given === undefined && size.residues <= MIN_RIBBON_THRESHOLD)) {
     shown = { stick: '*', ball: none, sphere: none, cartoon: none, nucl: none }
     paints = [['ac', [['*', model.hex]]], ['a', elementEntries('*', false)]]
   } else if (style === 'small polymer') {
@@ -171,9 +177,11 @@ export async function applyAutoStyle(ctx: WorkerContext, cc: CmdContext, obj: Nu
     const w = await writeSel(ctx, cc, id, sel)
     if (!w.ok) return w
   }
-  // Painted in order, each entry first in the table: the later ones win.
-  for (const [target, entries] of paints) {
-    const res = await paintTarget(ctx, cc, { obj, sel: '*' }, target, entries)
+  // Painted in order, each entry first in the table: the later ones win. The
+  // first colours every atom, so the table is cleared before it (a preset
+  // applied again does not grow it).
+  for (const [i, [target, entries]] of paints.entries()) {
+    const res = await paintTarget(ctx, cc, { obj, sel: '*' }, target, entries, false, i === 0)
     if (!res.ok) return res
   }
   return { ok: true }

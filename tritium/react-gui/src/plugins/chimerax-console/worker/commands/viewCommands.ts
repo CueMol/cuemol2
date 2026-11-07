@@ -327,12 +327,15 @@ function outlinedRenderers(ctx: WorkerContext, sceneId: number): { id: number; e
   return out
 }
 
+/** ChimeraX's default silhouette width in pixels (`graphics/opengl.py` `Silhouette.thickness`). */
+const SILHOUETTE_DEFAULT_PX = 1
+
 /**
  * ChimeraX's silhouettes, which are one setting for the whole view, as the
  * outline of every renderer that can draw one. The width is in pixels
  * there and in angstroms here, so it is converted at the current zoom.
  */
-async function silhouettes(
+export async function silhouettes(
   ctx: WorkerContext,
   cc: CmdContext,
   cmd: string,
@@ -355,6 +358,10 @@ async function silhouettes(
     const writes: [string, string][] = []
     if (enable !== '') writes.push(['egtype', enable === 'true' ? 'silhouette' : 'none'])
     if (width !== '') writes.push(['eglinew', String(Number(width) * pixelSize(cam))])
+    // An outline turned on gets ChimeraX's default width, 1 pixel at the
+    // current zoom: CueMol's default (0.01 A) is a fraction of a pixel. An
+    // outline already on keeps the width it has.
+    else if (enable === 'true' && r.egtype !== 'silhouette') writes.push(['eglinew', String(SILHOUETTE_DEFAULT_PX * pixelSize(cam))])
     if (color !== '') writes.push(['egcolor', splitColorArg(color).hex])
     for (const [prop, value] of writes) {
       const res = await runOp(ctx, cc, 'set_node_prop', { nodeType: 'renderer', nodeId: r.id, prop, value })

@@ -32,6 +32,7 @@ import { isSelector, withSceneSelectors } from '../spec/selectors'
 import { readCamera } from '../camera'
 import { applyAutoStyle } from '../autoStyle'
 import { openTarget } from '../openTarget'
+import { assemblyFetch } from '@renderer/worker/shared/dbSources'
 import { colorByPlddt } from './colorCommands'
 import { warnIgnored } from './warn'
 
@@ -63,6 +64,7 @@ async function openOne(ctx: WorkerContext, cc: CmdContext, name: string, args: R
   const objectName = args.name === '' ? null : args.name
   const before = new Set(numberedObjects(ctx, cc.sceneId).map((o) => o.uid))
   const target = openTarget(name, args.fromDatabase, args.format, (n) => fs.existsSync(resolvePath(cc.cwd, n)))
+  if ((args.maxAssemblies ?? '') !== '' && target.kind !== 'assemblies') cc.warn('open: maxAssemblies is used with rcsb_bio and pdbe_bio only; ignored')
   switch (target.kind) {
     case 'error':
       return { ok: false, error: target.error }
@@ -88,6 +90,8 @@ async function openOne(ctx: WorkerContext, cc: CmdContext, name: string, args: R
       if (!res.ok) return res
       return adopt(ctx, cc, before)
     }
+    case 'assemblies':
+      return openAssemblies(ctx, cc, target.site, target.id, args, before)
     case 'emdb': {
       if (args.format !== '') cc.warn('open: format is not used for an EMDB map')
       const res = await runOp(ctx, cc, 'fetch_emdb', { id: target.id, name: objectName, source: target.mirror, level: null })
@@ -113,6 +117,31 @@ async function openOne(ctx: WorkerContext, cc: CmdContext, name: string, args: R
   return adopt(ctx, cc, before)
 }
 
+/**
+ * The biological assemblies of an entry, 1, 2, ... until one is missing or
+ * `maxAssemblies` is reached, each a model (ChimeraX `fetch_pdb_bio.py`).
+ * The first missing is an error; a later one ends the list.
+ */
+async function openAssemblies(
+  ctx: WorkerContext, cc: CmdContext, site: 'rcsb' | 'pdbe', id: string, args: Record<string, string>, before: Set<number>,
+): Promise<CmdOutcome> {
+  if (args.format !== '') cc.warn('open: format is not used for assemblies (mmCIF)')
+  const max = (args.maxAssemblies ?? '') === '' ? Infinity : Number(args.maxAssemblies)
+  for (let n = 1; n <= max; n++) {
+    const spec = assemblyFetch(site, id, n)
+    if (!spec) return { ok: false, error: `Error: open: "${id}" is not a PDB id` }
+    const res = await runOp(ctx, cc, 'fetch_url', {
+      url: spec.url, reader: spec.readerName, name: args.name !== '' && n === 1 ? args.name : spec.name,
+      gzip: spec.gzip ? true : null, ...OPEN_CARTOON, preset: null, centerView: n === 1,
+    })
+    if (!res.ok) {
+      if (n === 1) return { ok: false, error: `Error: open: no biological assembly of ${id} could be fetched (${res.error.replace(/^Error: /, '')})` }
+      break
+    }
+  }
+  return adopt(ctx, cc, before)
+}
+
 const open = chxCommand({
   words: ['open'],
   args: [
@@ -120,6 +149,7 @@ const open = chxCommand({
     { name: 'name', type: StringArg, role: 'keyword' },
     { name: 'format', type: StringArg, role: 'keyword' },
     { name: 'fromDatabase', type: StringArg, role: 'keyword' },
+    { name: 'maxAssemblies', type: IntArg, role: 'keyword' },
   ],
   mutates: true,
   summary: 'Open files, .cxc scripts, or fetch entries: PDB ids, db:id (pdbe, pdbj, redo, alphafold, pubchem, emdb, eds), or URLs.',
@@ -162,7 +192,7 @@ const alphafoldFetch = chxCommand({
 })
 
 /** The objects a model specification names (every object for none). */
-function objectsOf(ctx: WorkerContext, sceneId: number, spec: string): { ok: true; objs: NumberedObject[] } | { ok: false; error: string } {
+export function objectsOf(ctx: WorkerContext, sceneId: number, spec: string): { ok: true; objs: NumberedObject[] } | { ok: false; error: string } {
   const all = numberedObjects(ctx, sceneId)
   if (spec.trim() === '') return { ok: true, objs: all }
   try {
