@@ -8,9 +8,10 @@
  * continuing a line, the `_ ` (quiet), `/` (Python) and `@` (script)
  * prefixes, the command word by unique prefix, and comma-separated
  * arguments that may be named (`name=value`). The two dialects that speak
- * it differ only in how arguments meet parameters (`ArgRule`) and in
- * whether Tab falls back to file names; each makes its syntax here with its
- * own choice. The runtime never reads a line itself.
+ * it differ in how arguments meet parameters (`ArgRule`), in whether Tab
+ * falls back to file names, and in whether a command runs by an
+ * abbreviation of its name; each makes its syntax here with its own choice.
+ * The runtime never reads a line itself.
  */
 
 import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
@@ -28,6 +29,14 @@ import type { SplitCommand } from './splitCommands'
 export interface CommaSyntaxOptions extends CommaGrammar {
   /** What a line starting `/` (Python, in PyMOL) is refused with. */
   pythonRefusal: string
+  /**
+   * A command runs only by its full name. An abbreviation (`sho`, `s_n`)
+   * is refused with the names it would stand for, rather than run: a bare
+   * verb typed for another dialect (`open`) would otherwise run the one
+   * command it starts (`open_log`). Tab still completes abbreviations.
+   * Off for PyMOL, whose scripts rely on them.
+   */
+  exactNames?: boolean
 }
 
 /** A split command as the runtime sees it. */
@@ -52,7 +61,13 @@ export function commaSyntax(opts: CommaSyntaxOptions): DialectSyntax {
 
     resolve(text: string, commands: readonly ConsoleCommand[]) {
       const word = text.split(/\s+/)[0]
-      const found = lookupCommand(word, commands.map((c) => c.name))
+      const names = commands.map((c) => c.name)
+      const found = lookupCommand(word, names)
+      if (opts.exactNames && !names.includes(word)) {
+        const meant = found.kind === 'found' ? [found.name] : found.kind === 'ambiguous' ? found.candidates : []
+        const hint = meant.length === 0 ? '' : ` (did you mean ${meant.join(', ')}?)`
+        return { kind: 'error', error: `Error: unknown command: "${word}"${hint}` }
+      }
       if (found.kind === 'ambiguous') {
         return { kind: 'error', error: `Error: ambiguous command: ${found.candidates.join(', ')}` }
       }

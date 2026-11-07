@@ -13,6 +13,8 @@ import { splitCommands } from './splitCommands'
 import { ParseError, parseArgs, scanArgs } from './parseArgs'
 import { BindError, bindArgs } from './bindArgs'
 import { lookupCommand } from './commandLookup'
+import { commaSyntax } from './commaSyntax'
+import type { ConsoleCommand } from '../runtime/types'
 
 describe('splitCommands', () => {
   it('does not cut on a semicolon inside brackets or quotes', () => {
@@ -149,5 +151,19 @@ describe('lookupCommand', () => {
       kind: 'ambiguous',
       candidates: ['select', 'set', 'set_name'],
     })
+  })
+})
+
+describe('commaSyntax exactNames', () => {
+  const commands = ['open_log', 'show'].map((name) => ({ name }) as ConsoleCommand)
+  const resolve = (exactNames: boolean, text: string) =>
+    commaSyntax({ rule: 'python', fileFallback: false, pythonRefusal: '', exactNames }).resolve(text, commands)
+
+  it('runs a command by its full name only, naming what an abbreviation stands for', () => {
+    // A bare verb meant for another dialect must not run the one command it starts.
+    expect(resolve(true, 'open 1a0m 1crn')).toEqual({ kind: 'error', error: 'Error: unknown command: "open" (did you mean open_log?)' })
+    expect(resolve(true, 'show 1crn')).toMatchObject({ kind: 'found', spec: { name: 'show' } })
+    // PyMOL keeps its abbreviations.
+    expect(resolve(false, 'open 1a0m')).toMatchObject({ kind: 'found', spec: { name: 'open_log' } })
   })
 })

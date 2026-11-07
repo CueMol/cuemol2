@@ -424,9 +424,11 @@ export const NATIVE_DIALECT: ConsoleDialect = {
   meta: NATIVE_META,
   // The comma grammar, with arguments matched as in a Python call; path
   // parameters list files themselves, so Tab does not fall back to them.
+  // Commands run by their full names only (Tab completes the rest).
   syntax: commaSyntax({
     rule: 'python',
     fileFallback: false,
+    exactNames: true,
     pythonRefusal: 'Error: a line starting with "/" is Python, which this console does not run',
   }),
   commands: () => NATIVE_COMMANDS,
