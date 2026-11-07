@@ -153,6 +153,27 @@ export function paletteColor(p: Palette, f: number): string {
   return hex(s[s.length - 1].rgb)
 }
 
+/** ChimeraX's `alphafold` colormap (`core/colors.py`): pLDDT 0 red, 50 orange, 70 yellow, 90 cornflowerblue, 100 blue. */
+const ALPHAFOLD_PALETTE: Palette = (() => {
+  const r = readPalette('0,red:0.5,orange:0.7,yellow:0.9,cornflowerblue:1,blue')
+  if (!r.ok) throw new Error(r.error)
+  return r.palette
+})()
+
+/** The pLDDT width of one colour of `plddtEntries`: 50 colours over 0-100, close to ChimeraX's continuous map. */
+export const PLDDT_STEP = 2
+
+/**
+ * Paint entries colouring atoms by pLDDT (the B-factor column of an AlphaFold
+ * model) along ChimeraX's `alphafold` colormap, lowest first: put first in a
+ * table one by one, the last (`bfac > 98`) ends on top and the first match wins.
+ */
+export function plddtEntries(): [string, string][] {
+  const out: [string, string][] = [['*', paletteColor(ALPHAFOLD_PALETTE, 0)]]
+  for (let t = 0; t < 100; t += PLDDT_STEP) out.push([`bfac > ${t}`, paletteColor(ALPHAFOLD_PALETTE, (t + PLDDT_STEP / 2) / 100)])
+  return out
+}
+
 /** How many colours `rainbow residues` uses per chain: enough to look smooth, few enough for the paint table. */
 export const RAINBOW_STEPS = 64
 

@@ -32,6 +32,7 @@
 | [261028-get-pdb-emdb-followups-plan.md](261028-get-pdb-emdb-followups-plan.md) | Get PDB の EMDB 対応で後回しにした項目 (subsample、検証値の表示、EMDB 単独 entry の検索、Volume Server) | **未実装 (候補の一覧)**。EMDB 対応とキーワード検索は実装済み (`../architecture/get-pdb-emdb.md`、`../architecture/get-pdb-keyword-search.md`) |
 | [261103-tritium-cli-autoupdate-plan.md](261103-tritium-cli-autoupdate-plan.md) | `tritium_cli autoupdate`: app の updater を `/app/update` で駆動 (owner 付き lease、GUI の自動 restart 抑止、開始 phase ごとの引き継ぎ) | **未着手 / 後日**。subcommand 拡充 (実装済み、`../architecture/local-api-server.md` §5) から分離 |
 | [261103-chimerax-console-plan.md](261103-chimerax-console-plan.md) | ChX console (console の ChimeraX dialect) の残り: lighting・windowsize・clip (CueMol 側の機能追加が先に要る)、backbone を隠す規則と非表示の原子の style 保持 (表示状態を別に持つ必要がある)、`fit_view` op | **未実装** (既存機能で作れるコマンドは実装済み。`../architecture/console-chimerax-dialect.md`) |
+| [261107-database-fetch-plan.md](261107-database-fetch-plan.md) | データベースからの取得の core への展開: op `fetch_entry`、Get PDB ダイアログの取得元 (照会・表示・取得に取得元を渡す)、AlphaFold の pLDDT の色の preset、EMDB の mirror、URL からの地図 | **Phase 2 は未実装**。取得元の表と ChX の `open` は実装済み (`../architecture/database-fetch.md`) |
 | [261017-tube-raycast-memo-plan.md](261017-tube-raycast-memo-plan.md) | tube / cartoon の GPU raycast (impostor) の設計メモ: dev201608 の rctube の経緯、掃引パラメータの 1D 求根 + 断面 SDF 案、文献調査 | **検討メモ**。着手前に CPU で試作して安定性を確かめる |
 
 ## 実装済み (旧ルールで残っているもの)

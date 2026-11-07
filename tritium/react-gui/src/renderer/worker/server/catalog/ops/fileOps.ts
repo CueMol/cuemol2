@@ -37,6 +37,7 @@ async function fetchInto(
   name: string,
   args: FetchArgs,
   setFormat: (format: FileOpenOptions['format']) => FileOpenOptions['format'] = (f) => f,
+  gzip = false,
 ): Promise<OpOutcome> {
   const options = buildHeadlessFileOpenOptions(ctx, {
     readerName,
@@ -52,7 +53,7 @@ async function fetchInto(
   const reqId = oc.streamId('fetch')
   oc.noteStream(reqId)
 
-  const result = await streamLoadFromUrl(ctx, { reqId, url, readerName, objectName: name, sceneId: oc.sceneId, options })
+  const result = await streamLoadFromUrl(ctx, { reqId, url, readerName, objectName: name, sceneId: oc.sceneId, options, gzip })
   if (!result.ok) return { ok: false, error: result.error || `${url} could not be downloaded.` }
   return { ok: true, data: { objectId: result.objId, name } }
 }
@@ -117,6 +118,7 @@ export const fetchUrl = defineOp({
     name: string('Name of the new object.'),
     rendererType: optional(rendererType(`Renderer to create for it. ${NULL_RENDERER_DOC}`)),
     selection: optional(selection('Draw only this selection. Null draws everything.')),
+    gzip: optional(boolean('The download is gzip-compressed (a .gz file). Null or false reads it as it is.')),
     ...FETCH_RENDERER_PARAMS,
   },
   mutates: true,
@@ -125,7 +127,7 @@ export const fetchUrl = defineOp({
   group: 'files',
   async run(ctx, args, oc) {
     if (!/^https?:\/\//i.test(args.url.trim())) return { ok: false, error: `"${args.url}" is not an http or https URL.` }
-    return fetchInto(ctx, oc, args.url.trim(), args.reader, args.name.trim(), args)
+    return fetchInto(ctx, oc, args.url.trim(), args.reader, args.name.trim(), args, undefined, args.gzip === true)
   },
 })
 

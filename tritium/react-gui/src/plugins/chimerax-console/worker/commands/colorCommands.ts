@@ -32,9 +32,10 @@ import { chxCommand } from '../cli/command'
 import type { ChxCommand } from '../cli/command'
 import { ELEMENT_COLORS } from '../colorTables'
 import { splitColorArg } from '../colors'
-import { chainColor, modelColor, paletteColors, RAINBOW, rainbowRanges, readPalette } from '../colorSchemes'
+import { chainColor, modelColor, paletteColors, plddtEntries, RAINBOW, rainbowRanges, readPalette } from '../colorSchemes'
 import { atomRenderers, cartoonRenderers, emitContext, ensureOwned, ensurePaint, forEachAtom, intersect, paintCount, runOp, targetsOf } from '../display'
 import type { Target } from '../display'
+import type { NumberedObject } from '../models'
 import { surfacesOn } from '../surface'
 import { warnIgnored } from './warn'
 
@@ -142,6 +143,15 @@ export async function paintTarget(ctx: WorkerContext, cc: CmdContext, t: Target,
     }
   }
   return { ok: true }
+}
+
+/**
+ * Colour a whole molecule by pLDDT, as ChimeraX colours an AlphaFold model
+ * when it opens (`alphafold/fetch.py` `_color_by_confidence`): atoms and
+ * cartoons, replacing the colours it was opened with.
+ */
+export function colorByPlddt(ctx: WorkerContext, cc: CmdContext, obj: NumberedObject): Promise<CmdOutcome> {
+  return paintTarget(ctx, cc, { obj, sel: '*' }, 'ac', plddtEntries(), false, true)
 }
 
 /** ChimeraX's default target, acsbpf: atoms (and bonds), cartoons, surfaces... */
