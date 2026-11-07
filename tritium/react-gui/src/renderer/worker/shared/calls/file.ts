@@ -11,6 +11,8 @@ import type { ElectronFileFilter } from '@shared/types/fileDialog'
 import type {
   FetchEmdbMapInfoArgs,
   FetchEmdbMapInfoResult,
+  FetchDbEntryInfoArgs,
+  FetchDbEntryInfoResult,
   FetchEntryInfoArgs,
   FetchEntryInfoResult,
   SearchPdbEntriesArgs,
@@ -73,6 +75,7 @@ export interface FileCalls {
   cancelStreamLoad:           { args: CancelStreamLoadArgs; result: CancelStreamLoadResult }
   fetchEntryInfo:             { args: FetchEntryInfoArgs; result: FetchEntryInfoResult }
   fetchEmdbMapInfo:           { args: FetchEmdbMapInfoArgs; result: FetchEmdbMapInfoResult }
+  fetchDbEntryInfo:           { args: FetchDbEntryInfoArgs; result: FetchDbEntryInfoResult }
   searchPdbEntries:           { args: SearchPdbEntriesArgs; result: SearchPdbEntriesResult }
   getObjectSaveInfo:          { args: GetObjectSaveInfoArgs; result: GetObjectSaveInfoResult }
   saveObjectToFile:           { args: SaveObjectToFileArgs; result: SaveObjectToFileResult }
@@ -93,6 +96,7 @@ export const FILE_KEYS = [
   'cancelStreamLoad',
   'fetchEntryInfo',
   'fetchEmdbMapInfo',
+  'fetchDbEntryInfo',
   'searchPdbEntries',
   'getObjectSaveInfo',
   'saveObjectToFile',

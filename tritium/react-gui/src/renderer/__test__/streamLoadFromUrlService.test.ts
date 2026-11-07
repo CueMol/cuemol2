@@ -174,6 +174,30 @@ describe('streamLoadFromUrl service', () => {
         expect(opArgs).not.toHaveProperty('loadSegid')
     })
 
+    it('records a database entry as fetch_entry (not its URL) and decompresses a gzip body', async () => {
+        const env = makeEnv()
+        globalThis.fetch = fetchYieldingChunks([new Uint8Array([1])]) as unknown as typeof fetch
+        const options = makeOptions()
+        options.renderer.objectName = '1crn'
+
+        await streamLoadFromUrl(env.ctx, {
+            reqId: 'req-e',
+            url: 'https://pdbj.org/rest/downloadPDBfile?format=mmcif&id=1crn',
+            readerName: 'mmcif',
+            objectName: '1crn',
+            sceneId: 7,
+            options,
+            gzip: true,
+            entry: { source: 'pdbj', id: '1CRN', format: null, defaultName: '1crn' },
+        })
+
+        expect((env.reader as unknown as { compress?: string }).compress).toBe('gzip')
+        const [, , op, opArgs] = vi.mocked(recordOp).mock.calls[0]
+        expect(op).toBe('fetch_entry')
+        // The default name is not recorded, so a replay names it the same way.
+        expect(opArgs).toMatchObject({ source: 'pdbj', id: '1CRN', format: null, name: null })
+    })
+
     it('cancel path: aborts fetch, drains IOThread via waitLoadAsync, does NOT add to scene', async () => {
         const env = makeEnv()
         const reqId = 'req-cancel'

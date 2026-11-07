@@ -65,6 +65,8 @@ ID 欄の下に lookup の結果 (title と「手法 | 分解能 | EMD ID」) �
 
 - **lookup に失敗してもダウンロードは止めない**。ダイアログは従来と同じ選択肢に戻るだけ
 - `pdb_format_compatible = N` (大きな構造) では PDB 形式の選択肢を出さず mmCIF に固定する
+- 座標の取得元 (RCSB / PDBe / PDBj / PDB-REDO) と、AlphaFold DB / PubChem への切り替えは
+  [database-fetch](database-fetch.md) §4
 - EMDB map の on/off は「外した ID の集合」で持つ。entry が変わっても状態を作り直す必要が無い
 - 結果 (`GetPdbDialogResult`) の `emMaps` に、ダイアログが読んだ推奨 level を入れて渡す。worker 側で
   EMDB を引き直さない

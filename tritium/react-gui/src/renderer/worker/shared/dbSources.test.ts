@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { structureFetch, urlFetch } from './dbSources'
+import { parseDbEntryInfo, structureFetch, urlFetch } from './dbSources'
 
 const spec = (r: ReturnType<typeof structureFetch>) => (r.ok ? r.spec : r.error)
 
@@ -30,5 +30,22 @@ describe('structureFetch', () => {
     expect(structureFetch('pdbe', '1crnx', null).ok).toBe(false)
     expect(structureFetch('alphafold', 'NOS3_HUMAN', null).ok).toBe(false)
     expect(structureFetch('pubchem', '2244', 'pdb').ok).toBe(false)
+  })
+})
+
+describe('parseDbEntryInfo', () => {
+  it('reads the name and facts from the AlphaFold DB and PubChem records, and nothing from an empty one', () => {
+    const af = [
+      { modelEntityId: 'AF-P29474-F1', uniprotAccession: 'P29474', uniprotDescription: 'Nitric oxide synthase 3', gene: 'NOS3',
+        organismScientificName: 'Homo sapiens', sequenceStart: 1, sequenceEnd: 1203, globalMetricValue: 82.5 },
+    ]
+    expect(parseDbEntryInfo('alphafold', 'P29474', af)).toEqual({
+      title: 'Nitric oxide synthase 3', details: ['NOS3', 'Homo sapiens', '1203 residues', 'mean pLDDT 82.5'],
+    })
+    const pc = { PropertyTable: { Properties: [{ CID: 2244, MolecularFormula: 'C9H8O4', MolecularWeight: '180.16', IUPACName: '2-acetyloxybenzoic acid', Title: 'Aspirin' }] } }
+    expect(parseDbEntryInfo('pubchem', '2244', pc)).toEqual({
+      title: 'Aspirin', details: ['C9H8O4', '180.16 g/mol', '2-acetyloxybenzoic acid'],
+    })
+    expect(parseDbEntryInfo('alphafold', 'P29474', [])).toBeNull()
   })
 })

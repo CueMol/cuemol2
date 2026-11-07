@@ -29,7 +29,10 @@ import type { Result } from '@renderer/worker/shared/result'
 import { GET_PDB_COMMAND } from '../manifest'
 import { useShowGetPdbDialog } from './GetPdbDialogProvider'
 import type { EmMapRequest, MapServerType } from './GetPdbDialog'
-import { pickCoordUrl, pickEmdbMapUrl, pickMapUrl } from './pdbUrls'
+import { pickEmdbMapUrl, pickMapUrl } from './pdbUrls'
+import { structureFetch } from '@renderer/worker/shared/dbSources'
+import { buildDefaultFormatOptions, formatKindForReader, getDefaultRendererOptions } from '@renderer/worker/shared/fileOpenDefaults'
+import type { FileOpenOptions } from '@renderer/worker/shared/fileOpenTypes'
 import { pushHistory as pushPdbIdHistory } from './pdbIdHistory'
 
 /** A request id the progress events can be matched against. */
@@ -70,6 +73,14 @@ async function streamWithProgress(
   }
 }
 
+/** How a PubChem compound opens: the reader's defaults, a ball-and-stick renderer, the view centred on it. */
+function compoundOpenOptions(name: string, readerName: string): FileOpenOptions {
+  return {
+    format: buildDefaultFormatOptions(formatKindForReader(readerName)),
+    renderer: { ...getDefaultRendererOptions(name, 'ballstick'), objectName: name, centerView: true },
+  }
+}
+
 /** Register the Get PDB command for as long as the plugin is enabled. */
 export function useGetPdbCommand(): void {
   const { cm } = useCueMol()
@@ -93,15 +104,21 @@ export function useGetPdbCommand(): void {
 
       // Persist the accepted ID to the dropdown history (LRU, dedup,
       // capped) so future invocations can quickly recall it.
-      pushPdbIdHistory(inputs.accession.id)
-      const pdbid = inputs.accession.id
+      pushPdbIdHistory(inputs.entryId)
+      // The maps below are a PDB / EMDB entry's; entryId is its accession then.
+      const pdbid = inputs.entryId
 
       const tasks: Array<() => Promise<Result<object>>> = []
 
       // Coord task: same flow as Open File... + pre-resolved readerName.
-      if (inputs.coord) {
-        const { url, readerName, ext } = pickCoordUrl(pdbid, inputs.coord.serverType)
-        const virtualFilename = `${pdbid}.${ext}`
+      // The URL, reader and name come from the source table, as fetch_entry's do.
+      const coordFetch = inputs.coord ? structureFetch(inputs.coord.source, inputs.entryId, inputs.coord.format) : null
+      if (coordFetch && !coordFetch.ok) {
+        await showErrorAlert({ title: 'Get PDB failed', message: coordFetch.error })
+      } else if (coordFetch && inputs.coord) {
+        const { source, format } = inputs.coord
+        const { url, readerName, gzip, name } = coordFetch.spec
+        const virtualFilename = `${name}.${readerName === 'mmcif' ? 'cif' : readerName}`
         // Pass readerName explicitly so the renderer-list lookup matches the
         // load reader. Skipping it re-introduces the .cif ambiguity
         // (mmcifmap wins by JSON order).
@@ -114,29 +131,36 @@ export function useGetPdbCommand(): void {
           await showErrorAlert({
             title: 'Get PDB failed',
             message:
-              `Could not find a compatible reader for the requested PDB:\n${virtualFilename}\n\n` +
+              `Could not find a compatible reader for the requested entry:\n${virtualFilename}\n\n` +
               'The selected server type may not provide this entry, or the format is unsupported.',
           })
         } else {
-          const presetTypes = await fetchPresetTypes(cm, info.scene_uid, objType)
-          const options = await showFileOpenOptionDialog({
-            filePath: virtualFilename,
-            sceneId: info.scene_uid,
-            rendererTypes,
-            presetTypes,
-            objType,
-            readerName,
-          })
+          // A PubChem compound is one small molecule: drawn as ball-and-stick
+          // and centred on, without asking how.
+          const options = source === 'pubchem'
+            ? compoundOpenOptions(name, readerName)
+            : await showFileOpenOptionDialog({
+                filePath: virtualFilename,
+                sceneId: info.scene_uid,
+                rendererTypes,
+                presetTypes: await fetchPresetTypes(cm, info.scene_uid, objType),
+                objType,
+                readerName,
+              })
           if (options !== null) {
             tasks.push(() =>
-              streamWithProgress(cm, streamProgress, `Downloading ${pdbid}...`, (reqId) =>
+              streamWithProgress(cm, streamProgress, `Downloading ${name}...`, (reqId) =>
                 cm.invokeService('streamLoadFromUrl', {
                   reqId,
                   url,
                   readerName,
-                  objectName: pdbid,
+                  objectName: name,
                   sceneId: info.scene_uid,
                   options,
+                  gzip,
+                  // The RCSB keeps being recorded as fetch_pdb, with the reader
+                  // options read here; another source as fetch_entry.
+                  ...(source === 'pdb' ? {} : { entry: { source, id: inputs.entryId, format, defaultName: name } }),
                 }),
               ),
             )

@@ -25,6 +25,12 @@ export interface StreamLoadFromUrlArgs {
     options: FileOpenOptions;
     /** The body is gzip-compressed (a `.gz` file, or a server that always compresses). */
     gzip?: boolean;
+    /**
+     * The database entry the URL was built for (`fetch_entry`): recorded as
+     * that entry rather than as its URL. `defaultName` is the name the entry
+     * opens as when none is given, so a recorded name is kept only when it differs.
+     */
+    entry?: { source: string; id: string; format: string | null; defaultName: string };
 }
 
 /** `{ objId }` on success; a cancel is `fail(..., 'canceled')`. */
@@ -52,9 +58,9 @@ function fetchPdbSpec(args: StreamLoadFromUrlArgs): { pdbId: string; format: 'mm
 }
 
 /**
- * Record the download: `fetch_pdb` for a URL it builds, `fetch_url` for any
- * other, under the name the object ends up with and the renderer it is
- * first drawn with.
+ * Record the download: `fetch_entry` for a database entry, `fetch_pdb` for
+ * a URL it builds, `fetch_url` for any other, under the name the object ends
+ * up with and the renderer it is first drawn with.
  */
 function recordFetch(ctx: WorkerContext, sceneId: number, args: StreamLoadFromUrlArgs): void {
     const rend = args.options.renderer;
@@ -66,6 +72,11 @@ function recordFetch(ctx: WorkerContext, sceneId: number, args: StreamLoadFromUr
         preset: rend.presetName ? rend.presetName : null,
         centerView: rend.centerView ? null : false,
     };
+    if (args.entry) {
+        const { source, id, format, defaultName } = args.entry;
+        recordOp(ctx, sceneId, 'fetch_entry', { source, id, format, name: name !== defaultName ? name : null, ...renderer });
+        return;
+    }
     const fetch = fetchPdbSpec(args);
     if (fetch) {
         recordOp(ctx, sceneId, 'fetch_pdb', {

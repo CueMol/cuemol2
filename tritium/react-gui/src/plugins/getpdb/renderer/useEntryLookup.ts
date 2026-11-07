@@ -15,6 +15,7 @@ import { useCueMol } from '@renderer/plugin-host/api'
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 import { parseAccession, type Accession } from '@renderer/worker/shared/pdbUrls'
 import type { EmdbMapInfo, EntryInfo } from '@renderer/worker/shared/pdbEntryInfo'
+import { dbEntryInfoUrl, type DbEntryInfo } from '@renderer/worker/shared/dbSources'
 
 /** How long typing has to pause before the lookup starts. */
 const LOOKUP_DEBOUNCE_MS = 400
@@ -118,6 +119,64 @@ export function useEntryLookup(text: string, active: boolean): EntryLookupState 
       guard.invalidate()
     }
     // `key` stands for `accession`, which is a fresh object every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, cm, guard])
+
+  return state
+}
+
+/** What AlphaFold DB or PubChem says about the id typed for it. */
+export type DbEntryLookup =
+  /** Nothing to look up (another database, or an id not of the form). */
+  | { status: 'idle' }
+  | { status: 'loading'; id: string }
+  | { status: 'found'; id: string; info: DbEntryInfo }
+  | { status: 'not-found'; id: string }
+  /** The lookup itself failed (offline, server error): the download is still offered. */
+  | { status: 'error'; id: string; message: string }
+
+/**
+ * Look up an AlphaFold DB model or PubChem compound, debounced like
+ * `useEntryLookup`. A result that arrives after the database or the id has
+ * changed is dropped.
+ *
+ * @param source - the database, or null when the dialog is on PDB / EMDB (no lookup)
+ * @param id - the id as typed; looked up only when it has the database's form
+ */
+export function useDbEntryLookup(source: 'alphafold' | 'pubchem' | null, id: string): DbEntryLookup {
+  const { cm } = useCueMol()
+  const guard = useStaleGuard()
+  const [state, setState] = useState<DbEntryLookup>({ status: 'idle' })
+  const trimmed = id.trim()
+  const valid = source !== null && dbEntryInfoUrl(source, trimmed) !== null
+  const key = valid ? `${source}:${trimmed}` : ''
+
+  useEffect(() => {
+    guard.invalidate()
+    if (!valid || !cm || source === null) {
+      setState({ status: 'idle' })
+      return
+    }
+    setState({ status: 'loading', id: trimmed })
+    const token = guard.next()
+    const timer = setTimeout(() => {
+      cm.invokeService('fetchDbEntryInfo', { source, id: trimmed })
+        .then((res) => {
+          if (!guard.isCurrent(token)) return
+          if (res.ok) setState({ status: 'found', id: trimmed, info: res.info })
+          else if (res.code === 'not-found') setState({ status: 'not-found', id: trimmed })
+          else setState({ status: 'error', id: trimmed, message: res.error })
+        })
+        .catch((e: unknown) => {
+          if (!guard.isCurrent(token)) return
+          setState({ status: 'error', id: trimmed, message: e instanceof Error ? e.message : String(e) })
+        })
+    }, LOOKUP_DEBOUNCE_MS)
+    return () => {
+      clearTimeout(timer)
+      guard.invalidate()
+    }
+    // `key` stands for source, id and whether it has the form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, cm, guard])
 

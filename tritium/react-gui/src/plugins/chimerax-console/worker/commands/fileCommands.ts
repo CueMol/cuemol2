@@ -79,21 +79,21 @@ const open = chxCommand({
     switch (target.kind) {
       case 'error':
         return { ok: false, error: target.error }
-      case 'pdb': {
-        const res = await runOp(ctx, cc, 'fetch_pdb', {
-          pdbId: target.pdbId, format: target.format, ...OPEN_CARTOON, name: objectName, preset: null, centerView: true,
+      case 'entry': {
+        const res = await runOp(ctx, cc, 'fetch_entry', {
+          source: target.source, id: target.id, format: target.format, ...OPEN_CARTOON, name: objectName, preset: null, centerView: true,
         })
         if (!res.ok) return res
-        return adopt(ctx, cc, before)
+        return adopt(ctx, cc, before, target.source === 'alphafold')
       }
       case 'url': {
-        if (target.source === 'url' && args.format !== '') cc.warn('open: format is not used for a URL (its extension says it)')
+        if (args.format !== '') cc.warn('open: format is not used for a URL (its extension says it)')
         const res = await runOp(ctx, cc, 'fetch_url', {
           url: target.spec.url, reader: target.spec.readerName, name: objectName ?? target.spec.name,
           gzip: target.spec.gzip ? true : null, ...OPEN_CARTOON, preset: null, centerView: true,
         })
         if (!res.ok) return res
-        return adopt(ctx, cc, before, target.source === 'alphafold')
+        return adopt(ctx, cc, before)
       }
       case 'emdb': {
         if (args.format !== '') cc.warn('open: format is not used for an EMDB map')

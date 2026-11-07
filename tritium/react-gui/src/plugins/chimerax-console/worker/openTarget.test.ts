@@ -16,11 +16,11 @@ const all = () => true
 
 describe('openTarget', () => {
   it('fetches with fromDatabase even when the file exists, and opens the file otherwise', () => {
-    expect(openTarget('1crn', 'pdbe', '', all)).toMatchObject({ kind: 'url', source: 'pdbe' })
+    expect(openTarget('1crn', 'pdbe', '', all)).toMatchObject({ kind: 'entry', source: 'pdbe' })
     expect(openTarget('1crn', '', '', all)).toEqual({ kind: 'file' })
     // db:id and fromDatabase are the same fetch.
     expect(openTarget('pdbe:1crn', '', 'pdb', none)).toEqual(openTarget('1crn', 'pdbe', 'pdb', none))
-    expect(openTarget('1crn', '', '', none)).toEqual({ kind: 'pdb', pdbId: '1crn', format: 'mmcif' })
+    expect(openTarget('1crn', '', '', none)).toEqual({ kind: 'entry', source: 'pdb', id: '1crn', format: null })
     expect(openTarget('emdb:1080', '', '', none)).toEqual({ kind: 'emdb', id: 'EMD-1080', mirror: 'WWPDB' })
     expect(openTarget('C:\\data\\x.pdb', '', '', none)).toEqual({ kind: 'file' })
   })
