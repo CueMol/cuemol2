@@ -36,6 +36,9 @@ CueMol 側の機能追加が要るもの、断るもの、共通の対策) で�
 
 ## 2. 新しいコマンドのうち、CueMol の既存の機能で作れるもの
 
+`volume` (表示の設定と zone)、`lighting`、`preset`、`camera ortho`、`unitcell`、`ribbon`、`open ... from rcsb_bio` は
+[261107-chx-small-commands-plan.md](261107-chx-small-commands-plan.md) (提案 B) で進める。残りはその plan の「対象外」を参照。
+
 | コマンド | 使用 | 使う CueMol の機能 | 注意点 |
 |---|---|---|---|
 | **`volume`** (`level`、`style mesh/surface`、`step`、`transparency`、`zone`、`region`、`hide/show`、`color`) | 10 本 / 49 行 (最多) | 地図の contour の op (`set_map_contour` ほか)、地図の renderer の property | 地図の演算 (`gaussian`、`subtract`、`morph`、`box`、`scale`、`cover`) は対象外として断る |
