@@ -16,7 +16,7 @@ import React from 'react'
 import { act } from 'react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mountTree } from '@renderer/__test__/helpers/testHarness'
-import type { EntryLookupState } from './useEntryLookup'
+import type { DbEntryLookup, EntryLookupState } from './useEntryLookup'
 import type { PdbSearch } from './usePdbSearch'
 
 // Render the Blueprint Dialog body inline (no portal/overlay) so the field
@@ -35,7 +35,8 @@ vi.mock('./pdbIdHistory', () => ({
 }))
 // The lookup is network-bound; each test hands the dialog its result.
 let lookupState: EntryLookupState = { lookup: { status: 'idle' }, emdbInfo: {} }
-vi.mock('./useEntryLookup', () => ({ useEntryLookup: () => lookupState }))
+let dbLookupState: DbEntryLookup = { status: 'idle' }
+vi.mock('./useEntryLookup', () => ({ useEntryLookup: () => lookupState, useDbEntryLookup: () => dbLookupState }))
 // The search is network-bound too: an idle one unless a test sets hits.
 const searchMock: PdbSearch = { state: null, run: vi.fn(), more: () => {}, reset: () => {} }
 vi.mock('./usePdbSearch', () => ({ usePdbSearch: () => searchMock }))
@@ -50,6 +51,7 @@ afterEach(() => {
   tree?.unmount()
   tree = null
   lookupState = { lookup: { status: 'idle' }, emdbInfo: {} }
+  dbLookupState = { status: 'idle' }
   searchMock.state = null
   vi.mocked(searchMock.run).mockClear()
 })
@@ -102,13 +104,14 @@ describe('GetPdbDialog', () => {
     const text = container.textContent ?? ''
     expect(text).toContain('Cryo-EM maps')
     expect(text).not.toContain('2Fo-Fc')
-    expect(text).not.toContain('PDB (RCSB)')
+    // The entry is too large for the PDB format: mmCIF is the only format offered.
+    expect(container.querySelectorAll('input[type="radio"][value="pdb"]').length).toBe(1) // the RCSB server, not a format
 
     const download = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Download')!
     act(() => { download.click() })
     expect(onConfirm).toHaveBeenCalledWith({
-      accession,
-      coord: { serverType: 'RCSB_CIF' },
+      entryId: '7a4p',
+      coord: { source: 'pdb', format: 'mmcif' },
       map2fofc: null,
       mapFofc: null,
       emMaps: [{ emdbId: 'EMD-11640', serverType: 'WWPDB', contourLevel: 0.01 }],
@@ -137,6 +140,34 @@ describe('GetPdbDialog', () => {
     act(() => { (row as HTMLElement).click() })
     const download = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Download')!
     act(() => { download.click() })
-    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ accession: { kind: 'pdb', id: '6vpv' } }))
+    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ entryId: '6vpv' }))
+  })
+
+  it('an AlphaFold DB id is downloaded without a lookup or maps once it has the right form', () => {
+    // A stale PDB lookup must not leak into another database's form.
+    lookupState = {
+      lookup: { status: 'pdb', accession: { kind: 'pdb', id: '1abc' }, entry: {
+        id: '1abc', title: 'X', methods: ['X-RAY DIFFRACTION'], resolution: 2, emdbIds: [], pdbFormatAvailable: true, kind: 'xtal',
+      } },
+      emdbInfo: {},
+    }
+    const onConfirm = vi.fn()
+    const { container } = mount(onConfirm)
+    const segment = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'AlphaFold DB')!
+    act(() => { segment.click() })
+    const download = () => Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Download')!
+
+    typeId(container, 'NOS3_HUMAN')
+    expect(download().disabled).toBe(true)
+    expect(container.textContent).toContain('UniProt name')
+
+    dbLookupState = { status: 'found', id: 'P29474', info: { title: 'Nitric oxide synthase 3', details: ['NOS3', 'Homo sapiens'] } }
+    typeId(container, 'P29474')
+    expect(container.textContent).toContain('Nitric oxide synthase 3')
+    expect(container.textContent).not.toContain('Density maps')
+    act(() => { download().click() })
+    expect(onConfirm).toHaveBeenCalledWith({
+      entryId: 'P29474', coord: { source: 'alphafold', format: 'mmcif' }, map2fofc: null, mapFofc: null, emMaps: [],
+    })
   })
 })

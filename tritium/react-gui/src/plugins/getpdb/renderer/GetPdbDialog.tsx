@@ -2,7 +2,8 @@
  * @file plugins/getpdb/renderer/GetPdbDialog.tsx
  * @description The Get PDB form: a PDB or EMDB accession code (or keywords to
  * search for one), then which of the entry's files to fetch, and from which
- * server.
+ * server. The Database switch also takes an AlphaFold DB model (by UniProt
+ * accession) or a PubChem compound (by CID).
  *
  * The code is looked up as it is typed (`useEntryLookup`), and the map
  * section follows what the entry is: a crystallographic entry offers its
@@ -15,6 +16,13 @@
  * searched for on Enter, and the hits are listed under the field; picking a
  * row makes that entry the one the rest of the form is about, exactly as if
  * its ID had been typed. Typing an ID again closes the list.
+ *
+ * AlphaFold DB and PubChem are not PDB entries: their own record is looked up
+ * (the protein or compound name), nothing is searched, no map is offered, and
+ * the download needs only an id of the right form (`dbSources.ts` checks it)
+ * that the database does not say it lacks. PDBe, PDBj and PDB-REDO serve the
+ * same PDB entry as the RCSB, so they are coordinate servers of a PDB entry,
+ * which the RCSB lookup still describes.
  */
 
 import React, { useState, useEffect, useCallback } from 'react'
@@ -30,25 +38,51 @@ import {
   FieldSection,
   FormButton,
   RadioField,
+  SegmentField,
   SelectField,
 } from '@renderer/h3-kit/form'
 import { Listbox, ListRow, TruncatedText } from '@renderer/h3-kit/list'
 import { getHistory, pushHistory } from './pdbIdHistory'
 import { parseAccession } from '@renderer/worker/shared/pdbUrls'
+import { structureFetch } from '@renderer/worker/shared/dbSources'
+import type { StructureFormat, StructureSource } from '@renderer/worker/shared/dbSources'
 import type { EmdbMapInfo, EntryInfo, SearchMethodFilter, SearchSort } from '@renderer/worker/shared/pdbEntryInfo'
-import { useEntryLookup, type EmdbInfoMap, type EntryLookup } from './useEntryLookup'
+import { useDbEntryLookup, useEntryLookup, type DbEntryLookup, type EmdbInfoMap, type EntryLookup } from './useEntryLookup'
 import { usePdbSearch, type PdbSearchState } from './usePdbSearch'
 
 // The server choices are shared with the worker (see worker/shared/pdbUrls.ts),
 // which builds the URLs for a headless fetch too.
 import type {
-  Accession,
-  CoordServerType,
   EmdbServerType,
   MapServerType,
 } from '@renderer/worker/shared/pdbUrls'
 
-export type { CoordServerType, EmdbServerType, MapServerType }
+export type { EmdbServerType, MapServerType }
+
+/** What the id field names: a PDB / EMDB entry, an AlphaFold DB model, or a PubChem compound. */
+export type EntryDatabase = 'pdb' | 'alphafold' | 'pubchem'
+
+/** The servers a PDB entry's coordinates are fetched from. */
+export type CoordServer = Extract<StructureSource, 'pdb' | 'pdbe' | 'pdbj' | 'redo'>
+
+/** Where the coordinates come from (`dbSources.ts`), and in which format (null: the source's only one). */
+export interface CoordRequest {
+  source: StructureSource
+  format: StructureFormat | null
+}
+
+const DATABASE_OPTIONS: { value: EntryDatabase; label: string }[] = [
+  { value: 'pdb', label: 'PDB / EMDB' },
+  { value: 'alphafold', label: 'AlphaFold DB' },
+  { value: 'pubchem', label: 'PubChem' },
+]
+
+/** The id field's label and placeholder per database. */
+const ID_FIELD: Record<EntryDatabase, { label: string; placeholder: string }> = {
+  pdb: { label: 'PDB or EMDB ID, or keywords', placeholder: '1mbn, EMD-11638, or keywords' },
+  alphafold: { label: 'UniProt accession or AlphaFold ID', placeholder: 'P29474, Q8N9C0-2, or AF-P29474-F1-v6' },
+  pubchem: { label: 'PubChem compound ID (CID)', placeholder: '2244' },
+}
 
 /** One EMDB map to fetch. */
 export interface EmMapRequest {
@@ -60,8 +94,9 @@ export interface EmMapRequest {
 }
 
 export interface GetPdbDialogResult {
-  accession: Accession
-  coord:    { serverType: CoordServerType } | null
+  /** The PDB / EMDB accession (lowercased PDB id, `EMD-<num>`), or the AlphaFold / PubChem id as typed. */
+  entryId: string
+  coord:    CoordRequest | null
   map2fofc: { serverType: MapServerType }   | null
   mapFofc:  { serverType: MapServerType }   | null
   emMaps:   EmMapRequest[]
@@ -197,6 +232,33 @@ function EntryInfoLines({ lookup, emdbInfo, onSearchInstead }: {
   }
 }
 
+const DATABASE_NAMES: Record<'alphafold' | 'pubchem', string> = { alphafold: 'AlphaFold DB', pubchem: 'PubChem' }
+
+/** What the AlphaFold DB / PubChem lookup says, under the id field. */
+function DbEntryInfoLines({ lookup, source }: { lookup: DbEntryLookup; source: 'alphafold' | 'pubchem' }): React.JSX.Element | null {
+  switch (lookup.status) {
+    case 'idle':
+      return null
+    case 'loading':
+      return <div className="h3-dialog-hint">Looking up {lookup.id}...</div>
+    case 'found':
+      return (
+        <>
+          <div className="type-body">{lookup.info.title}</div>
+          {lookup.info.details.length > 0 && <div className="h3-dialog-hint">{lookup.info.details.join(' | ')}</div>}
+        </>
+      )
+    case 'not-found':
+      return <div className="h3-dialog-error">No entry {lookup.id} was found in {DATABASE_NAMES[source]}.</div>
+    case 'error':
+      return (
+        <div className="h3-dialog-hint">
+          Could not read the entry information ({lookup.message}). The file can still be downloaded.
+        </div>
+      )
+  }
+}
+
 const METHOD_FILTER_LABELS: Record<SearchMethodFilter, string> = {
   all: 'All methods',
   xray: 'X-ray',
@@ -278,9 +340,11 @@ function SearchResults({ search, method, onMethodChange, sort, onSortChange, sel
 
 export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX.Element {
   const [text, setText] = useState('')
+  const [database, setDatabase] = useState<EntryDatabase>('pdb')
 
   const [coordEnabled, setCoordEnabled] = useState(true)
-  const [coordServer, setCoordServer] = useState<CoordServerType>('RCSB_CIF')
+  const [coordServer, setCoordServer] = useState<CoordServer>('pdb')
+  const [coordFormat, setCoordFormat] = useState<StructureFormat>('mmcif')
 
   const [map2fofcEnabled, setMap2fofcEnabled] = useState(false)
   const [mapFofcEnabled, setMapFofcEnabled] = useState(false)
@@ -301,8 +365,10 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
   useEffect(() => {
     if (visible) {
       setText('')
+      setDatabase('pdb')
       setCoordEnabled(true)
-      setCoordServer('RCSB_CIF')
+      setCoordServer('pdb')
+      setCoordFormat('mmcif')
       setMap2fofcEnabled(false)
       setMapFofcEnabled(false)
       setMapServer('RCSB_CIF')
@@ -325,24 +391,38 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
   // The search list owns the form while it is open: the entry is the picked
   // row, not the text. It stays open while the text is still not an ID, or
   // is the very text that was searched ("Search as keywords" on an ID).
-  const typed = parseAccession(text)
-  const searchOpen = search.state !== null && (typed === null || search.state.query === text.trim())
+  const isPdb = database === 'pdb'
+  const typed = isPdb ? parseAccession(text) : null
+  const searchOpen = isPdb && search.state !== null && (typed === null || search.state.query === text.trim())
   const entryText = searchOpen ? (selectedId ?? '') : text
 
-  const { lookup, emdbInfo } = useEntryLookup(entryText, visible)
-  const accession = parseAccession(entryText)
-  const section = mapSectionFor(lookup)
-  const emdbIds = emdbIdsFor(lookup)
+  // Only a PDB / EMDB entry is looked up. Switching database away turns the
+  // lookup off, which drops its result and any reply still on the way.
+  const { lookup, emdbInfo } = useEntryLookup(entryText, visible && isPdb)
+  const accession = isPdb ? parseAccession(entryText) : null
+  const section = isPdb ? mapSectionFor(lookup) : 'none'
+  const emdbIds = isPdb ? emdbIdsFor(lookup) : []
+
+  // Another database: the id only has to have the right form.
+  const otherId = text.trim()
+  const otherCheck = isPdb || otherId === '' ? null : structureFetch(database, otherId, null)
+  const otherError = otherCheck && !otherCheck.ok ? otherCheck.error : null
+  const otherSource = !isPdb && visible ? (database as 'alphafold' | 'pubchem') : null
+  const dbLookup = useDbEntryLookup(otherSource, text)
 
   // A PDB entry has coordinates; an EMDB code typed directly does not.
-  const showCoord = accession?.kind === 'pdb' && lookup.status !== 'not-found'
-  const pdbFormatAvailable = lookup.status !== 'pdb' || lookup.entry.pdbFormatAvailable
-  const effCoordServer: CoordServerType = pdbFormatAvailable ? coordServer : 'RCSB_CIF'
+  const showCoord = isPdb
+    ? accession?.kind === 'pdb' && lookup.status !== 'not-found'
+    : otherCheck?.ok === true && dbLookup.status !== 'not-found'
+  const pdbFormatAvailable = !isPdb || lookup.status !== 'pdb' || lookup.entry.pdbFormatAvailable
+  const effFormat: StructureFormat = pdbFormatAvailable ? coordFormat : 'mmcif'
 
-  const coordOn = showCoord && coordEnabled
+  const coordOn = showCoord && (isPdb ? coordEnabled : true)
   const xtalOn = section === 'xtal' && (map2fofcEnabled || mapFofcEnabled)
   const emSelected = section === 'em' ? emdbIds.filter((id) => !emOff.has(id)) : []
-  const canSubmit = accession !== null && (coordOn || xtalOn || emSelected.length > 0)
+  const canSubmit = isPdb
+    ? accession !== null && (coordOn || xtalOn || emSelected.length > 0)
+    : coordOn
 
   const toggleEm = (id: string, on: boolean): void => {
     setEmOff((prev) => {
@@ -353,15 +433,26 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
     })
   }
 
+  const coordRequest = (): CoordRequest => {
+    if (database === 'pubchem') return { source: 'pubchem', format: null }
+    if (database === 'alphafold') return { source: 'alphafold', format: coordFormat }
+    return { source: coordServer, format: effFormat }
+  }
+
   const handleOk = () => {
-    if (!canSubmit || !accession) return
+    if (!canSubmit) return
+    if (!isPdb) {
+      onConfirm({ entryId: otherId, coord: coordRequest(), map2fofc: null, mapFofc: null, emMaps: [] })
+      return
+    }
+    if (!accession) return
     const level = (id: string): number | null => {
       const info = emdbInfo[id]
       return typeof info === 'object' ? info.recommendedLevel : null
     }
     onConfirm({
-      accession,
-      coord:    coordOn ? { serverType: effCoordServer } : null,
+      entryId: accession.id,
+      coord:    coordOn ? coordRequest() : null,
       map2fofc: section === 'xtal' && map2fofcEnabled ? { serverType: mapServer } : null,
       mapFofc:  section === 'xtal' && mapFofcEnabled  ? { serverType: mapServer } : null,
       emMaps:   emSelected.map((id) => ({ emdbId: id, serverType: emServer, contourLevel: level(id) })),
@@ -381,7 +472,7 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
   // fills the field, and the lookup follows as if it had been typed.
   const pickHistory = (v: string): void => {
     setText(v)
-    if (parseAccession(v) === null) runSearch(v)
+    if (isPdb && parseAccession(v) === null) runSearch(v)
   }
 
   const changeMethod = (m: SearchMethodFilter): void => {
@@ -403,7 +494,7 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
     if (e.key === 'Enter') {
       e.preventDefault()
       const searched = search.state !== null && search.state.query === q
-      if (typed === null && q.length > 0 && !searched) runSearch(q)
+      if (isPdb && typed === null && q.length > 0 && !searched) runSearch(q)
       else if (canSubmit) handleOk()
       return
     }
@@ -416,7 +507,7 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
     }
   }
 
-  const keywordsPending = typed === null && text.trim().length > 0 && !searchOpen
+  const keywordsPending = isPdb && typed === null && text.trim().length > 0 && !searchOpen
 
   return (
     <DialogShell
@@ -429,7 +520,10 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
       okDisabled={!canSubmit}
     >
       <FieldSection title="Entry">
-        <Field label="PDB or EMDB ID, or keywords">
+        <Field label="Database">
+          <SegmentField value={database} onValueChange={setDatabase} options={DATABASE_OPTIONS} />
+        </Field>
+        <Field label={ID_FIELD[database].label}>
           {/* Editable combobox: text + themed, click-to-open history
               dropdown. The chevron and dark-mode popover are handled
               by ComboBoxField (h3-kit), so this dialog adds none of
@@ -441,15 +535,17 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
             onPick={pickHistory}
             options={historyItems}
             onOpen={refreshHistory}
-            placeholder="1mbn, EMD-11638, or keywords"
+            placeholder={ID_FIELD[database].placeholder}
             autoFocus
             onKeyDown={handleKeyDown}
             emptyText="No history"
             triggerLabel="Show history"
             triggerTitle="Recent IDs and searches"
-            aria-label="PDB or EMDB ID"
+            aria-label={ID_FIELD[database].label}
           />
         </Field>
+        {otherError && <div className="h3-dialog-error">{otherError}</div>}
+        {otherSource && <DbEntryInfoLines lookup={dbLookup} source={otherSource} />}
         {keywordsPending && (
           <>
             <div className="h3-dialog-hint">Press Enter to search the PDB for these keywords.</div>
@@ -458,7 +554,7 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
             </ButtonRow>
           </>
         )}
-        {!searchOpen && (
+        {isPdb && !searchOpen && (
           <EntryInfoLines
             lookup={lookup}
             emdbInfo={emdbInfo}
@@ -482,27 +578,65 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
         </SearchResults>
       )}
 
-      {showCoord && (
+      {showCoord && isPdb && (
         <FieldSection title="Coordinates">
           <Field label="Fetch coordinates" inline controlFirst>
             <CheckboxField checked={coordEnabled} onChange={setCoordEnabled} />
           </Field>
+          <Field label="Server">
+            <RadioField
+              value={coordServer}
+              onValueChange={setCoordServer}
+              disabled={!coordEnabled}
+              options={[
+                { value: 'pdb', label: 'RCSB' },
+                { value: 'pdbe', label: 'PDBe' },
+                { value: 'pdbj', label: 'PDBj' },
+                { value: 'redo', label: 'PDB-REDO' },
+              ]}
+            />
+          </Field>
           <Field label="Format">
             <RadioField
-              value={effCoordServer}
-              onValueChange={setCoordServer}
+              value={effFormat}
+              onValueChange={setCoordFormat}
               disabled={!coordEnabled}
               options={pdbFormatAvailable
                 ? [
-                    { value: 'RCSB_CIF', label: 'mmCIF (RCSB)' },
-                    { value: 'RCSB_PDB', label: 'PDB (RCSB)' },
+                    { value: 'mmcif', label: 'mmCIF' },
+                    { value: 'pdb', label: 'PDB' },
                   ]
-                : [{ value: 'RCSB_CIF', label: 'mmCIF (RCSB)' }]}
+                : [{ value: 'mmcif', label: 'mmCIF' }]}
             />
           </Field>
           {!pdbFormatAvailable && (
             <div className="h3-dialog-hint">This entry is too large for the PDB format.</div>
           )}
+          {coordServer === 'redo' && (
+            <div className="h3-dialog-hint">PDB-REDO has only the entries it has re-refined (X-ray).</div>
+          )}
+        </FieldSection>
+      )}
+
+      {showCoord && database === 'alphafold' && (
+        <FieldSection title="Model">
+          <Field label="Format">
+            <RadioField
+              value={coordFormat}
+              onValueChange={setCoordFormat}
+              options={[
+                { value: 'mmcif', label: 'mmCIF' },
+                { value: 'pdb', label: 'PDB' },
+              ]}
+            />
+          </Field>
+          <div className="h3-dialog-hint">The predicted model from AlphaFold DB. Its B-factors hold the pLDDT confidence.</div>
+        </FieldSection>
+      )}
+
+      {showCoord && database === 'pubchem' && (
+        <FieldSection title="Compound">
+          <div className="h3-dialog-hint">The compound's 3D conformer, as SDF.</div>
         </FieldSection>
       )}
 

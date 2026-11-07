@@ -1,9 +1,10 @@
 # データベースからの取得 (取得元の表と ChX の `open`)
 
 accession ID と取得元のデータベースから、構造を取得して開く仕組み。取得元の知識 (ID の形・URL・reader・
-既定の名前) は core の共有モジュールに置き、op `fetch_entry` (native console・MCP・agent) と ChX console の
-`open` (`open pdbe:1crn`、`open alphafold:P29474`、`open 1crn fromDatabase pdbj` など) が使う。Get PDB
-ダイアログへの展開などの残りは [`../plans/261107-database-fetch-plan.md`](../plans/261107-database-fetch-plan.md)。
+既定の名前) は core の共有モジュールに置き、op `fetch_entry` (native console・MCP・agent)、Get PDB ダイアログ、
+ChX console の `open` (`open pdbe:1crn`、`open alphafold:P29474`、`open 1crn fromDatabase pdbj` など) が使う。
+残り (pLDDT の色の preset、EMDB の mirror、URL からの地図) は
+[`../plans/261107-database-fetch-plan.md`](../plans/261107-database-fetch-plan.md)。
 
 URL は ChimeraX の取得処理に合わせた (`~/ext/ChimeraX/src/bundles/` の `mmcif`・`pdb`・`alphafold`・
 `pubchem`)。同じ接頭辞で同じものを取る。
@@ -34,6 +35,14 @@ URL は ChimeraX の取得処理に合わせた (`~/ext/ChimeraX/src/bundles/` �
   `pdb`、`.sdf`/`.mol` -> `sdf`、`.mol2` -> `mol2`)。末尾の `.gz` は gzip として展開する。query と fragment は
   見ない。名前はファイル名から拡張子を除いたもの。地図の URL は扱わない。
 - `emdbAccession(text)`: `1080`、`emd_1080`、`EMD-1080` を `EMD-1080` にする (`fetch_emdb` の `id`)。
+- `dbEntryInfoUrl` / `parseDbEntryInfo`: AlphaFold DB と PubChem の entry の情報 (Get PDB が表示する名前と概要)。
+  - AlphaFold DB: `https://alphafold.ebi.ac.uk/api/prediction/{uniprot}[-{isoform}]`。fragment ごとの配列から
+    ID の fragment (既定 F1) のものを選び、`uniprotDescription` を名前、遺伝子名・生物種・残基数・平均 pLDDT を概要にする。
+    無い accession は 404。
+  - PubChem: `.../compound/cid/{cid}/property/Title,IUPACName,MolecularFormula,MolecularWeight/JSON`。`Title` を名前、
+    分子式・分子量・IUPAC 名を概要にする。無い CID は 400。
+  - worker の service `fetchDbEntryInfo` (`services/file/entryInfo.ts`、RCSB / EMDB の照会と同じ場所) が取得し、
+    400 / 404 は `not-found` にする。
 
 ## 2. op `fetch_entry` と `fetch_url` の `gzip`
 
@@ -97,7 +106,34 @@ atom と cartoon の renderer に入れる (`colorSchemes.ts` の `plddtEntries`
 
 表に無い接頭辞は「unknown database」と、使える取得元の一覧を出す。
 
-## 4. テスト
+## 4. Get PDB ダイアログ (`plugins/getpdb`)
+
+Entry 欄の先頭に **Database** の切り替え (`SegmentField`: PDB / EMDB、AlphaFold DB、PubChem) を置く。ID 欄の
+見出しと placeholder は Database で変わる。
+
+- **PDB / EMDB**: 今までどおり (RCSB / EMDB の照会、キーワード検索、地図の欄。[get-pdb-emdb](get-pdb-emdb.md))。
+  Coordinates 欄は **Server** (RCSB / PDBe / PDBj / PDB-REDO) と **Format** (mmCIF / PDB) の 2 つ。PDBe などは
+  同じ PDB の entry を配るので、RCSB の照会結果 (手法・地図の有無・PDB 形式の可否) はそのまま使う。
+- **AlphaFold DB / PubChem**: RCSB の照会と検索はせず、地図の欄も出さない (PDB として扱うと、RCSB の照会結果や
+  結晶の地図の fallback が別の取得元の ID に使われるため)。
+  - ID の形を `structureFetch` で検査し、違えば理由を赤字で出して Download を押せなくする。
+  - 形が正しければ `fetchDbEntryInfo` で照会し (`useDbEntryLookup`、PDB の照会と同じ待ち時間と古い結果の破棄)、
+    名前と概要を 2 行で出す。見つからなければ Download を押せなくする。照会の失敗 (offline など) では押せる。
+  - AlphaFold DB は Model 欄に Format (mmCIF / PDB)。PubChem は SDF だけなので Compound 欄に説明だけ。
+- Database を切り替えると、前の Database の照会は止まり、結果も捨てる (`useEntryLookup` の `active` を落とす)。
+
+取得 (`useGetPdbCommand.ts`):
+- 座標は `structureFetch(source, id, format)` の URL・reader・gzip・名前で `streamLoadFromUrl` に渡す。
+- 記録: RCSB は今までどおり `fetch_pdb` (読込のダイアログで選んだ reader の設定付き)。それ以外は `entry` を渡して
+  `fetch_entry` (reader の設定は記録しない。`fetch_entry` は reader の設定を取らない)。
+- **PubChem** は file-open option ダイアログを出さず、reader の既定値、ballstick の renderer、表示の中心を合わせる
+  (`centerView`) で開く (`compoundOpenOptions`)。化合物 1 つなので、選ばせる必要が無い。
+- 結果 (`GetPdbDialogResult`) は `entryId` (PDB / EMDB の accession、または AlphaFold / PubChem の ID) と
+  `coord: { source, format }`。地図の取得は PDB / EMDB のときだけ。
+
+既知の制約: Get PDB で開いた AlphaFold のモデルは pLDDT で塗らない (ChX の `open` だけが塗る。plan §1)。
+
+## 5. テスト
 
 - `renderer/__test__/streamLoadFromUrlService.test.ts`: `entry` を渡した取得は URL でなく `fetch_entry` として
   記録され (既定の名前は残さない)、gzip の取得は reader の `compress` を `gzip` にする。
@@ -106,3 +142,6 @@ atom と cartoon の renderer に入れる (`colorSchemes.ts` の `plddtEntries`
   ID の分解、PubChem の SDF、URL の `.gz`)、断る ID。
 - `plugins/chimerax-console/worker/openTarget.test.ts`: `fromDatabase` は同じ名前のファイルより優先、
   `db:id` と `fromDatabase` が同じ取得になること、`C:\...` はファイル、断る取得元。
+- `renderer/worker/shared/dbSources.test.ts` (`parseDbEntryInfo`): AlphaFold DB と PubChem の応答から名前と概要を読む。
+- `plugins/getpdb/renderer/GetPdbDialog.test.tsx`: AlphaFold DB の ID は形が正しければ照会結果を出して取得でき、
+  PDB の照会結果が残っていても地図の欄を出さない。

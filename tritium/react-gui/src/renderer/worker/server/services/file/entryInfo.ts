@@ -3,7 +3,9 @@
  * @description What Get PDB reads about an entry before downloading it: the
  * RCSB entry record (method, resolution, associated EMDB volumes), the EMDB
  * map record (recommended contour level, file size), and a keyword search
- * for when the user does not know the ID.
+ * for when the user does not know the ID. Also the record of an AlphaFold DB
+ * model or a PubChem compound (name, organism or formula), whose rules live
+ * in `worker/shared/dbSources.ts`.
  *
  * Runs in the Web Worker thread. Both are plain HTTPS fetches (RCSB and EMDB
  * answer with `Access-Control-Allow-Origin: *`); the parsing rules live in
@@ -23,6 +25,7 @@ import {
     type SearchMethodFilter,
     type SearchSort,
 } from '@renderer/worker/shared/pdbEntryInfo';
+import { dbEntryInfoUrl, parseDbEntryInfo, type DbEntryInfo } from '@renderer/worker/shared/dbSources';
 
 const RCSB_GRAPHQL_URL = 'https://data.rcsb.org/graphql';
 const EMDB_API_URL = 'https://www.ebi.ac.uk/emdb/api/entry';
@@ -138,6 +141,36 @@ export async function fetchEmdbMapInfo(
         if (mapResp.status === 404) return fail(`${args.emdbId} not found`, 'not-found');
         if (!mapResp.ok) return fail(`HTTP ${mapResp.status} from EMDB`, 'io');
         return ok({ info: parseEmdbMap(args.emdbId.toUpperCase(), await mapResp.json(), adminJson) });
+    } catch (e) {
+        return failFrom(e, 'io');
+    }
+}
+
+export interface FetchDbEntryInfoArgs {
+    source: 'alphafold' | 'pubchem';
+    id: string;
+}
+
+export type FetchDbEntryInfoResult = Result<{ info: DbEntryInfo }>;
+
+/**
+ * Read what AlphaFold DB or PubChem says about `id`.
+ *
+ * @returns the info; `not-found` when the database has no such entry (AlphaFold
+ *   answers 404, PubChem 400 or 404) or the id is not of its form
+ */
+export async function fetchDbEntryInfo(
+    _ctx: WorkerContext,
+    args: FetchDbEntryInfoArgs,
+): Promise<FetchDbEntryInfoResult> {
+    const url = dbEntryInfoUrl(args.source, args.id);
+    if (!url) return fail(`"${args.id}" is not a ${args.source} id`, 'not-found');
+    try {
+        const resp = await fetch(url);
+        if (resp.status === 404 || resp.status === 400) return fail(`${args.id} not found`, 'not-found');
+        if (!resp.ok) return fail(`HTTP ${resp.status} from ${args.source}`, 'io');
+        const info = parseDbEntryInfo(args.source, args.id, await resp.json());
+        return info ? ok({ info }) : fail(`${args.id} not found`, 'not-found');
     } catch (e) {
         return failFrom(e, 'io');
     }

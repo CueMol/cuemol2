@@ -154,3 +154,64 @@ export function emdbAccession(text: string): string | null {
   const m = /^(?:emd[-_]?)?(\d{4,})$/i.exec(text.trim())
   return m ? `EMD-${m[1]}` : null
 }
+
+/** What the Get PDB dialog shows about an AlphaFold DB model or a PubChem compound before downloading it. */
+export interface DbEntryInfo {
+  /** The protein's or compound's name. */
+  title: string
+  /** Short facts, in display order (`NOS3`, `Homo sapiens`, ...). */
+  details: string[]
+}
+
+/**
+ * The record that describes `id` in `source`: AlphaFold DB's prediction API,
+ * PubChem's compound properties. Null for a source without one, or an id
+ * that is not of the source's form.
+ */
+export function dbEntryInfoUrl(source: 'alphafold' | 'pubchem', id: string): string | null {
+  if (source === 'alphafold') {
+    const a = parseAlphaFoldId(id)
+    return a.ok ? `https://alphafold.ebi.ac.uk/api/prediction/${a.uniprot}${a.isoform ? `-${a.isoform}` : ''}` : null
+  }
+  const cid = id.trim()
+  return /^\d+$/.test(cid)
+    ? `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/Title,IUPACName,MolecularFormula,MolecularWeight/JSON`
+    : null
+}
+
+const str = (v: unknown): string => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : '')
+
+/**
+ * Read the record `dbEntryInfoUrl` answers with.
+ *
+ * @returns the info, or null when the record names nothing
+ */
+export function parseDbEntryInfo(source: 'alphafold' | 'pubchem', id: string, json: unknown): DbEntryInfo | null {
+  if (source === 'alphafold') {
+    if (!Array.isArray(json) || json.length === 0) return null
+    // One record per fragment: the one the id names (F1 unless it says).
+    const a = parseAlphaFoldId(id)
+    const fragment = a.ok ? a.fragment : '1'
+    const rec = (json.find((r) => typeof r === 'object' && r !== null && str((r as Record<string, unknown>).modelEntityId).endsWith(`-F${fragment}`)) ??
+      json[0]) as Record<string, unknown>
+    const residues = typeof rec.sequenceEnd === 'number' && typeof rec.sequenceStart === 'number' ? rec.sequenceEnd - rec.sequenceStart + 1 : null
+    const plddt = typeof rec.globalMetricValue === 'number' ? rec.globalMetricValue : null
+    return {
+      title: str(rec.uniprotDescription) || str(rec.uniprotAccession) || id,
+      details: [
+        str(rec.gene),
+        str(rec.organismScientificName),
+        residues !== null ? `${residues} residues` : '',
+        plddt !== null ? `mean pLDDT ${plddt.toFixed(1)}` : '',
+      ].filter((s) => s !== ''),
+    }
+  }
+  const props = (json as { PropertyTable?: { Properties?: Record<string, unknown>[] } })?.PropertyTable?.Properties
+  const rec = Array.isArray(props) ? props[0] : undefined
+  if (!rec) return null
+  const weight = str(rec.MolecularWeight)
+  return {
+    title: str(rec.Title) || `CID ${id.trim()}`,
+    details: [str(rec.MolecularFormula), weight ? `${weight} g/mol` : '', str(rec.IUPACName)].filter((s) => s !== ''),
+  }
+}

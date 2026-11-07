@@ -8,7 +8,7 @@
  * defaults are).
  */
 
-import { fetchEmdbMapInfo, fetchEntryInfo, searchPdbEntries } from './entryInfo';
+import { fetchDbEntryInfo, fetchEmdbMapInfo, fetchEntryInfo, searchPdbEntries } from './entryInfo';
 import { getCompatibleRendererNames } from './getCompatibleRendererNames';
 import { getOpenFilters } from './getOpenFilters';
 import { getReaderDefaultOptions } from './getReaderDefaultOptions';
@@ -31,6 +31,7 @@ export const services = {
     cancelStreamLoad,
     fetchEntryInfo,
     fetchEmdbMapInfo,
+    fetchDbEntryInfo,
     searchPdbEntries,
 };
 
