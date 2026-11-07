@@ -217,6 +217,30 @@ describe('streamLoadDensityMap — reader configuration', () => {
         expect(recordOp).toHaveBeenCalledWith(env.ctx, 7, 'fetch_emdb', recorded)
         expect(typeof readToolArgs(findOp('fetch_emdb')!, recorded)).toBe('object')
     })
+
+    it('auto (a map from a URL): drawn as the kind read from the file, no structure-factor setup, recorded as fetch_map_url', async () => {
+        // The reader resolved the map as cryo-EM from its header.
+        const obj = { __obj: true, fitView: vi.fn(), map_type_resolved: 'em' } as FakeObj
+        const env = makeEnv({ readerName: 'ccp4map', obj })
+        globalThis.fetch = fetchYieldingChunks([new Uint8Array([1])]) as unknown as typeof fetch
+
+        await streamLoadDensityMap(env.ctx, {
+            reqId: 'r-5',
+            url: 'https://example.org/maps/emd_1080.map.gz',
+            readerName: 'ccp4map',
+            gzip: true,
+            mapType: 'auto',
+            objectName: 'emd_1080',
+            sceneId: 7,
+            viewId: 1,
+        })
+
+        expect(env.reader.gridsize).toBeUndefined()
+        expect(setupDensityMapRenderers).toHaveBeenCalledWith(env.ctx, env.scene, env.obj, 'em', null)
+        const recorded = { url: 'https://example.org/maps/emd_1080.map.gz', name: 'emd_1080', gzip: true }
+        expect(recordOp).toHaveBeenCalledWith(env.ctx, 7, 'fetch_map_url', recorded)
+        expect(typeof readToolArgs(findOp('fetch_map_url')!, recorded)).toBe('object')
+    })
 })
 
 describe('streamLoadDensityMap — post-load behavior', () => {

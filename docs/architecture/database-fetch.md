@@ -3,7 +3,7 @@
 accession ID と取得元のデータベースから、構造を取得して開く仕組み。取得元の知識 (ID の形・URL・reader・
 既定の名前) は core の共有モジュールに置き、op `fetch_entry` (native console・MCP・agent)、Get PDB ダイアログ、
 ChX console の `open` (`open pdbe:1crn`、`open alphafold:P29474`、`open 1crn fromDatabase pdbj` など) が使う。
-残り (pLDDT の色の preset、EMDB の mirror、URL からの地図) は
+残り (pLDDT の色の preset) は
 [`../plans/261107-database-fetch-plan.md`](../plans/261107-database-fetch-plan.md)。
 
 URL は ChimeraX の取得処理に合わせた (`~/ext/ChimeraX/src/bundles/` の `mmcif`・`pdb`・`alphafold`・
@@ -33,7 +33,9 @@ URL は ChimeraX の取得処理に合わせた (`~/ext/ChimeraX/src/bundles/` �
   取得 (Electron の fetch) では問題ない。
 - `urlFetch(url)`: URL のファイル名の拡張子で reader を決める (`.cif`/`.mmcif` -> `mmcif`、`.pdb`/`.ent` ->
   `pdb`、`.sdf`/`.mol` -> `sdf`、`.mol2` -> `mol2`)。末尾の `.gz` は gzip として展開する。query と fragment は
-  見ない。名前はファイル名から拡張子を除いたもの。地図の URL は扱わない。
+  見ない。名前はファイル名から拡張子を除いたもの。
+- `mapUrlFetch(url)`: 地図 (CCP4 / MRC) の URL。拡張子が `.map` / `.mrc` / `.ccp4` (末尾の `.gz` は展開) なら
+  reader `ccp4map` と名前を返し、そうでなければ null (呼ぶ側は `urlFetch` を試す)。
 - `emdbAccession(text)`: `1080`、`emd_1080`、`EMD-1080` を `EMD-1080` にする (`fetch_emdb` の `id`)。
 - `dbEntryInfoUrl` / `parseDbEntryInfo`: AlphaFold DB と PubChem の entry の情報 (Get PDB が表示する名前と概要)。
   - AlphaFold DB: `https://alphafold.ebi.ac.uk/api/prediction/{uniprot}[-{isoform}]`。fragment ごとの配列から
@@ -57,6 +59,20 @@ URL は ChimeraX の取得処理に合わせた (`~/ext/ChimeraX/src/bundles/` �
 - `fetch_pdb` は互換のためそのまま残す (`fetch_entry source=pdb` と同じものを取るが、reader の option を取る)。
 - EMDB の地図は `fetch_emdb` のまま (`fetch_entry` の取得元には入れない)。
 
+**EMDB の mirror**: `pickEmdbMapUrl` (`worker/shared/pdbUrls.ts`) の取得先は `WWPDB` (files.wwpdb.org、既定)・
+`EBI`・`PDBJ` (`EMDB_SERVERS`)。PDBj の URL は ChimeraX の `ftp.pdbj.org` ではなく、そのリダイレクト先の
+`files.pdbj.org` を直接書く。China の mirror (`ftp.emdb-china.org`) は、足そうとしたとき (2026-11-07) に
+応答が無かったので入れていない。`fetch_emdb` の `source`、Get PDB の Cryo-EM maps の Source、記録の照合
+(`streamLoad.ts` の `fetchEmdbSpec`) が同じ一覧を使う。
+
+**op `fetch_map_url`** (`catalog/ops/mapOps.ts`、toolset `map`、console): `url`・`name`・`gzip` (省略時は
+`.gz` で判定)。地図の URL を `streamLoadDensityMap` の `mapType: 'auto'` で開く。
+
+- `auto` は、読み込んだ後に CueMol が判定した地図の種類 (`isEmDensityMap`: `map_type_resolved`) で描く。
+  cryo-EM なら isosurface (EMDB の地図と同じ。推奨 level は無いので style の既定)、結晶なら 2Fo-Fc と同じ
+  contour。構造因子の reader の設定 (`gridsize`、MTZ の列) はしない。
+- 記録は `fetch_map_url` (URL・名前・gzip)。それ以外の `mapType` は今までどおり `fetch_map` / `fetch_emdb`。
+
 **`fetch_url` の `gzip`** (省略可の boolean): `streamLoadFromUrl` で reader の `compress` を `gzip` にする。展開は
 libcuemol2 側で行う (`ObjReader::read` が入力を `qlib::GzipInStream` で包む。地図の `streamLoadDensityMap` や
 ローカルの `.gz` を開くときと同じ)。ダウンロードしたバイト列は圧縮されたまま C++ に渡す。記録される
@@ -77,8 +93,8 @@ libcuemol2 側で行う (`ObjReader::read` が入力を `qlib::GzipInStream` で
 
 取得:
 - 取得元 (`pdb` を含む) は `fetch_entry`。ID の形は `open` でも先に検査して、何かを走らせる前に断る。
-- `emdb` / `emdb_us` は WWPDB、`emdb_europe` は EBI で `fetch_emdb`。
-- URL は `urlFetch` の reader・gzip で `fetch_url`。
+- `emdb` / `emdb_us` は WWPDB、`emdb_europe` は EBI、`emdb_japan` は PDBJ で `fetch_emdb`。
+- URL は、地図 (`mapUrlFetch`) なら `fetch_map_url`、それ以外は `urlFetch` の reader・gzip で `fetch_url`。
 
 `format` は `pdb` / `mmcif` (`cif` も) を PDB 系と AlphaFold で使う。それ以外の形式名をこれらに渡すと断る。
 URL と EMDB では使わない (warn)。ファイルを開くときは今までどおり無視して warn。
@@ -97,7 +113,7 @@ atom と cartoon の renderer に入れる (`colorSchemes.ts` の `plddtEntries`
 
 | 接頭辞 | 理由 |
 |---|---|
-| `emdb_japan` / `emdb_china` | `fetch_emdb` がその mirror を持たない |
+| `emdb_china` | その mirror に応答が無かった (`emdb`・`emdb_europe`・`emdb_japan` を案内する) |
 | `emdb_fits` | fit したモデルを開く処理が無い |
 | `cod` / `pcod` | 低分子結晶の CIF を読む reader が無い |
 | `pdbihm` / `pdbdev` | integrative model を扱えない |

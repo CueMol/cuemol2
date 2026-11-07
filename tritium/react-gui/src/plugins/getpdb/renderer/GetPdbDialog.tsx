@@ -684,6 +684,7 @@ export function GetPdbDialog({ visible, onConfirm, onCancel }: Props): React.JSX
                 options={[
                   { value: 'WWPDB', label: 'wwPDB' },
                   { value: 'EBI', label: 'EBI' },
+                  { value: 'PDBJ', label: 'PDBj' },
                 ]}
               />
             </Field>

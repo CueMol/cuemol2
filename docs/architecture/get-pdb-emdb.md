@@ -97,7 +97,7 @@ level を EMDB API で引いてから (level の指定があれば引かない) 
 (top 1%) で読む。
 
 - **op `fetch_emdb`** (`catalog/ops/mapOps.ts`、toolset `map`、native console / AI agent / MCP 共通):
-  `id` / `name` / `source` (`WWPDB` / `EBI`) / `level` (map の密度の単位、絶対値)。`id` は EMDB コード
+  `id` / `name` / `source` (`WWPDB` / `EBI` / `PDBJ`。[database-fetch](database-fetch.md) §2) / `level` (map の密度の単位、絶対値)。`id` は EMDB コード
   (`EMD-11638`、`emd_11638`、数字だけも可) か cryo-EM の PDB ID。PDB ID は `resolveEmdbId` が
   `fetchEntryInfo` で引き、entry の最初の EMDB map を取る (モデルを組んだ map)。EMDB map の無い entry は
   `has no EMDB map (not a cryo-EM entry)` で失敗する。座標は `fetch_pdb` で別に取る

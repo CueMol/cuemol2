@@ -1,7 +1,7 @@
 /**
  * @file worker/server/catalog/ops/mapOps.ts
- * @description Ops for electron density maps: fetching one from the PDB or
- * EMDB and setting how its contour is drawn.
+ * @description Ops for electron density maps: fetching one from the PDB,
+ * EMDB or a URL, and setting how its contour is drawn.
  */
 
 import { listMapRenderers as listMapRenderersService } from '@renderer/worker/server/services/map/renderers'
@@ -10,10 +10,11 @@ import { setMapRendererProp } from '@renderer/worker/server/services/map/props'
 import { streamLoadDensityMap } from '@renderer/worker/server/services/map/streamLoad'
 import { fetchEmdbMap, resolveEmdbId } from '@renderer/worker/server/services/map/fetchEmdbMap'
 import { PDB_ID_RE, pickMapUrl } from '@renderer/worker/shared/pdbUrls'
+import { mapUrlFetch } from '@renderer/worker/shared/dbSources'
 import { normalizeServiceResult } from '@renderer/worker/shared/serviceResult'
 import { defineOp } from '../op'
 import type { OpOutcome } from '../op'
-import { color, enumOf, optional, real, rendererId, string } from '../params'
+import { boolean, color, enumOf, optional, real, rendererId, string } from '../params'
 
 
 export const fetchMap = defineOp({
@@ -66,7 +67,7 @@ export const fetchEmdb = defineOp({
   params: {
     id: string('EMDB code such as EMD-11638, or the PDB ID of a cryo-EM entry.'),
     name: optional(string('Name for the map object. Null uses emd_<number>.')),
-    source: optional(enumOf(['WWPDB', 'EBI'], 'Which mirror: WWPDB (files.wwpdb.org) or EBI. Null is WWPDB.')),
+    source: optional(enumOf(['WWPDB', 'EBI', 'PDBJ'], 'Which mirror: WWPDB (files.wwpdb.org), EBI or PDBJ (PDBj, Japan). Null is WWPDB.')),
     level: optional(real('Contour level in the map\'s own density units. Null uses the level EMDB recommends (the top 1% of grid points when it gives none).')),
   },
   mutates: true,
@@ -89,6 +90,42 @@ export const fetchEmdb = defineOp({
     })
     if (!res.ok) return { ok: false, error: res.error || `The map of ${resolved.emdbId} could not be downloaded.` }
     return { ok: true, data: { objectId: res.objId, emdbId: res.emdbId } }
+  },
+})
+
+export const fetchMapUrl = defineOp({
+  name: 'fetch_map_url',
+  description:
+    'Download a density map file (CCP4 / MRC: .map, .mrc, .ccp4, or one of them .gz) from a URL and add it ' +
+    'to the scene. CueMol tells a cryo-EM map from a crystallographic one when it reads it: a cryo-EM ' +
+    'map is drawn as an isosurface, a crystallographic one as a contour at 1 sigma. For an EMDB entry ' +
+    'use fetch_emdb, for a PDB entry\'s map fetch_map.',
+  params: {
+    url: string('The URL (http or https) of the map file.'),
+    name: optional(string('Name for the map object. Null uses the file name.')),
+    gzip: optional(boolean('The download is gzip-compressed. Null tells it from a .gz at the end of the file name.')),
+  },
+  mutates: true,
+  describe: (a) => `Fetch the map at ${a.url}`,
+  expose: { tool: 'map', console: true },
+  group: 'maps',
+  async run(ctx, args, oc) {
+    const spec = mapUrlFetch(args.url)
+    if (!spec) return { ok: false, error: `"${args.url}" is not the http(s) URL of a .map, .mrc or .ccp4 file.` }
+    const reqId = oc.streamId('fetch_map_url')
+    oc.noteStream(reqId)
+    const res = await streamLoadDensityMap(ctx, {
+      reqId,
+      url: spec.url,
+      readerName: spec.readerName,
+      gzip: args.gzip ?? spec.gzip,
+      mapType: 'auto',
+      objectName: args.name ?? spec.name,
+      sceneId: oc.sceneId,
+      viewId: oc.viewId,
+    })
+    if (!res.ok) return { ok: false, error: res.error || `${spec.url} could not be downloaded.` }
+    return { ok: true, data: { objectId: res.objId } }
   },
 })
 
@@ -151,4 +188,4 @@ export const setMapContour = defineOp({
   },
 })
 
-export const MAP_OPS = [fetchMap, fetchEmdb, listMapRenderers, setMapContour]
+export const MAP_OPS = [fetchMap, fetchEmdb, fetchMapUrl, listMapRenderers, setMapContour]

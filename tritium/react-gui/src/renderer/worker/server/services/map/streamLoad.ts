@@ -8,12 +8,13 @@ import type { WorkerContext } from '@renderer/worker/server/types/WorkerContext'
 import type { ObjReader } from '@cuemol/core/src/wrappers/ObjReader';
 import type { DensityMap } from '@cuemol/core/src/wrappers/DensityMap';
 import { setupDensityMapRenderers, type DensityMapType } from './setupRenderers';
+import { isEmDensityMap } from './emDefaults';
 import { undoTxnResult } from '../withUndoTxn';
 import { streamFetchToReader } from '@renderer/worker/server/services/helpers/streamFetchToReader';
 import { fail, failFrom, ok, type Result } from '@renderer/worker/shared/result';
 import { getSceneOrNull, getViewOrNull } from '@renderer/worker/server/services/helpers/sceneResolver';
 import { recordOp } from '@renderer/worker/server/actions/serviceOps';
-import { pickEmdbMapUrl, pickMapUrl, type EmdbServerType, type MapServerType } from '@renderer/worker/shared/pdbUrls';
+import { EMDB_SERVERS, pickEmdbMapUrl, pickMapUrl, type EmdbServerType, type MapServerType } from '@renderer/worker/shared/pdbUrls';
 const log = console;
 
 export type DensityMapReaderName = 'mmcifmap' | 'mtzmap' | 'ccp4map';
@@ -24,7 +25,12 @@ export interface StreamLoadDensityMapArgs {
     readerName: DensityMapReaderName;
     /** True for .cif.gz from RCSB validation_reports; false for raw .mtz. */
     gzip: boolean;
-    mapType: DensityMapType;
+    /**
+     * `auto`: a gridded map from anywhere (a URL), drawn by the kind CueMol
+     * detects when it reads it -- cryo-EM as an isosurface, crystallographic
+     * as a 2Fo-Fc contour -- and recorded as `fetch_map_url`.
+     */
+    mapType: DensityMapType | 'auto';
     /** Object name to assign after load (e.g. '1mbn_2fofc'). */
     objectName: string;
     /**
@@ -62,7 +68,7 @@ function configureMtzColumns(
 
 /** The entry and server `fetch_map` downloads this URL from, or null for a URL it does not build. */
 function fetchMapSpec(args: StreamLoadDensityMapArgs): { pdbId: string; source: MapServerType } | null {
-    if (args.mapType === 'em') return null;
+    if (args.mapType === 'em' || args.mapType === 'auto') return null;
     const m = /\/validation_reports\/[0-9a-z]{2}\/([0-9][0-9a-z]{3})\//i.exec(args.url)
         ?? /\/pdbe\/coordinates\/files\/([0-9][0-9a-z]{3})_map\.mtz$/i.exec(args.url);
     if (!m) return null;
@@ -78,7 +84,7 @@ function fetchMapSpec(args: StreamLoadDensityMapArgs): { pdbId: string; source: 
 function fetchEmdbSpec(args: StreamLoadDensityMapArgs): { num: string; source: EmdbServerType } | null {
     const m = /\/EMD-(\d+)\/map\/emd_\d+\.map\.gz$/.exec(args.url);
     if (!m) return null;
-    for (const source of ['WWPDB', 'EBI'] as const) {
+    for (const source of EMDB_SERVERS) {
         const spec = pickEmdbMapUrl(m[1], source);
         if (spec.url === args.url && spec.readerName === args.readerName) return { num: m[1], source };
     }
@@ -92,6 +98,10 @@ function fetchEmdbSpec(args: StreamLoadDensityMapArgs): { num: string; source: E
  * is not recorded.
  */
 function recordFetchMap(ctx: WorkerContext, sceneId: number, args: StreamLoadDensityMapArgs): void {
+    if (args.mapType === 'auto') {
+        recordOp(ctx, sceneId, 'fetch_map_url', { url: args.url, name: args.objectName, gzip: args.gzip ? true : null });
+        return;
+    }
     if (args.mapType === 'em') {
         const em = fetchEmdbSpec(args);
         if (!em) return;
@@ -107,7 +117,7 @@ function recordFetchMap(ctx: WorkerContext, sceneId: number, args: StreamLoadDen
     if (!spec) return;
     recordOp(ctx, sceneId, 'fetch_map', {
         pdbId: spec.pdbId,
-        mapType: args.mapType,
+        mapType: args.mapType as '2fofc' | 'fofc',
         name: args.objectName === `${spec.pdbId}_${args.mapType}` ? null : args.objectName,
         source: spec.source === 'RCSB_CIF' ? null : spec.source,
     });
@@ -129,8 +139,8 @@ export async function streamLoadDensityMap(
         // compress is enum-typed in the wrapper but accepts strings at runtime.
         (reader as unknown as { compress: string }).compress = 'gzip';
     }
-    if (args.mapType !== 'em') {
-        // Structure-factor readers only: a cryo-EM map is already gridded.
+    if (args.mapType !== 'em' && args.mapType !== 'auto') {
+        // Structure-factor readers only: a cryo-EM map (or any gridded one) is already gridded.
         if (args.readerName === 'mtzmap') {
             configureMtzColumns(reader, args.mapType);
         }
@@ -168,7 +178,9 @@ export async function streamLoadDensityMap(
             (obj as unknown as { map_type: string }).map_type = 'em';
         }
 
-        setupDensityMapRenderers(ctx, scene, obj, args.mapType, args.contourLevel ?? null);
+        // A map from a URL is drawn as what CueMol read it to be.
+        const kind: DensityMapType = args.mapType === 'auto' ? (isEmDensityMap(obj) ? 'em' : '2fofc') : args.mapType;
+        setupDensityMapRenderers(ctx, scene, obj, kind, args.contourLevel ?? null);
 
         // Center view on the new map (UXP renderer.js L196-198).
         // fitView is on DensityMap; obj is typed as Object so cast.

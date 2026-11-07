@@ -215,3 +215,31 @@ export function parseDbEntryInfo(source: 'alphafold' | 'pubchem', id: string, js
     details: [str(rec.MolecularFormula), weight ? `${weight} g/mol` : '', str(rec.IUPACName)].filter((s) => s !== ''),
   }
 }
+
+/** A gridded density map at a URL: how to download and read it. */
+export interface MapUrlSpec {
+  url: string
+  readerName: 'ccp4map'
+  gzip: boolean
+  /** The object's name when the caller gives none (the file name without its extensions). */
+  name: string
+}
+
+/** File extensions of the gridded maps a URL can name (CCP4 / MRC, read by `ccp4map`). */
+const MAP_URL_EXTENSIONS = ['map', 'mrc', 'ccp4']
+
+/**
+ * How to fetch a density map by its URL, by its file name's extension
+ * (`.map`, `.mrc`, `.ccp4`; a trailing `.gz` is decompressed). Null when the
+ * URL does not name one of those, so a caller can try `urlFetch` instead.
+ */
+export function mapUrlFetch(url: string): MapUrlSpec | null {
+  const u = url.trim()
+  if (!/^https?:\/\//i.test(u)) return null
+  let file = u.split(/[?#]/)[0].split('/').pop() ?? ''
+  const gzip = /\.gz$/i.test(file)
+  if (gzip) file = file.slice(0, -3)
+  const dot = file.lastIndexOf('.')
+  if (dot <= 0 || !MAP_URL_EXTENSIONS.includes(file.slice(dot + 1).toLowerCase())) return null
+  return { url: u, readerName: 'ccp4map', gzip, name: file.slice(0, dot) }
+}
